@@ -21,7 +21,7 @@ setup(
     license='MIT',
     url='https://github.com/prashanth-sams/pytest-html-reporter',
     description='Generate a static pytest html report',
-    long_description=read('README.rst'),
+    long_description=read('README.md'),
     keywords=[
         'pytest', 'py.test', 'html', 'reporter', 'report'
     ],
