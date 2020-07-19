@@ -25,7 +25,7 @@ setup(
     keywords=[
         'pytest', 'py.test', 'html', 'reporter', 'report'
     ],
-    packages=find_packages(),
+    packages=find_packages(include=['pytest_html_reporter']),
     python_requires='>=3.5',
     install_requires=[
         'pytest',

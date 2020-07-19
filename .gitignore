@@ -4,3 +4,6 @@ venv/
 */**/.DS_Store
 */.DS_Store
 .pytest_cache/
+pytest_report.html
+pytest_html_reporter/__pycache__/
+pytest_html_reporter.egg-info/
