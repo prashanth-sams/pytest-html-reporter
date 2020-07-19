@@ -6,28 +6,20 @@ from _pytest.runner import pytest_runtest_setup
 from _pytest.runner import pytest_runtest_teardown
 from pytest_html_reporter.template import html_template
 
-_total = 0
-_executed = 0
+_total = _executed = 0
 _pass = _fail = 0
 _skip = _error = 0
 _xpass = _xfail = 0
 _current_error = ""
-_suite_name = None
-_test_name = None
+_suite_name = _test_name = None
 _test_status = None
 _test_start_time = None
-_excution_time = 0
-_test_metrics_content = ""
-_suite_metrics_content = ""
-_duration = 0
+_excution_time = _duration = 0
+_test_metrics_content = _suite_metrics_content = ""
 _previous_suite_name = "None"
 _initial_trigger = True
-_spass_tests = 0
-_sfail_tests = 0
-_sskip_tests = 0
-_serror_tests = 0
-_sxfail_tests = 0
-_sxpass_tests = 0
+_spass_tests = _sfail_tests = _sskip_tests = 0
+_serror_tests = _sxfail_tests = _sxpass_tests = 0
 
 
 def pytest_addoption(parser):
@@ -35,27 +27,27 @@ def pytest_addoption(parser):
     group.addoption(
         "--html",
         action="store",
-        dest="htmlpath",
-        default=["./report"],
+        dest="path",
+        default=".",
         help="path to generate html report",
     )
 
 
 def pytest_configure(config):
-    htmlpath = config.getoption("htmlpath")
+    path = config.getoption("path")
 
-    config._html = HTMLReporter(htmlpath, config)
+    config._html = HTMLReporter(path, config)
     config.pluginmanager.register(config._html)
 
 
 class HTMLReporter:
 
-    def __init__(self, htmlpath, config):
-        self.htmlpath = htmlpath
+    def __init__(self, path, config):
+        self.path = path
         self.config = config
 
     def report_path(self):
-        logfile = os.path.expanduser(os.path.expandvars(self.htmlpath))
+        logfile = os.path.expanduser(os.path.expandvars(self.path))
         return os.path.abspath(logfile)
 
     @pytest.hookimpl(hookwrapper=True)
