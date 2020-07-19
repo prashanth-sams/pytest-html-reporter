@@ -1,6 +1,6 @@
 
 def html_template():
-    my_template = """
+    return """
 	<!DOCTYPE doctype html>
     <html lang="en">
     <head>
@@ -493,4 +493,3 @@ def html_template():
         </script>
     </body>
 	"""
-    return my_template

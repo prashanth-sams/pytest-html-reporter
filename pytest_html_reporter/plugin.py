@@ -36,7 +36,7 @@ def pytest_addoption(parser):
         "--html",
         action="store",
         dest="htmlpath",
-        default=["."],
+        default=["./report"],
         help="path to generate html report",
     )
 
@@ -44,33 +44,33 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     htmlpath = config.getoption("htmlpath")
 
-    if htmlpath:
-        HTMLReporter._report_location(htmlpath)
-    else:
-        pass
+    config._html = HTMLReporter(htmlpath, config)
+    config.pluginmanager.register(config._html)
 
 
 class HTMLReporter:
 
-    def __init__(self, htmlpath):
-        pass
+    def __init__(self, htmlpath, config):
+        self.htmlpath = htmlpath
+        self.config = config
 
-    def _report_location(htmlpath):
-        pass
-
+    def report_path(self):
+        logfile = os.path.expanduser(os.path.expandvars(self.htmlpath))
+        return os.path.abspath(logfile)
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
         yield
 
         report_file_name = "pytest_report.html"
-        live_logs_file = open(report_file_name, 'w')
+        path = os.path.join(self.report_path(), report_file_name)
+        live_logs_file = open(path, 'w')
         message = self.get_updated_template_text('https://i.imgur.com/OdZIPpg.png')
         live_logs_file.write(message)
         live_logs_file.close()
 
 
-    def get_updated_template_text(logo_url):
+    def get_updated_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
         template_text = template_text.replace("__execution_time__", str(round(_excution_time, 2)))
