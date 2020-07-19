@@ -40,14 +40,14 @@ def html_template():
                 z-index: 1;
                 top: 0;
                 left: 0;
-                background-color: white;
+                background-color: #2b2b2beb;
                 overflow-x: hidden;
             }
             .sidenav a {
                 padding: 12px 10px 8px 12px;
                 text-decoration: none;
                 font-size: 18px;
-                color: Black;
+                color: #a2a2a2;
                 display: block;
             }
             .main {
@@ -64,14 +64,14 @@ def html_template():
             .wrimagecard {
                 margin-top: 0;
                 margin-bottom: 0.6rem;
-                border-radius: 10px;
+                border-radius: 5px;
                 transition: all 0.3s ease;
                 background-color: #f8f9fa;
             }
             .rowcard {
                 padding-top: 10px;
                 box-shadow: 12px 15px 20px 0px rgba(46, 61, 73, 0.15);
-                border-radius: 15px;
+                border-radius: 6px;
                 transition: all 0.3s ease;
                 background-color: white;
             }
@@ -104,13 +104,13 @@ def html_template():
     <body>
         <div class="loader"></div>
         <div class="sidenav">
-            <a><img class="wrimagecard" src="__custom_logo__" style="height:20vh;max-width:98%;" /></a>
-            <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, '#fc6666')">
-                <i class="fa fa-dashboard" style="color:CORNFLOWERBLUE"></i> Dashboard</a>
-            <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, '#fc6666'); executeDataTable('#sm',2)">
-                <i class="fa fa-th-large" style="color:CADETBLUE"></i> Suite Metrics</a>
-            <a class="tablink" href="#" onclick="openPage('testMetrics', this, '#fc6666'); executeDataTable('#tm',3)">
-                <i class="fa fa-list-alt" style="color:PALEVIOLETRED"></i> Test Metrics</a>
+            <a><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
+            <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
+                <i class="fa fa-dashboard" id="tablinkicon" style="color:CORNFLOWERBLUE; margin:5% 5% 5% 10%"></i> Dashboard</a>
+            <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
+                <i class="fa fa-th-large" id="tablinkicon" style="color:CADETBLUE; margin:5% 5% 5% 10%"></i> Suite Metrics</a>
+            <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
+                <i class="fa fa-list-alt" id="tablinkicon" style="color:PALEVIOLETRED; margin:5% 5% 5% 10%"></i> Test Metrics</a>
         </div>
         <div class="main col-md-9 ml-sm-auto col-lg-10 px-4">
             <div class="tabcontent" id="dashboard">
@@ -468,7 +468,7 @@ def html_template():
         }
         </script>
         <script>
-            function openPage(pageName,elmnt,color) {
+            function openPage(pageName,elmnt,color,bgcolor,borderstyle) {
                 var i, tabcontent, tablinks;
                 tabcontent = document.getElementsByClassName("tabcontent");
                 for (i = 0; i < tabcontent.length; i++) {
@@ -477,9 +477,13 @@ def html_template():
                 tablinks = document.getElementsByClassName("tablink");
                 for (i = 0; i < tablinks.length; i++) {
                     tablinks[i].style.color = "";
+                    tablinks[i].style.background = "";
+                    tablinks[i].style.borderRight = "";
                 }
                 document.getElementById(pageName).style.display = "block";
                 elmnt.style.color = color;
+                elmnt.style.background = bgcolor;
+                elmnt.style.borderRight = borderstyle;
             }
             // Get the element with id="defaultOpen" and click on it
             document.getElementById("defaultOpen").click();
