@@ -28,6 +28,7 @@ def html_template():
         <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js" type="text/javascript"></script>
         <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.print.min.js" type="text/javascript"></script>
         <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
         <style>
             body {
                 font-family: -apple-system, sans-serif;
@@ -40,7 +41,7 @@ def html_template():
                 z-index: 1;
                 top: 0;
                 left: 0;
-                background-color: #2b2b2beb;
+                background-color: #211f1f;
                 overflow-x: hidden;
             }
             .sidenav a {
@@ -69,11 +70,11 @@ def html_template():
                 background-color: #f8f9fa;
             }
             .rowcard {
-                padding-top: 10px;
+                # padding-top: 10px;
                 box-shadow: 12px 15px 20px 0px rgba(46, 61, 73, 0.15);
                 border-radius: 6px;
                 transition: all 0.3s ease;
-                background-color: white;
+                # background-color: white;
             }
             .tablecard {
                 background-color: white;
@@ -98,6 +99,96 @@ def html_template():
                 z-index: 9999;
                 background: url('https://i.ibb.co/cXnKsNR/Cube-1s-200px.gif') 50% 50% no-repeat rgb(249, 249, 249);
             }
+            
+            .card-wrapper {
+              background-color: #f5f5f5;
+              # height: 100vh;
+              # width: 100vw;
+              display: grid;
+            }
+            
+            .card {
+              background-color: #ffff;
+              display: flex;
+              flex-direction: column;
+              # place-self: center;
+              border-radius: 4px;
+              box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+            }
+            
+            .card__content {
+              padding: 1.5rem;
+              font-family: sans-serif;
+            }
+            
+            .card__header {
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+            }
+            
+            .header__title {
+              font-size: 1.5rem;
+              font-weight: 600;
+              font-family: sans-serif;
+              padding-top: 4%;
+              padding-left: 5%;
+              color: dimgrey;
+            }
+            
+            .header__title-icon {
+              font-size: 1.6rem;
+              color: #ccc;
+            }
+            
+            .header__title-icon:hover {
+              color: rgba(54, 162, 235, 1);;
+            }
+            
+            .header__button {
+              border-radius: 50px;
+              background-color: #f5f5f5;
+              padding: 0.5rem 1rem;
+              border: none;
+              margin-left: 1rem;
+            }
+            
+            .header__button:hover {
+              background-color: rgba(54, 162, 235, 0.25);
+            }
+            
+            .chart {
+              padding: 2.0rem 52;
+            }
+            
+            .card__footer {
+              display: flex;
+              flex-direction: row;
+              justify-content: space-between;
+              margin-bottom: 5%;
+            }
+            
+            .card__footer-section {
+              text-align: center;
+              width: 33%;
+              # border-right: 1px solid #ccc;
+            }
+            
+            .card__footer-section:nth-child(3) {
+              border-right: none;
+            }
+            
+            .footer-section__data {
+              font-size: 2.2rem;
+              font-weight: 900;
+            }
+            
+            .footer-section__label {
+              text-transform: uppercase;
+              color: slategrey;
+              font-size: 1.0rem;
+            }
+            
         </style>
     </head>
     </html>
@@ -114,121 +205,40 @@ def html_template():
         </div>
         <div class="main col-md-9 ml-sm-auto col-lg-10 px-4">
             <div class="tabcontent" id="dashboard">
-                <div class="d-flex flex-column flex-md-row align-items-center p-1 mb-3 bg-light border-bottom shadow-sm rowcard">
-                    <h5 class="my-0 mr-md-auto font-weight-normal"><i class="fa fa-dashboard"></i> Dashboard</h5>
-                    <nav class="my-2 my-md-0 mr-md-3" style="color:red">
-                        <a class="p-2"><b style="color:black;">Execution Time:</b> __execution_time__ s</a>
-                    </nav>
-                </div>
+                
                 <div class="row rowcard">
                     <div class="col-md-4 border-right">
-                        <table style="width:100%;height:200px;text-align: center;">
-                            <tbody>
-                                <tr style="height:60%">
-                                    <td>
-                                        <table style="width:100%">
-                                            <tbody>
-                                                <tr style="height:100%">
-                                                    <td style="font-size:60px; color:rgb(105, 135, 219)">__total__</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <span style="color: #999999;font-size:12px">Total</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                                <tr style="height:25%">
-                                    <td>
-                                        <table style="width:100%">
-                                            <tbody>
-                                                <tr align="center" style="height:70%;font-size:25px" valign="middle">
-                                                    <td style="width: 33%; color:rgb(17, 3, 3)">__executed__</td>
-                                                    <td style="width: 33%; color:#96a74c">__skip__</td>
-                                                </tr>
-                                                <tr align="center" style="height:30%" valign="top">
-                                                    <td style="width: 33%">
-                                                        <span style="color: #999999;font-size:10px">Executed</span>
-                                                    </td>
-                                                    <td style="width: 33%">
-                                                        <span style="color: #999999;font-size:10px">Skip</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-md-4 borders" data-toggle="tooltip">
-                        <table style="width:100%;height:200px;text-align: center;">
-                            <tbody>
-                                <tr style="height:100%">
-                                    <td>
-                                        <table style="width:100%">
-                                            <tbody>
-                                                <tr style="height:100%">
-                                                    <td style="font-size:60px; color:#2ecc71">__pass__</td>
-                                                    <td style="font-size:60px; color:#fc6666">__fail__</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <span style="color: #999999;font-size:12px">Pass</span>
-                                                    </td>
-                                                    <td>
-                                                        <span style="color: #999999;font-size:12px">Fail</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-md-4 border-left">
-                        <table style="width:100%;height:200px;text-align: center;">
-                            <tbody>
-                                <tr style="height:100%">
-                                    <td>
-                                        <table style="width:100%">
-                                            <tbody>
-                                                <tr style="height:100%">
-                                                    <td style="font-size:60px; color:#9e6b6b">__xpass__</td>
-                                                    <td style="font-size:60px; color:#96a74c">__xfail__</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>
-                                                        <span style="color: #999999;font-size:12px">xPass</span>
-                                                    </td>
-                                                    <td>
-                                                        <span style="color: #999999;font-size:12px">xFail</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <hr/>
-                <div class="row rowcard">
-                    <div class="col-md-4"> <span style="font-weight:bold;color:gray">Test Status:</span>
-                        <div id="testChartID" style="height:280px;width:auto;"></div>
-                    </div>
-                    <div class="col-md-8"> <span style="font-weight:bold;color:gray">Top 5 Suite Failures:</span>
-                        <div id="suiteBarID" style="height:300px;width:auto;"></div>
-                    </div>
-                </div>
-                <hr/>
-                <div class="row rowcard">
-                    <div class="col-md-12" style="height:450px;width:auto;"> <span style="font-weight:bold;color:gray">Top 10 Test Performance (sec):</span>
-                        <div id="testsBarID" style="height:400px;width:auto;"></div>
+                          <div class="card" style="width:150%;height:500px;text-align: center;">
+                            <div class="card__content">
+                              <div class="card__header">
+                                <div class="header__title">
+                                  PYTEST REPORT     
+                                </div>
+                              </div>
+                              <div>
+                                  <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -11%;">
+                                    <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
+                                  </div>
+                                  <div style="margin-left: 45%; margin-top: -5%;">
+                                      <div class="card__footer">
+                                        <div class="card__footer-section">
+                                          <div class="footer-section__data" style="color:#98cc64">__pass__</div>
+                                          <div class="footer-section__label">passed</div>
+                                        </div>
+                                        <div class="card__footer-section">
+                                          <div class="footer-section__data" style="color:#fc6766">__fail__</div>
+                                          <div class="footer-section__label">failed</div>
+                                        </div>
+                                        <div class="card__footer-section">
+                                          <div class="footer-section__data" style="color:#ffd050">__skip__</div>
+                                          <div class="footer-section__label">skipped</div>
+                                        </div>
+                                        </div>
+                                      </div>
+                                  </div>
+                              </div>
+                            </div>
+                          </div>
                     </div>
                 </div>
                 <hr/>
@@ -494,6 +504,61 @@ def html_template():
         </script>
         <script>
             $(window).on('load',function(){$('.loader').fadeOut();});
+        </script>
+        <script>
+            var ctx = document.getElementById('myChart');
+            var myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['PASS', 'FAIL', 'SKIP'],
+                    datasets: [{
+                        label: '# of Votes',
+                        data: [__pass__, __fail__, __skip__],
+                        backgroundColor: [
+                            '#98cc64',
+                            '#fc6766',
+                            '#ffd050'
+                        ],
+                        hoverBackgroundColor: [
+                            "#84b356",
+                            "#e35857",
+                            "#e4b942"
+                        ],
+                        hoverBorderColor: [
+                            '#9bca6d',
+                            '#fd8a89',
+                            '#ffcf4c'
+                        ]
+                    }]
+                },
+                options: {
+                    legend: {
+                        display: false
+                    },
+                    responsive: true,
+                    cutoutPercentage: 80
+                }
+            });
+            
+            Chart.pluginService.register({
+                beforeDraw: function(chart) {
+                    var width = chart.chart.width,
+                        height = chart.chart.height,
+                        ctx = chart.chart.ctx;
+        
+                ctx.restore();
+                var fontSize = (height / 114).toFixed(2);
+                ctx.font = fontSize + "em sans-serif";
+                ctx.textBaseline = "middle";
+            
+                var text = "75%",
+                    textX = Math.round((width - ctx.measureText(text).width) / 2),
+                    textY = height / 2;
+            
+                ctx.fillText(text, textX, textY);
+                ctx.save();
+              }
+            });
         </script>
     </body>
 	"""

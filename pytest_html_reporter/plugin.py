@@ -1,7 +1,6 @@
 import pytest
 import os, time
 from pytest_html_reporter.template import html_template
-from pytest_html_reporter.data import *
 
 _total = _executed = 0
 _pass = _fail = 0
@@ -61,7 +60,7 @@ class HTMLReporter:
         report_filename = "pytest_report.html"
         path = os.path.join(self.report_path(), report_filename)
         live_logs_file = open(path, 'w')
-        message = self.renew_template_text('https://i.imgur.com/cbW2Jxw.png')
+        message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
         live_logs_file.write(message)
         live_logs_file.close()
 
