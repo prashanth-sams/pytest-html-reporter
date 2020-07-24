@@ -238,7 +238,7 @@ def html_template():
                                     </div>
                                   </div>
                                   <div class="card__header">
-                                    <span class="header__date">July 24, 2020</span>
+                                    <span class="header__date">__date__</span>
                                   </div>
                                   <div style="display: flex;">
                                     <span class="total__count">__total__</span>
@@ -279,6 +279,25 @@ def html_template():
                             </div>
                           </div>
                     </div>
+                    
+                    <div style="max-width: 49%; padding-left: 15%;">
+                      <div class="card" style="width:150%;height:500px;text-align: center;">
+                        <div class="card__content">
+                          <div>
+                          </div>
+                          <div>
+                              <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -50%;">
+                                <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
+                              </div>
+                              <div style="margin-top: -5%;">
+                                  <div class="card__footer">
+                                  </div>
+                              </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                 </div>
                 <hr/>
                 <div class="row">
