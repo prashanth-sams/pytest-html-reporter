@@ -17,4 +17,4 @@ jobs:
           title: '[Example] Add report file'
           body: >
             This PR is auto-generated
-          labels: report, automated pr
+          labels: automated
