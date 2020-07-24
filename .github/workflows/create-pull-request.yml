@@ -10,3 +10,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: master
           labels: automated
+          branch: refactor
