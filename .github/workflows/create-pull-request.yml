@@ -1,5 +1,13 @@
-- name: Create Pull Request
-  uses: peter-evans/create-pull-request@v1.5.4
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    PULL_REQUEST_BASE: master
+on:
+  repository_dispatch:
+    types: [create-pull-request]
+name: create-pull-request workflow
+jobs:
+  createPullRequest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v1.5.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_BASE: master
