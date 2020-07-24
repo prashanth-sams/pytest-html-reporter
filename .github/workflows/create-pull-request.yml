@@ -1,20 +1,14 @@
 name: Create Pull Request
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: push
 jobs:
-  createPullRequest:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
         with:
           ref: master
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v3.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch-suffix: none
