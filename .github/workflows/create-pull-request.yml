@@ -10,5 +10,4 @@ jobs:
         uses: peter-evans/create-pull-request@v3.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch-suffix: none
           base: master
