@@ -3,201 +3,201 @@ def html_template():
     return """
 	<!DOCTYPE doctype html>
     <html lang="en">
-    <head>
-        <link href="https://img.icons8.com/flat_round/64/000000/bar-chart.png" rel="shortcut icon" type="image/x-icon" />
-        <title>Pytest HTML Reporter</title>
-        <meta charset="utf-8" />
-        <meta content="width=device-width, initial-scale=1" name="viewport" />
-        <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
-        <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" />
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" />
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
-        <script src="https://code.jquery.com/jquery-3.3.1.js" type="text/javascript"></script>
-        <!-- Bootstrap core Googleccharts -->
-        <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
-        <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
-        <script type="text/javascript">
-            google.charts.load('current', {
-                packages: ['corechart']
-            });
-        </script>
-        <!-- Bootstrap core Datatable-->
-        <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript"></script>
-        <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js" type="text/javascript"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js" type="text/javascript"></script>
-        <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js" type="text/javascript"></script>
-        <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.print.min.js" type="text/javascript"></script>
-        <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
-        <style>
-            body {
-                font-family: -apple-system, sans-serif;
-                background-color: #eeeeee;
-            }
-            .sidenav {
-                height: 100%;
-                width: 240px;
-                position: fixed;
-                z-index: 1;
-                top: 0;
-                left: 0;
-                background-color: #211f1f;
-                overflow-x: hidden;
-            }
-            .sidenav a {
-                padding: 12px 10px 8px 12px;
-                text-decoration: none;
-                font-size: 18px;
-                color: #a2a2a2;
-                display: block;
-            }
-            .main {
-                padding-top: 10px;
-            }
-            @media screen and (max-height: 450px) {
+        <head>
+            <link href="https://img.icons8.com/flat_round/64/000000/bar-chart.png" rel="shortcut icon" type="image/x-icon" />
+            <title>Pytest HTML Reporter</title>
+            <meta charset="utf-8" />
+            <meta content="width=device-width, initial-scale=1" name="viewport" />
+            <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
+            <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+            <script src="https://code.jquery.com/jquery-3.3.1.js" type="text/javascript"></script>
+            <!-- Bootstrap core Googleccharts -->
+            <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
+            <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
+            <script type="text/javascript">
+                google.charts.load('current', {
+                    packages: ['corechart']
+                });
+            </script>
+            <!-- Bootstrap core Datatable-->
+            <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript"></script>
+            <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js" type="text/javascript"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js" type="text/javascript"></script>
+            <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js" type="text/javascript"></script>
+            <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.print.min.js" type="text/javascript"></script>
+            <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
+            <style>
+                body {
+                    font-family: -apple-system, sans-serif;
+                    background-color: #eeeeee;
+                }
                 .sidenav {
-                    padding-top: 15px;
+                    height: 100%;
+                    width: 240px;
+                    position: fixed;
+                    z-index: 1;
+                    top: 0;
+                    left: 0;
+                    background-color: #211f1f;
+                    overflow-x: hidden;
                 }
                 .sidenav a {
+                    padding: 12px 10px 8px 12px;
+                    text-decoration: none;
                     font-size: 18px;
+                    color: #a2a2a2;
+                    display: block;
                 }
-            }
-            .wrimagecard {
-                margin-top: 0;
-                margin-bottom: 0.6rem;
-                border-radius: 5px;
-                transition: all 0.3s ease;
-                background-color: #f8f9fa;
-            }
-            .rowcard {
-                # padding-top: 10px;
-                box-shadow: 12px 15px 20px 0px rgba(46, 61, 73, 0.15);
-                border-radius: 6px;
-                transition: all 0.3s ease;
-                # background-color: white;
-            }
-            .tablecard {
-                background-color: white;
-                font-size: 15px;
-            }
-            tr {
-                height: 40px;
-            }
-            .dt-buttons {
-                margin-left: 5px;
-            }
-            th, td, tr {
-                text-align:center;
-                vertical-align: middle;
-            }
-            .loader {
-                position: fixed;
-                left: 0px;
-                top: 0px;
-                width: 100%;
-                height: 100%;
-                z-index: 9999;
-                background: url('https://i.ibb.co/cXnKsNR/Cube-1s-200px.gif') 50% 50% no-repeat rgb(249, 249, 249);
-            }
-            
-            .card-wrapper {
-              background-color: #f5f5f5;
-              # height: 100vh;
-              # width: 100vw;
-              display: grid;
-            }
-            
-            .card {
-              background-color: #ffff;
-              display: flex;
-              flex-direction: column;
-              # place-self: center;
-              border-radius: 4px;
-              box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
-            }
-            
-            .card__content {
-              padding: 1.5rem;
-              font-family: sans-serif;
-            }
-            
-            .card__header {
-              display: flex;
-              flex-direction: row;
-              justify-content: space-between;
-            }
-            
-            .header__title {
-              font-size: 1.5rem;
-              font-weight: 600;
-              font-family: sans-serif;
-              padding-top: 4%;
-              padding-left: 5%;
-              color: dimgrey;
-            }
-            
-            .header__date {
-              font-size: 1.3rem;
-              font-family: sans-serif;
-              padding-left: 5%;
-              color: darkgray;
-            }
-            
-            .header__title-icon {
-              font-size: 1.6rem;
-              color: #ccc;
-            }
-            
-            .header__title-icon:hover {
-              color: rgba(54, 162, 235, 1);;
-            }
-            
-            .header__button {
-              border-radius: 50px;
-              background-color: #f5f5f5;
-              padding: 0.5rem 1rem;
-              border: none;
-              margin-left: 1rem;
-            }
-            
-            .header__button:hover {
-              background-color: rgba(54, 162, 235, 0.25);
-            }
-            
-            .chart {
-              padding: 2.0rem 52;
-            }
-            
-            .card__footer {
-              display: flex;
-              flex-direction: row;
-              justify-content: space-between;
-              margin-bottom: 5%;
-            }
-            
-            .card__footer-section {
-              text-align: center;
-              width: 33%;
-              # border-right: 1px solid #ccc;
-            }
-            
-            .card__footer-section:nth-child(3) {
-              border-right: none;
-            }
-            
-            .footer-section__data {
-              font-size: 2.2rem;
-              font-weight: 900;
-            }
-            
-            .footer-section__label {
-              text-transform: uppercase;
-              color: slategrey;
-              font-size: 1.0rem;
-            }
-            
-        </style>
-    </head>
+                .main {
+                    padding-top: 10px;
+                }
+                @media screen and (max-height: 450px) {
+                    .sidenav {
+                        padding-top: 15px;
+                    }
+                    .sidenav a {
+                        font-size: 18px;
+                    }
+                }
+                .wrimagecard {
+                    margin-top: 0;
+                    margin-bottom: 0.6rem;
+                    border-radius: 5px;
+                    transition: all 0.3s ease;
+                    background-color: #f8f9fa;
+                }
+                .rowcard {
+                    # padding-top: 10px;
+                    box-shadow: 12px 15px 20px 0px rgba(46, 61, 73, 0.15);
+                    border-radius: 6px;
+                    transition: all 0.3s ease;
+                    # background-color: white;
+                }
+                .tablecard {
+                    background-color: white;
+                    font-size: 15px;
+                }
+                tr {
+                    height: 40px;
+                }
+                .dt-buttons {
+                    margin-left: 5px;
+                }
+                th, td, tr {
+                    text-align:center;
+                    vertical-align: middle;
+                }
+                .loader {
+                    position: fixed;
+                    left: 0px;
+                    top: 0px;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 9999;
+                    background: url('https://i.ibb.co/cXnKsNR/Cube-1s-200px.gif') 50% 50% no-repeat rgb(249, 249, 249);
+                }
+                
+                .card-wrapper {
+                  background-color: #f5f5f5;
+                  # height: 100vh;
+                  # width: 100vw;
+                  display: grid;
+                }
+                
+                .card {
+                  background-color: #ffff;
+                  display: flex;
+                  flex-direction: column;
+                  # place-self: center;
+                  border-radius: 4px;
+                  box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+                }
+                
+                .card__content {
+                  padding: 1.5rem;
+                  font-family: sans-serif;
+                }
+                
+                .card__header {
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                }
+                
+                .header__title {
+                  font-size: 1.5rem;
+                  font-weight: 600;
+                  font-family: sans-serif;
+                  padding-top: 4%;
+                  padding-left: 5%;
+                  color: dimgrey;
+                }
+                
+                .header__date {
+                  font-size: 1.3rem;
+                  font-family: sans-serif;
+                  padding-left: 5%;
+                  color: darkgray;
+                }
+                
+                .header__title-icon {
+                  font-size: 1.6rem;
+                  color: #ccc;
+                }
+                
+                .header__title-icon:hover {
+                  color: rgba(54, 162, 235, 1);;
+                }
+                
+                .header__button {
+                  border-radius: 50px;
+                  background-color: #f5f5f5;
+                  padding: 0.5rem 1rem;
+                  border: none;
+                  margin-left: 1rem;
+                }
+                
+                .header__button:hover {
+                  background-color: rgba(54, 162, 235, 0.25);
+                }
+                
+                .chart {
+                  padding: 2.0rem 52;
+                }
+                
+                .card__footer {
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                  margin-bottom: 5%;
+                }
+                
+                .card__footer-section {
+                  text-align: center;
+                  width: 33%;
+                  # border-right: 1px solid #ccc;
+                }
+                
+                .card__footer-section:nth-child(3) {
+                  border-right: none;
+                }
+                
+                .footer-section__data {
+                  font-size: 2.2rem;
+                  font-weight: 900;
+                }
+                
+                .footer-section__label {
+                  text-transform: uppercase;
+                  color: slategrey;
+                  font-size: 1.0rem;
+                }
+                
+            </style>
+        </head>
     </html>
     <body>
         <div class="loader"></div>

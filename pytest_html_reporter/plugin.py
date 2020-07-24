@@ -59,6 +59,7 @@ class HTMLReporter:
 
         report_filename = "pytest_report.html"
         path = os.path.join(self.report_path(), report_filename)
+        os.makedirs(self.report_path(), exist_ok=True)
         live_logs_file = open(path, 'w')
         message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
         live_logs_file.write(message)
