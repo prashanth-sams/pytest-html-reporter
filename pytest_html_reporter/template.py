@@ -136,6 +136,13 @@ def html_template():
               color: dimgrey;
             }
             
+            .header__date {
+              font-size: 1.3rem;
+              font-family: sans-serif;
+              padding-left: 5%;
+              color: darkgray;
+            }
+            
             .header__title-icon {
               font-size: 1.6rem;
               color: #ccc;
@@ -210,16 +217,21 @@ def html_template():
                     <div class="col-md-4 border-right">
                           <div class="card" style="width:150%;height:500px;text-align: center;">
                             <div class="card__content">
-                              <div class="card__header">
-                                <div class="header__title">
-                                  PYTEST REPORT     
-                                </div>
+                              <div>
+                                  <div class="card__header">
+                                    <div class="header__title">
+                                      PYTEST REPORT
+                                    </div>
+                                  </div>
+                                  <div class="card__header">
+                                    <span class="header__date">July 24, 2020</span>
+                                  </div>
                               </div>
                               <div>
-                                  <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -11%;">
+                                  <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -15%;">
                                     <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
                                   </div>
-                                  <div style="margin-left: 45%; margin-top: -5%;">
+                                  <div style="margin-top: -5%;">
                                       <div class="card__footer">
                                         <div class="card__footer-section">
                                           <div class="footer-section__data" style="color:#98cc64">__pass__</div>
@@ -233,6 +245,13 @@ def html_template():
                                           <div class="footer-section__data" style="color:#ffd050">__skip__</div>
                                           <div class="footer-section__label">skipped</div>
                                         </div>
+                                        <div class="card__footer-section">
+                                          <div class="footer-section__data" style="color:#aaaaaa">__xpass__</div>
+                                          <div class="footer-section__label">xpassed</div>
+                                        </div>
+                                        <div class="card__footer-section">
+                                          <div class="footer-section__data" style="color:#d35fbf">__xfail__</div>
+                                          <div class="footer-section__label">xfailed</div>
                                         </div>
                                       </div>
                                   </div>
@@ -510,24 +529,30 @@ def html_template():
             var myChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['PASS', 'FAIL', 'SKIP'],
+                    labels: ['PASS', 'FAIL', 'SKIP', 'XPASS', 'XFAIL'],
                     datasets: [{
                         label: '# of Votes',
-                        data: [__pass__, __fail__, __skip__],
+                        data: [__pass__, __fail__, __skip__, __xpass__, __xfail__],
                         backgroundColor: [
                             '#98cc64',
                             '#fc6766',
-                            '#ffd050'
+                            '#ffd050',
+                            '#aaaaaa',
+                            '#d35fbf'
                         ],
                         hoverBackgroundColor: [
                             "#84b356",
                             "#e35857",
-                            "#e4b942"
+                            "#e4b942",
+                            "#bdbbbb",
+                            "#c357b0"
                         ],
                         hoverBorderColor: [
                             '#9bca6d',
                             '#fd8a89',
-                            '#ffcf4c'
+                            '#ffcf4c',
+                            '#abaaaa',
+                            '#f26fdb'
                         ]
                     }]
                 },
@@ -536,7 +561,36 @@ def html_template():
                         display: false
                     },
                     responsive: true,
-                    cutoutPercentage: 80
+                    cutoutPercentage: 80,
+                    tooltips: {
+                      callbacks: {
+                        title: function(tooltipItem, data) {
+                          return data['labels'][tooltipItem[0]['index']];
+                        },
+                        label: function(tooltipItem, data) {
+                          return ''
+                        },
+                        afterLabel: function(tooltipItem, data) {
+                          var dataset = data['datasets'][0];
+                          var percent = Math.round((dataset['data'][tooltipItem['index']] / dataset["_meta"][0]['total']) * 100)
+                          return percent + '%';
+                        }
+                      },
+                      backgroundColor: '#FFF',
+                      titleFontSize: 16,
+                      titleFontColor: '#555555',
+                      bodyFontColor: '#000',
+                      bodyFontSize: 14,
+                      displayColors: false,
+                      borderColor: '#555555',
+                      borderWidth: 3,
+                      multiKeyBackground: '#555555',
+                      cornerRadius: 3,
+                      caretSize: 15,
+                      caretPadding: 13,
+                      xPadding: 12,
+                      yPadding: 12
+                    }
                 }
             });
             
@@ -550,8 +604,10 @@ def html_template():
                 var fontSize = (height / 114).toFixed(2);
                 ctx.font = fontSize + "em sans-serif";
                 ctx.textBaseline = "middle";
+                
+                var passPercent = Math.round((__pass__ / __total__) * 100)
             
-                var text = "75%",
+                var text = passPercent + "%",
                     textX = Math.round((width - ctx.measureText(text).width) / 2),
                     textY = height / 2;
             
