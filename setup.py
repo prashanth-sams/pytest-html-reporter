@@ -20,7 +20,7 @@ setup(
     maintainer_email='sams.prashanth@gmail.com',
     license='MIT',
     url='https://github.com/prashanth-sams/pytest-html-reporter',
-    description='Generates a static pytest based html report',
+    description='Generates a static html report based on pytest framework',
     long_description=read('README.md'),
     keywords=[
         'pytest', 'py.test', 'html', 'reporter', 'report'
