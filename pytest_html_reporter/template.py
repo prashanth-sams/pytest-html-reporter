@@ -143,6 +143,21 @@ def html_template():
                   color: darkgray;
                 }
                 
+                .total__count {
+                  font-size: 5.3rem;
+                  font-family: sans-serif;
+                  padding-left: 14%;
+                  color: black;
+                  padding-top: 8%;
+                }
+                
+                .total_count__label {
+                  font-size: 1.3rem;
+                  font-family: sans-serif;
+                  padding-left: 12%;
+                  color: darkgray;
+                }
+                
                 .header__title-icon {
                   font-size: 1.6rem;
                   color: #ccc;
@@ -226,9 +241,15 @@ def html_template():
                                   <div class="card__header">
                                     <span class="header__date">July 24, 2020</span>
                                   </div>
+                                  <div style="display: flex;">
+                                    <span class="total__count">__total__</span>
+                                  </div>
+                                  <div style="display: flex;">
+                                    <span class="total_count__label">TEST CASES</span>
+                                  </div>
                               </div>
                               <div>
-                                  <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -15%;">
+                                  <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -50%;">
                                     <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
                                   </div>
                                   <div style="margin-top: -5%;">
