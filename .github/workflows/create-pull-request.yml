@@ -4,9 +4,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-        with:
-          ref: master
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3.0.0
         with:
