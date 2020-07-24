@@ -1,5 +1,6 @@
 import pytest
 import os, time
+from datetime import date
 from pytest_html_reporter.template import html_template
 
 _total = _executed = 0
@@ -245,6 +246,9 @@ class HTMLReporter:
         global _error
         _error += 1
 
+    def _date(self):
+        return date.today().strftime("%B %d, %Y")
+
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
@@ -263,4 +267,5 @@ class HTMLReporter:
         template_text = template_text.replace("__xfail__", str(_xfail))
         template_text = template_text.replace("__suite_metrics_row__", str(_suite_metrics_content))
         template_text = template_text.replace("__test_metrics_row__", str(_test_metrics_content))
+        template_text = template_text.replace("__date__", str(self._date()))
         return template_text
