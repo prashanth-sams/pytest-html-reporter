@@ -146,7 +146,6 @@ def html_template():
                 .total__count {
                   font-size: 5.3rem;
                   font-family: sans-serif;
-                  padding-left: 14%;
                   color: black;
                   padding-top: 8%;
                 }
@@ -290,6 +289,7 @@ def html_template():
                 </div>
                 <script>
                     window.onload = function() {
+                        alignTotalCount();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
                         createBarGraph('#sm', 0, 2, 5, 'suiteBarID', 'Failure ', 'Suite');
@@ -516,6 +516,16 @@ def html_template():
                 }
             );
         }
+        </script>
+        <script>
+            function alignTotalCount() {
+                arr1 = [1, 2, 3, 4, 5];
+                arr2 = ['19%', '14%', '11%', '7%', '4%'];
+                zipped = arr1.map((x, i) => [x, arr2[i]]);
+                var x = parseInt(__total__);
+                size = zipped[(x.toString().length)-1][1];
+                document.getElementsByClassName("total__count")[0].style.paddingLeft = `${size}`;
+            }
         </script>
         <script>
             function openPage(pageName,elmnt,color,bgcolor,borderstyle) {
