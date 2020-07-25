@@ -9,3 +9,11 @@ def test_fixture_pass():
 @pytest.mark.fast
 def test_fixture_fail():
     assert 5 == 6
+
+@pytest.mark.fast
+def test_fixture_failx2():
+    assert 5 == 6
+
+@pytest.mark.fast
+def test_fixture_failx3():
+    assert 5 == 6
