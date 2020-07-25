@@ -685,32 +685,37 @@ def html_template():
                     labels: __test_suites__,
                     datasets: [{
                         label: 'Passed',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: '#98cc64',
+                        hoverBackgroundColor: '#84b356',
+                        borderColor: '#9bca6d',
                         borderWidth: 1,
                         data: __test_suite_pass__
                     }, {
                         label: 'Failed',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: '#fc6766',
+                        hoverBackgroundColor: '#e35857',
+                        borderColor: '#fd8a89',
                         borderWidth: 1,
                         data: __test_suites_fail__
                     }, {
                         label: 'Skipped',
-                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: '#ffd050',
+                        hoverBackgroundColor: '#e4b942',
+                        borderColor: '#ffcf4c',
                         borderWidth: 1,
                         data: __test_suites_skip__
                     }, {
                         label: 'XPassed',
-                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: '#aaaaaa',
+                        hoverBackgroundColor: '#bdbbbb',
+                        borderColor: '#abaaaa',
                         borderWidth: 1,
                         data: __test_suites_xpass__
                     }, {
                         label: 'XFailed',
-                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
-                        borderColor: 'rgba(255, 206, 86, 1)',
+                        backgroundColor: '#d35fbf',
+                        hoverBackgroundColor: '#c357b0',
+                        borderColor: '#f26fdb',
                         borderWidth: 1,
                         data: __test_suites_xfail__
                     }]
@@ -722,7 +727,21 @@ def html_template():
                     },
                     tooltips: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                        backgroundColor: '#FFF',
+                        titleFontSize: 16,
+                        titleFontColor: '#555555',
+                        bodyFontColor: '#000',
+                        bodyFontSize: 14,
+                        displayColors: false,
+                        borderColor: '#555555',
+                        borderWidth: 3,
+                        multiKeyBackground: '#555555',
+                        cornerRadius: 3,
+                        caretSize: 15,
+                        caretPadding: 13,
+                        xPadding: 12,
+                        yPadding: 12
                     },
                     legend: {
                         display: false
@@ -733,6 +752,7 @@ def html_template():
                             stacked: true
                         }],
                         yAxes: [{
+                            stacked: true,
                             ticks: {
                                 beginAtZero: true
                             }
