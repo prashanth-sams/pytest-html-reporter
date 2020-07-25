@@ -179,7 +179,7 @@ def html_template():
                 }
                 
                 .chart {
-                  padding: 2.0rem 52;
+                  padding: 2.0rem 60;
                 }
                 
                 .card__footer {
@@ -218,76 +218,76 @@ def html_template():
         <div class="sidenav">
             <a><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
             <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
-                <i class="fa fa-dashboard" id="tablinkicon" style="color:CORNFLOWERBLUE; margin:5% 5% 5% 10%"></i> Dashboard</a>
+                <i class="fa fa-dashboard" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard</a>
             <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
-                <i class="fa fa-th-large" id="tablinkicon" style="color:CADETBLUE; margin:5% 5% 5% 10%"></i> Suite Metrics</a>
+                <i class="fa fa-th-large" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suite Metrics</a>
             <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
-                <i class="fa fa-list-alt" id="tablinkicon" style="color:PALEVIOLETRED; margin:5% 5% 5% 10%"></i> Test Metrics</a>
+                <i class="fa fa-list-alt" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics</a>
         </div>
         <div class="main col-md-9 ml-sm-auto col-lg-10 px-4">
             <div class="tabcontent" id="dashboard">
                 
                 <div class="row rowcard">
                     <div class="col-md-4 border-right">
-                          <div class="card" style="width:150%;height:500px;text-align: center;">
-                            <div class="card__content">
-                              <div>
-                                  <div class="card__header">
-                                    <div class="header__title">
-                                      PYTEST REPORT
+                      <div class="card" style="width:150%;height:500px;text-align: center;">
+                        <div class="card__content">
+                          <div>
+                              <div class="card__header">
+                                <div class="header__title">
+                                  PYTEST REPORT
+                                </div>
+                              </div>
+                              <div class="card__header">
+                                <span class="header__date">__date__</span>
+                              </div>
+                              <div style="display: flex;">
+                                <span class="total__count">__total__</span>
+                              </div>
+                              <div style="display: flex;">
+                                <span class="total_count__label">TEST CASES</span>
+                              </div>
+                          </div>
+                          <div>
+                              <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -50%;">
+                                <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
+                              </div>
+                              <div style="margin-top: -5%;">
+                                  <div class="card__footer">
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#98cc64">__pass__</div>
+                                      <div class="footer-section__label">passed</div>
+                                    </div>
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#fc6766">__fail__</div>
+                                      <div class="footer-section__label">failed</div>
+                                    </div>
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#ffd050">__skip__</div>
+                                      <div class="footer-section__label">skipped</div>
+                                    </div>
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#aaaaaa">__xpass__</div>
+                                      <div class="footer-section__label">xpassed</div>
+                                    </div>
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#d35fbf">__xfail__</div>
+                                      <div class="footer-section__label">xfailed</div>
                                     </div>
                                   </div>
-                                  <div class="card__header">
-                                    <span class="header__date">__date__</span>
-                                  </div>
-                                  <div style="display: flex;">
-                                    <span class="total__count">__total__</span>
-                                  </div>
-                                  <div style="display: flex;">
-                                    <span class="total_count__label">TEST CASES</span>
-                                  </div>
                               </div>
-                              <div>
-                                  <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -50%;">
-                                    <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
-                                  </div>
-                                  <div style="margin-top: -5%;">
-                                      <div class="card__footer">
-                                        <div class="card__footer-section">
-                                          <div class="footer-section__data" style="color:#98cc64">__pass__</div>
-                                          <div class="footer-section__label">passed</div>
-                                        </div>
-                                        <div class="card__footer-section">
-                                          <div class="footer-section__data" style="color:#fc6766">__fail__</div>
-                                          <div class="footer-section__label">failed</div>
-                                        </div>
-                                        <div class="card__footer-section">
-                                          <div class="footer-section__data" style="color:#ffd050">__skip__</div>
-                                          <div class="footer-section__label">skipped</div>
-                                        </div>
-                                        <div class="card__footer-section">
-                                          <div class="footer-section__data" style="color:#aaaaaa">__xpass__</div>
-                                          <div class="footer-section__label">xpassed</div>
-                                        </div>
-                                        <div class="card__footer-section">
-                                          <div class="footer-section__data" style="color:#d35fbf">__xfail__</div>
-                                          <div class="footer-section__label">xfailed</div>
-                                        </div>
-                                      </div>
-                                  </div>
-                              </div>
-                            </div>
                           </div>
+                        </div>
+                      </div>
                     </div>
                     
-                    <div style="max-width: 49%; padding-left: 15%;">
+                    <div style="max-width: 49.5%; padding-left: 15%;">
                       <div class="card" style="width:150%;height:500px;text-align: center;">
                         <div class="card__content">
                           <div>
                           </div>
                           <div>
                               <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -50%;">
-                                <canvas class="chart" id="myChart" style="margin-top: 6%; height: 290px;"></canvas>
+                                <canvas class="chart" id="barChart" style="margin-top: 6%; height: 290px;"></canvas>
                               </div>
                               <div style="margin-top: -5%;">
                                   <div class="card__footer">
