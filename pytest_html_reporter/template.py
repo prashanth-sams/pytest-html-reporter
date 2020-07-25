@@ -228,7 +228,7 @@ def html_template():
             <div class="tabcontent" id="dashboard">
                 
                 <div class="row rowcard">
-                    <div class="col-md-4 border-right">
+                    <div class="col-md-4 border-right" style="margin-left: -1%;">
                       <div class="card" style="width:150%;height:500px;text-align: center;">
                         <div class="card__content">
                           <div>
@@ -280,14 +280,14 @@ def html_template():
                       </div>
                     </div>
                     
-                    <div style="max-width: 49.5%; padding-left: 15%;">
+                    <div style="max-width: 49.95%; padding-left: 15%;">
                       <div class="card" style="width:150%;height:500px;text-align: center;">
                         <div class="card__content">
                           <div>
                           </div>
                           <div>
                               <div style="width: 600px;height: 350px; margin-left: 22%;margin-top: -50%;">
-                                <canvas class="chart" id="barChart" style="margin-top: 6%; height: 290px;"></canvas>
+                                
                               </div>
                               <div style="margin-top: -5%;">
                                   <div class="card__footer">
@@ -299,7 +299,14 @@ def html_template():
                     </div>
                     
                 </div>
+                
+                <div class="row rowcard" style="padding-top: 0.8%;">
+                    <div class="card border-right">
+                        <canvas class="chart" id="groupBarChart" style="margin-top: 6%; height: 451px; width: 903px;"></canvas>
+                    </div>
+                </div>
                 <hr/>
+                
                 <div class="row">
                     <div class="col-md-12" style="width:auto;">
                         <p class="text-muted" style="text-align:center;font-size:9px"> <a href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank">pytest-html-reporter</a>
@@ -607,18 +614,19 @@ def html_template():
                     }]
                 },
                 options: {
-                    legend: {
-                        display: false
-                    },
-                    responsive: true,
-                    cutoutPercentage: 80,
-                    tooltips: {
+                  doughnut_chart: true,
+                  legend: {
+                    display: false
+                  },
+                  responsive: true,
+                  cutoutPercentage: 80,
+                  tooltips: {
                       callbacks: {
                         title: function(tooltipItem, data) {
-                          return data['labels'][tooltipItem[0]['index']];
+                            return data['labels'][tooltipItem[0]['index']];
                         },
                         label: function(tooltipItem, data) {
-                          return ''
+                            return ''
                         },
                         afterLabel: function(tooltipItem, data) {
                           var dataset = data['datasets'][0];
@@ -646,25 +654,71 @@ def html_template():
             
             Chart.pluginService.register({
                 beforeDraw: function(chart) {
-                    var width = chart.chart.width,
-                        height = chart.chart.height,
-                        ctx = chart.chart.ctx;
+                    if (chart.config.options.doughnut_chart) {
+                        var width = chart.chart.width,
+                            height = chart.chart.height,
+                            ctx = chart.chart.ctx;
+            
+                        ctx.restore();
+                        var fontSize = (height / 114).toFixed(2);
+                        ctx.font = fontSize + "em sans-serif";
+                        ctx.textBaseline = "middle";
+                        
+                        var passPercent = Math.round((__pass__ / __total__) * 100)
+                    
+                        var text = passPercent + "%",
+                            textX = Math.round((width - ctx.measureText(text).width) / 2),
+                            textY = height / 2;
+                    
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                  }
+                });
+        </script>
         
-                ctx.restore();
-                var fontSize = (height / 114).toFixed(2);
-                ctx.font = fontSize + "em sans-serif";
-                ctx.textBaseline = "middle";
-                
-                var passPercent = Math.round((__pass__ / __total__) * 100)
-            
-                var text = passPercent + "%",
-                    textX = Math.round((width - ctx.measureText(text).width) / 2),
-                    textY = height / 2;
-            
-                ctx.fillText(text, textX, textY);
-                ctx.save();
-              }
+        <script>
+            var ctx = document.getElementById('groupBarChart').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Green', 'Green', 'Green', 'Green', 'Green', 'Green'],
+                    datasets: [{
+                        label: '# of Votes',
+                        data: [12, 19, 3, 5, 2, 3],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)',
+                            'rgba(255, 159, 64, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    legend: {
+                        display: false
+                    },
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
             });
         </script>
+        
     </body>
 	"""
