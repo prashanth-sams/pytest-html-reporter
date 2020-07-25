@@ -10,6 +10,11 @@ _xpass = _xfail = 0
 _current_error = ""
 _suite_name = _test_name = None
 _test_suite_name = []
+_test_pass_list = []
+_test_fail_list = []
+_test_skip_list = []
+_test_xpass_list = []
+_test_xfail_list = []
 _test_status = None
 _test_start_time = None
 _excution_time = _duration = 0
@@ -156,6 +161,12 @@ class HTMLReporter:
 
     def append_suite_metrics_row(self, name):
         self._test_suites(name)
+        self._test_passed(int(_spass_tests))
+        self._test_failed(int(_sfail_tests))
+        self._test_skipped(int(_sskip_tests))
+        self._test_xpassed(int(_sxpass_tests))
+        self._test_xfailed(int(_sxfail_tests))
+
         suite_row_text = """
             <tr>
                 <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">__sname__</td>
@@ -255,6 +266,26 @@ class HTMLReporter:
         global _test_suite_name
         _test_suite_name.append(name.split('/')[-1].replace('.py', ''))
 
+    def _test_passed(self, value):
+        global _test_pass_list
+        _test_pass_list.append(value)
+
+    def _test_failed(self, value):
+        global _test_fail_list
+        _test_fail_list.append(value)
+
+    def _test_skipped(self, value):
+        global _test_skip_list
+        _test_skip_list.append(value)
+
+    def _test_xpassed(self, value):
+        global _test_xpass_list
+        _test_xpass_list.append(value)
+
+    def _test_xfailed(self, value):
+        global _test_xfail_list
+        _test_xfail_list.append(value)
+
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
@@ -275,4 +306,9 @@ class HTMLReporter:
         template_text = template_text.replace("__test_metrics_row__", str(_test_metrics_content))
         template_text = template_text.replace("__date__", str(self._date()))
         template_text = template_text.replace("__test_suites__", str(_test_suite_name))
+        template_text = template_text.replace("__test_suite_pass__", str(_test_pass_list))
+        template_text = template_text.replace("__test_suites_fail__", str(_test_fail_list))
+        template_text = template_text.replace("__test_suites_skip__", str(_test_skip_list))
+        template_text = template_text.replace("__test_suites_xpass__", str(_test_xpass_list))
+        template_text = template_text.replace("__test_suites_xfail__", str(_test_xfail_list))
         return template_text
