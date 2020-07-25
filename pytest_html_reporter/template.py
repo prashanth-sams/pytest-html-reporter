@@ -218,7 +218,7 @@ def html_template():
         <div class="sidenav">
             <a><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
             <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
-                <i class="fa fa-dashboard" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard</a>
+                <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard</a>
             <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
                 <i class="fa fa-th-large" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suite Metrics</a>
             <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
@@ -682,34 +682,56 @@ def html_template():
             var myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Green', 'Green', 'Green', 'Green', 'Green', 'Green'],
+                    labels: __test_suites__,
                     datasets: [{
-                        label: '# of Votes',
-                        data: [12, 19, 3, 5, 2, 3],
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.2)',
-                            'rgba(54, 162, 235, 0.2)',
-                            'rgba(255, 206, 86, 0.2)',
-                            'rgba(75, 192, 192, 0.2)',
-                            'rgba(153, 102, 255, 0.2)',
-                            'rgba(255, 159, 64, 0.2)'
-                        ],
-                        borderColor: [
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(153, 102, 255, 1)',
-                            'rgba(255, 159, 64, 1)'
-                        ],
-                        borderWidth: 1
+                        label: 'Passed',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1,
+                        data: []
+                    }, {
+                        label: 'Failed',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        data: []
+                    }, {
+                        label: 'Skipped',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1,
+                        data: []
+                    }, {
+                        label: 'XPassed',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1,
+                        data: []
+                    }, {
+                        label: 'XFailed',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                        borderWidth: 1,
+                        data: []
                     }]
                 },
                 options: {
+                    title: {
+                        display: false,
+                        text: 'Test Suites'
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     legend: {
                         display: false
                     },
+                    responsive: true,
                     scales: {
+                        xAxes: [{
+                            stacked: true
+                        }],
                         yAxes: [{
                             ticks: {
                                 beginAtZero: true

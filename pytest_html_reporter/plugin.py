@@ -9,6 +9,7 @@ _skip = _error = 0
 _xpass = _xfail = 0
 _current_error = ""
 _suite_name = _test_name = None
+_test_suite_name = []
 _test_status = None
 _test_start_time = None
 _excution_time = _duration = 0
@@ -154,6 +155,7 @@ class HTMLReporter:
         _test_metrics_content += test_row_text
 
     def append_suite_metrics_row(self, name):
+        self._test_suites(name)
         suite_row_text = """
             <tr>
                 <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">__sname__</td>
@@ -249,6 +251,10 @@ class HTMLReporter:
     def _date(self):
         return date.today().strftime("%B %d, %Y")
 
+    def _test_suites(self, name):
+        global _test_suite_name
+        _test_suite_name.append(name.split('/')[-1].replace('.py', ''))
+
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
@@ -268,4 +274,5 @@ class HTMLReporter:
         template_text = template_text.replace("__suite_metrics_row__", str(_suite_metrics_content))
         template_text = template_text.replace("__test_metrics_row__", str(_test_metrics_content))
         template_text = template_text.replace("__date__", str(self._date()))
+        template_text = template_text.replace("__test_suites__", str(_test_suite_name))
         return template_text
