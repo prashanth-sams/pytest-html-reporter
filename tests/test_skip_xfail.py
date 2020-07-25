@@ -9,3 +9,8 @@ def test_skip():
 @pytest.mark.xfail
 def test_xfail():
     assert 5 == 3
+
+
+@pytest.mark.xfail
+def test_xpass():
+    pass
