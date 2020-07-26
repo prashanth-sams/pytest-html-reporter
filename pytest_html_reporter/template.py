@@ -220,9 +220,9 @@ def html_template():
             <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard</a>
             <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
-                <i class="fa fa-th-large" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suite Metrics</a>
+                <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites</a>
             <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
-                <i class="fa fa-list-alt" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics</a>
+                <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics</a>
         </div>
         <div class="main col-md-9 ml-sm-auto col-lg-10 px-4">
             <div class="tabcontent" id="dashboard">
@@ -315,7 +315,10 @@ def html_template():
                         </div>
                         <canvas class="chart" id="groupBarChart" style="margin-top: 6%; height: 451px; width: 903px;"></canvas>
                     </div>
-                    <div class="col-md-4 card border-left" style="max-width: 49.95%; padding-left: 15%;">
+                    <div class="col-md-4 card border-left" style="max-width: 32.4%; padding-left: 3%; padding-top: 2%; margin-left: 0.75%;">
+                        <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
+                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><i class="fa fa-bolt" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>Suite Highlights</div>
+                        </div>
                     </div>
                 </div>
                 <hr/>
@@ -338,7 +341,7 @@ def html_template():
                 </script>
             </div>
             <div class="tabcontent" id="suiteMetrics">
-                <h4><b><i class="fa fa-table"></i> Suite Metrics</b></h4>
+                <h4><b><i class="fa fa-briefcase"></i> Test Suite</b></h4>
                 <hr/>
                 <table class="table row-border tablecard" id="sm">
                     <thead>
