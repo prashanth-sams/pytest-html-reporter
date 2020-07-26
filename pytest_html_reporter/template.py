@@ -301,8 +301,15 @@ def html_template():
                 </div>
                 
                 <div class="row rowcard" style="padding-top: 0.8%;">
-                    <div class="card border-right">
+                    <div class="col-md-8 card border-right">
+                        <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
+                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><i class="fa fa-area-chart" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>Test Suite
+                                __test_suite_length__
+                            </div>
+                        </div>
                         <canvas class="chart" id="groupBarChart" style="margin-top: 6%; height: 451px; width: 903px;"></canvas>
+                    </div>
+                    <div class="col-md-4 card border-left" style="max-width: 49.95%; padding-left: 15%;">
                     </div>
                 </div>
                 <hr/>

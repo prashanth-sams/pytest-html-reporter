@@ -4,6 +4,8 @@
 ### Feature
 - [x] Basic
 - [x] Fixture #mock-data
+- [x] UseFixture #background-teardown
+- [x] Autouse
 - [x] Mark #Tags
 - [x] Parameterize #data-driven
 - [x] Yield #hooks

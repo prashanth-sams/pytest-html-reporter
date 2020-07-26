@@ -1,9 +1,8 @@
 import pytest
 
 
-@pytest.mark.skip
 def test_skip():
-    assert 5 == 5
+    pytest.skip("skip this test")
 
 
 @pytest.mark.xfail

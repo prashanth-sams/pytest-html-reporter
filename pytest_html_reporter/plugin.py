@@ -306,6 +306,7 @@ class HTMLReporter:
         template_text = template_text.replace("__test_metrics_row__", str(_test_metrics_content))
         template_text = template_text.replace("__date__", str(self._date()))
         template_text = template_text.replace("__test_suites__", str(_test_suite_name))
+        template_text = template_text.replace("__test_suite_length__", str(len(_test_suite_name)))
         template_text = template_text.replace("__test_suite_pass__", str(_test_pass_list))
         template_text = template_text.replace("__test_suites_fail__", str(_test_fail_list))
         template_text = template_text.replace("__test_suites_skip__", str(_test_skip_list))
