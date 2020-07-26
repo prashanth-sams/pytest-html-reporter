@@ -17,7 +17,7 @@ _test_xpass_list = []
 _test_xfail_list = []
 _test_status = None
 _test_start_time = None
-_excution_time = _duration = 0
+_execution_time = _duration = 0
 _test_metrics_content = _suite_metrics_content = ""
 _previous_suite_name = "None"
 _initial_trigger = True
@@ -60,6 +60,9 @@ class HTMLReporter:
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
         yield
+
+        global _execution_time
+        _execution_time = time.time() - terminalreporter._sessionstarttime
 
         global _total
         _total = _pass + _fail + _xpass + _xfail + _skip + _error
@@ -289,7 +292,7 @@ class HTMLReporter:
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
-        template_text = template_text.replace("__execution_time__", str(round(_excution_time, 2)))
+        template_text = template_text.replace("__execution_time__", str(round(_execution_time, 2)))
         # template_text = template_text.replace("__executed_by__", str(platform.uname()[1]))
         # template_text = template_text.replace("__os_name__", str(platform.uname()[0]))
         # template_text = template_text.replace("__python_version__", str(sys.version.split(' ')[0]))

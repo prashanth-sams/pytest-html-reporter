@@ -231,6 +231,12 @@ def html_template():
                     <div class="col-md-4 border-right" style="margin-left: -1%;">
                       <div class="card" style="width:150%;height:500px;text-align: center;">
                         <div class="card__content">
+                          <div style="margin-bottom: -6%; margin-left: 40%;">
+                            <span style="color: darkgray; font-size: 17px;">
+                                <i class="fa fa-clock-o" style="color:currentcolor; margin: 2% 2% 0% 29%; font-size: 25px;"></i>
+                                    Time taken __execution_time__ secs
+                            </span>
+                          </div>
                           <div>
                               <div class="card__header">
                                 <div class="header__title">
