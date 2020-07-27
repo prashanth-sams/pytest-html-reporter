@@ -6,8 +6,6 @@
 
 <div align="center"><img src="./PHR.png" width="200"/></div>
 
-![](https://i.imgur.com/cDIp9JG.jpg)
-
 ### Installation
 
 ```
@@ -24,6 +22,8 @@ And then execute:
 ```
 pip install -r requirements.txt
 ```
+
+![](https://i.imgur.com/cDIp9JG.jpg)
 
 ## #Usage outline
 
