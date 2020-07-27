@@ -273,8 +273,9 @@ class HTMLReporter:
         _skip += 1
 
     def increment_error(self):
-        global _error
+        global _error, _serror_tests
         _error += 1
+        _serror_tests += 1
 
     def _date(self):
         return date.today().strftime("%B %d, %Y")

@@ -588,7 +588,7 @@ def html_template():
                     labels: ['PASS', 'FAIL', 'SKIP', 'XPASS', 'XFAIL', 'ERROR'],
                     datasets: [{
                         label: '# of Votes',
-                        data: [__pass__, __fail__, __skip__, __xpass__, __xfail__],
+                        data: [__pass__, __fail__, __skip__, __xpass__, __xfail__, __error__],
                         backgroundColor: [
                             '#98cc64',
                             '#fc6766',
