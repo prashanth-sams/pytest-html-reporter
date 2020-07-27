@@ -9,7 +9,7 @@
 ### Installation
 
 ```
-pip3 install pytest-html-reporter
+pip install pytest-html-reporter
 ```
 
 Or install it by adding this line in your project's `requirements.txt` file:
@@ -20,8 +20,10 @@ pytest-html-reporter
 
 And then execute:
 ```
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
+
+![](https://i.imgur.com/cDIp9JG.jpg)
 
 ## #Usage outline
 
