@@ -6,10 +6,12 @@
 
 <div align="center"><img src="./PHR.png" width="200"/></div>
 
+![](./Pytest_HTML_Reporter.png)
+
 ### Installation
 
 ```
-pip3 install pytest-html-reporter
+pip install pytest-html-reporter
 ```
 
 Or install it by adding this line in your project's `requirements.txt` file:
@@ -20,7 +22,7 @@ pytest-html-reporter
 
 And then execute:
 ```
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## #Usage outline
