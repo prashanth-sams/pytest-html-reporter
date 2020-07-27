@@ -1,4 +1,5 @@
 # pytest-html-reporter
+[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg)](https://badge.fury.io/py/pytest-html-reporter)
 [![Build Status](https://travis-ci.com/prashanth-sams/pytest-html-reporter.svg?branch=master)](https://travis-ci.com/prashanth-sams/pytest-html-reporter)
 
 > Generates a static html report based on `pytest` framework
@@ -7,30 +8,30 @@
 
 ### Installation
 
-```bash
+```
 pip3 install pytest-html-reporter
 ```
 
 Or install it by adding this line in your project's `requirements.txt` file:
 
-```text
+```
 pytest-html-reporter
 ```
 
 And then execute:
-```bash
+```
 pip3 install -r requirements.txt
 ```
 
 ## #Usage outline
 
 - Add `--html` tag followed by path location in the command line:
-    ```shell script
+    ```
     pytest tests/ --html=./report
     ```
 
 - Or add this snippet in the `pytest.ini` file:
-    ```shell script
+    ```
     [pytest]
     addopts = -vs -rf --html=./report
     ```
