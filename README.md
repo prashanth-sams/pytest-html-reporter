@@ -6,7 +6,7 @@
 
 <div align="center"><img src="./PHR.png" width="200"/></div>
 
-![](./Pytest_HTML_Reporter.png)
+![](https://i.imgur.com/cDIp9JG.jpg)
 
 ### Installation
 
