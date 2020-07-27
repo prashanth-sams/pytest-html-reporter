@@ -279,6 +279,10 @@ def html_template():
                                       <div class="footer-section__data" style="color:#d35fbf">__xfail__</div>
                                       <div class="footer-section__label">xfailed</div>
                                     </div>
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#b13635">__error__</div>
+                                      <div class="footer-section__label">error</div>
+                                    </div>
                                   </div>
                               </div>
                           </div>
@@ -335,7 +339,6 @@ def html_template():
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
                         createBarGraph('#sm', 0, 2, 5, 'suiteBarID', 'Failure ', 'Suite');
-                        createPieChart(__pass__, __fail__, __xpass__, __xfail__, 'testChartID', 'Tests Status:');
                         createBarGraph('#tm', 1, 3, 10, 'testsBarID', 'Elapsed Time (s) ', 'Test');
                     };
                 </script>
@@ -384,26 +387,6 @@ def html_template():
                 <div class="col-md-12" style="height:25px;width:auto;"></div>
             </div>
         </div>
-        <script>
-            function createPieChart(pass_count, fail_count, xpass_count, xfail_count, ChartID, ChartName) {
-                var status = [];
-                status.push(['Status', 'Percentage']);
-                status.push(['PASS', parseInt(pass_count)], ['FAIL', parseInt(fail_count)],
-                 ['xPASS', parseInt(xpass_count)], ['xFAIL', parseInt(xfail_count)], );
-                var data = google.visualization.arrayToDataTable(status);
-                var options = {
-                    pieHole: 0.6,
-                    legend: 'bottom',
-                    chartArea: {
-                        width: "85%",
-                        height: "80%"
-                    },
-                    colors: ['#2ecc71', '#fc6666', '#9e6b6b', '#96a74c'],
-                };
-                var chart = new google.visualization.PieChart(document.getElementById(ChartID));
-                chart.draw(data, options);
-            }
-        </script>
         <script>
             function createBarGraph(tableID, keyword_column, time_column, limit, ChartID, Label, type) {
                 var status = [];
@@ -602,7 +585,7 @@ def html_template():
             var myChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['PASS', 'FAIL', 'SKIP', 'XPASS', 'XFAIL'],
+                    labels: ['PASS', 'FAIL', 'SKIP', 'XPASS', 'XFAIL', 'ERROR'],
                     datasets: [{
                         label: '# of Votes',
                         data: [__pass__, __fail__, __skip__, __xpass__, __xfail__],
@@ -611,21 +594,24 @@ def html_template():
                             '#fc6766',
                             '#ffd050',
                             '#aaaaaa',
-                            '#d35fbf'
+                            '#d35fbf',
+                            '#b13635'
                         ],
                         hoverBackgroundColor: [
                             "#84b356",
                             "#e35857",
                             "#e4b942",
                             "#bdbbbb",
-                            "#c357b0"
+                            "#c357b0",
+                            '#8b2828'
                         ],
                         hoverBorderColor: [
                             '#9bca6d',
                             '#fd8a89',
                             '#ffcf4c',
                             '#abaaaa',
-                            '#f26fdb'
+                            '#f26fdb',
+                            '#b13635'
                         ]
                     }]
                 },
@@ -734,6 +720,13 @@ def html_template():
                         borderColor: '#f26fdb',
                         borderWidth: 1,
                         data: __test_suites_xfail__
+                    }, {
+                        label: 'Error',
+                        backgroundColor: '#b13635',
+                        hoverBackgroundColor: '#8b2828',
+                        borderColor: '#b13635',
+                        borderWidth: 1,
+                        data: __test_suites_error__
                     }]
                 },
                 options: {

@@ -15,14 +15,20 @@ _test_fail_list = []
 _test_skip_list = []
 _test_xpass_list = []
 _test_xfail_list = []
+_test_error_list = []
 _test_status = None
 _test_start_time = None
 _execution_time = _duration = 0
 _test_metrics_content = _suite_metrics_content = ""
 _previous_suite_name = "None"
 _initial_trigger = True
-_spass_tests = _sfail_tests = _sskip_tests = 0
-_serror_tests = _sxfail_tests = _sxpass_tests = 0
+_spass_tests = 0
+_sfail_tests = 0
+_sskip_tests = 0
+_serror_tests = 0
+_sxfail_tests = 0
+_sxpass_tests = 0
+_suite_length = 0
 
 
 def pytest_addoption(parser):
@@ -50,8 +56,15 @@ class HTMLReporter:
         self.config = config
 
     def pytest_runtest_teardown(self, item, nextitem):
+        global _test_name
+        _test_name = item.name
+
         self.append_test_metrics_row()
 
+
+    def pytest_sessionfinish(self, session):
+        self.append_suite_metrics_row(_suite_name)
+        self.reset_counts()
 
     def report_path(self):
         logfile = os.path.expanduser(os.path.expandvars(self.path))
@@ -169,6 +182,7 @@ class HTMLReporter:
         self._test_skipped(int(_sskip_tests))
         self._test_xpassed(int(_sxpass_tests))
         self._test_xfailed(int(_sxfail_tests))
+        self._test_error(int(_serror_tests))
 
         suite_row_text = """
             <tr>
@@ -289,6 +303,10 @@ class HTMLReporter:
         global _test_xfail_list
         _test_xfail_list.append(value)
 
+    def _test_error(self, value):
+        global _test_error_list
+        _test_error_list.append(value)
+
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
@@ -302,7 +320,7 @@ class HTMLReporter:
         template_text = template_text.replace("__pass__", str(_pass))
         template_text = template_text.replace("__fail__", str(_fail))
         template_text = template_text.replace("__skip__", str(_skip))
-        # template_text = template_text.replace("__error__", str(_error))
+        template_text = template_text.replace("__error__", str(_error))
         template_text = template_text.replace("__xpass__", str(_xpass))
         template_text = template_text.replace("__xfail__", str(_xfail))
         template_text = template_text.replace("__suite_metrics_row__", str(_suite_metrics_content))
@@ -315,4 +333,5 @@ class HTMLReporter:
         template_text = template_text.replace("__test_suites_skip__", str(_test_skip_list))
         template_text = template_text.replace("__test_suites_xpass__", str(_test_xpass_list))
         template_text = template_text.replace("__test_suites_xfail__", str(_test_xfail_list))
+        template_text = template_text.replace("__test_suites_error__", str(_test_error_list))
         return template_text
