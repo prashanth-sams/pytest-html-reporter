@@ -10,3 +10,4 @@ pytest_html_reporter.egg-info/
 tests/__pycache__/
 dist/
 xtests/
+report/
