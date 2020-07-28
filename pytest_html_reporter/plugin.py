@@ -70,7 +70,7 @@ class HTMLReporter:
     def report_path(self):
         if '.html' in self.path:
             path = '.' if '.html' in self.path.rsplit('/', 1)[0] else self.path.rsplit('/', 1)[0]
-            if path is '': path = '.'
+            if path == '': path = '.'
             logfile = os.path.expanduser(os.path.expandvars(path))
             return os.path.abspath(logfile), self.path.split('/')[-1]
         else:
