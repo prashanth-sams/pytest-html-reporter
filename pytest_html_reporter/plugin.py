@@ -66,9 +66,16 @@ class HTMLReporter:
         self.append_suite_metrics_row(_suite_name)
         self.reset_counts()
 
+    @property
     def report_path(self):
-        logfile = os.path.expanduser(os.path.expandvars(self.path))
-        return os.path.abspath(logfile)
+        if '.html' in self.path:
+            path = '.' if '.html' in self.path.rsplit('/', 1)[0] else self.path.rsplit('/', 1)[0]
+            if path == '': path = '.'
+            logfile = os.path.expanduser(os.path.expandvars(path))
+            return os.path.abspath(logfile), self.path.split('/')[-1]
+        else:
+            logfile = os.path.expanduser(os.path.expandvars(self.path))
+            return os.path.abspath(logfile), 'pytest_html_report.html'
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
@@ -80,9 +87,8 @@ class HTMLReporter:
         global _total
         _total = _pass + _fail + _xpass + _xfail + _skip + _error
 
-        report_filename = "pytest_report.html"
-        path = os.path.join(self.report_path(), report_filename)
-        os.makedirs(self.report_path(), exist_ok=True)
+        path = os.path.join(self.report_path[0], self.report_path[1])
+        os.makedirs(self.report_path[0], exist_ok=True)
         live_logs_file = open(path, 'w')
         message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
         live_logs_file.write(message)
