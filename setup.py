@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-html-reporter',
-    version='0.0.6',
+    version='0.0.7',
     author='Prashanth Sams',
     author_email='sams.prashanth@gmail.com',
     maintainer='Prashanth Sams',
@@ -21,7 +21,7 @@ setup(
     license='MIT',
     url='https://github.com/prashanth-sams/pytest-html-reporter',
     description='Generates a static html report based on pytest framework',
-    long_description=read('README.md'),
+    long_description=read('README.rst'),
     keywords=[
         'pytest', 'py.test', 'html', 'reporter', 'report'
     ],
