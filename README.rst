@@ -1,6 +1,7 @@
 =====================
 pytest-html-reporter
 =====================
+
 .. image:: https://badge.fury.io/py/pytest-html-reporter.svg
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
@@ -14,14 +15,12 @@ pytest-html-reporter
     :alt: Downloads
 
 
-Generates a static html report based on ``pytest`` framework
+..
+
+        Generates a static html report based on ``pytest`` framework
 
 
 .. image:: ./PHR.png
-   :width: 30%
-   :align: center
-   :height: 100px
-   :scale: 50%
    :alt: pytest-html-reporter
 
 
@@ -41,14 +40,19 @@ one of them if not needed::
 
     $ pytest tests/
 
-> Custom path and filename
+
+..
+
+        Custom path and filename
 
 Add ``--html`` tag followed by path location and filename to customize the report location and filename::
 
     $ pytest tests/ --html=./report
     $ pytest tests/ --html=./report/report.html
 
-> pytest.ini
+..
+
+        pytest.ini
 
 Alternate option is to add this snippet in the ``pytest.ini`` file::
 
@@ -63,8 +67,9 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     :height: 100 px
     :alt: pytest-html-reporter
 
----
-#### Is there a demo available for this gem?
+
+Is there a demo available for this gem?
+------------
 
 Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter::
 
