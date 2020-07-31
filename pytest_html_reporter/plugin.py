@@ -101,14 +101,12 @@ class HTMLReporter:
 
         if os.path.isfile(path) is True:
             os.makedirs(base + '/archive', exist_ok=True)
-            filenames = next(os.walk(base))[2]
-            breakpoint()
+            f = 'output.json'
 
-            for f in filenames:
-                if isfile(join(base, f)):
-                    fname = os.path.splitext(f)
-                    os.rename(base + '/' + f, os.path.join(base + '/archive', fname[0] + '_' +
-                                                           str(_start_execution_time) + fname[1]))
+            if isfile(join(base, f)):
+                fname = os.path.splitext(f)
+                os.rename(base + '/' + f, os.path.join(base + '/archive', fname[0] + '_' +
+                                                       str(_start_execution_time) + fname[1]))
 
     @property
     def report_path(self):
