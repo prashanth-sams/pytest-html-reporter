@@ -210,6 +210,34 @@ def html_template():
                   font-size: 1.0rem;
                 }
                 
+                .list-group-item {
+                    border: 5px solid rgba(0,0,0,0);
+                }
+                
+                .list-group {
+                    height: 100%;
+                    background-color: #ffff;
+                    display: flex;
+                    flex-direction: column;
+                    place-self: center;
+                    border-radius: 4px;
+                    box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+                }
+                
+                .archive-body {
+                    height: 100%;
+                    background-color: #ffff;
+                    max-width: 85%;
+                    border-radius: 4px;
+                    box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+                }
+                
+                .archive-header {
+                    padding-top: 4%;
+                    padding-left: 5%;
+                    color: gray;
+                }
+                
             </style>
         </head>
     </html>
@@ -223,8 +251,10 @@ def html_template():
                 <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites</a>
             <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics</a>
+            <a class="tablink" href="#" onclick="openPage('archives', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
+                <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives</a>
         </div>
-        <div class="main col-md-9 ml-sm-auto col-lg-10 px-4">
+        <div class="main col-md-9 ml-sm-auto col-lg-10 px-4" style="height: 100%;">
             <div class="tabcontent" id="dashboard">
                 
                 <div class="row rowcard">
@@ -385,6 +415,15 @@ def html_template():
             </table>
             <div class="row">
                 <div class="col-md-12" style="height:25px;width:auto;"></div>
+            </div>
+        </div>
+        <div class="tabcontent" id="archives">
+            <div id="list-example" class="list-group" style="right: 0.5%; width: 200px;top: 0; bottom: 0; position: fixed; overflow-y: scroll; overflow-x: hidden;">
+              __archive_status__
+            </div>
+            
+            <div data-spy="scroll" data-target="#list-example" data-offset="0" class="scrollspy-example">
+                __archive_body_content__
             </div>
         </div>
         <script>
@@ -553,6 +592,22 @@ def html_template():
             }
         </script>
         <script>
+            function archiveTotalCase(total, i) {
+                number = [1, 2, 3, 4, 5];
+                container = ['23%', '20%', '15%', '12%', '7%'];
+                label = ['-24%', '-2%', '15%', '27%', '31%'];
+                
+                zipped = container.map((x, i) => [x, label[i]]);
+                var x = parseInt(total);
+                
+                acontainer = zipped[(x.toString().length)-1][0];
+                alabel = zipped[(x.toString().length)-1][1];
+                
+                document.getElementById(`archive-container-${i}`).style.paddingLeft = `${acontainer}`;
+                document.getElementById(`archive-label-${i}`).style.marginLeft = `${alabel}`;
+            }
+        </script>
+        <script>
             function openPage(pageName,elmnt,color,bgcolor,borderstyle) {
                 var i, tabcontent, tablinks;
                 tabcontent = document.getElementsByClassName("tabcontent");
@@ -677,6 +732,50 @@ def html_template():
                     }
                   }
                 });
+        </script>
+        
+        <script>
+            for(var i=0; i<=__archive_count__; i++) {
+                var MeSeContext = document.getElementById("archive-chart-"+i).getContext("2d");
+                var archives = __archives__;
+                var pass = archives[i].pass;
+                var fail = archives[i].fail;
+                var skip = archives[i].skip;
+                var xpass = archives[i].xpass;
+                var xfail = archives[i].xfail;
+                var error = archives[i].error;
+                var total = archives[i].total;
+                
+                archiveTotalCase(total, i)
+                
+                var MeSeData = {
+                    labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
+                    datasets: [{
+                        label: "Test",
+                        data: [pass, fail, skip, xpass, xfail, error],
+                        backgroundColor: ["#98cc64", "#fc6766", '#ffd050', '#aaaaaa', '#d35fbf', '#b13635'],
+                        hoverBackgroundColor: ["#84b356", "#e35857", "#e4b942", "#bdbbbb", "#c357b0", '#8b2828'],
+                        hoverBorderColor: ["#9bca6d", "#fd8a89", "#ffcf4c", "#abaaaa", "#f26fdb", "#b13635"]
+                    }]
+                };
+                
+                var MeSeChart = new Chart(MeSeContext, {
+                    type: 'horizontalBar',
+                    data: MeSeData,
+                    options: {
+                        legend: {
+                            display: false
+                        },
+                        responsive: false,
+                        scales: {
+                            yAxes: [{
+                                stacked: true
+                            }]
+                        }
+                
+                    }
+                });
+            }
         </script>
         
         <script>

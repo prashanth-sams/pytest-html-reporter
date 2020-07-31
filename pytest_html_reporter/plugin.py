@@ -2,13 +2,28 @@ import pytest
 import os, time
 from datetime import date
 from pytest_html_reporter.template import html_template
+from os.path import isfile, join
+import json
+import glob
+
 
 _total = _executed = 0
 _pass = _fail = 0
 _skip = _error = 0
 _xpass = _xfail = 0
+_apass = _afail = 0
+_askip = _aerror = 0
+_axpass = _axfail = 0
+_astotal = 0
+_aspass = 0
+_asfail = 0
+_asskip = 0
+_aserror = 0
+_asxpass = 0
+_asxfail = 0
 _current_error = ""
 _suite_name = _test_name = None
+_scenario = []
 _test_suite_name = []
 _test_pass_list = []
 _test_fail_list = []
@@ -17,7 +32,7 @@ _test_xpass_list = []
 _test_xfail_list = []
 _test_error_list = []
 _test_status = None
-_test_start_time = None
+_start_execution_time = 0
 _execution_time = _duration = 0
 _test_metrics_content = _suite_metrics_content = ""
 _previous_suite_name = "None"
@@ -29,6 +44,16 @@ _serror_tests = 0
 _sxfail_tests = 0
 _sxpass_tests = 0
 _suite_length = 0
+_archive_tab_content = ""
+_archive_body_content = ""
+_archive_count = ""
+archive_pass = 0
+archive_fail = 0
+archive_skip = 0
+archive_xpass = 0
+archive_xfail = 0
+archive_error = 0
+archives = {}
 
 
 def pytest_addoption(parser):
@@ -52,6 +77,7 @@ def pytest_configure(config):
 class HTMLReporter:
 
     def __init__(self, path, config):
+        self.json_data = {'content': {'suites': {0: {'status': {}, 'tests': {0: {}}, }, }}}
         self.path = path
         self.config = config
 
@@ -59,12 +85,30 @@ class HTMLReporter:
         global _test_name
         _test_name = item.name
 
+        self._test_names(_test_name)
         self.append_test_metrics_row()
 
+    def pytest_runtest_setup(item):
+        global _start_execution_time
+        _start_execution_time = round(time.time())
 
     def pytest_sessionfinish(self, session):
         self.append_suite_metrics_row(_suite_name)
         self.reset_counts()
+
+    def archive_data(self, base, filename):
+        path = os.path.join(base, filename)
+
+        if os.path.isfile(path) is True:
+            os.makedirs(base + '/archive', exist_ok=True)
+            filenames = next(os.walk(base))[2]
+            breakpoint()
+
+            for f in filenames:
+                if isfile(join(base, f)):
+                    fname = os.path.splitext(f)
+                    os.rename(base + '/' + f, os.path.join(base + '/archive', fname[0] + '_' +
+                                                           str(_start_execution_time) + fname[1]))
 
     @property
     def report_path(self):
@@ -87,8 +131,19 @@ class HTMLReporter:
         global _total
         _total = _pass + _fail + _xpass + _xfail + _skip + _error
 
-        path = os.path.join(self.report_path[0], self.report_path[1])
-        os.makedirs(self.report_path[0], exist_ok=True)
+        base = self.report_path[0]
+        path = os.path.join(base, self.report_path[1])
+
+        self.archive_data(base, self.report_path[1])
+        os.makedirs(base, exist_ok=True)
+
+        # generate json file
+        self.generate_json_data(base)
+
+        # generate archive template
+        if len(glob.glob(base+'/archive/*.json')) > 0: self.update_archives_template(base)
+
+        # generate html report
         live_logs_file = open(path, 'w')
         message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
         live_logs_file.write(message)
@@ -161,7 +216,6 @@ class HTMLReporter:
                     for line in rep.longreprtext.splitlines():
                         self.update_test_error(line)
 
-
     def append_test_metrics_row(self):
         test_row_text = """
             <tr>
@@ -178,10 +232,19 @@ class HTMLReporter:
         test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
         test_row_text = test_row_text.replace("__msg__", str(_current_error))
 
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {})['suite_name'] = str(_suite_name)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
+            len(_scenario) - 1, {})['status'] = str(_test_status)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
+            len(_scenario) - 1, {})['message'] = str(_current_error)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
+            len(_scenario) - 1, {})['test_name'] = str(_test_name)
+
         global _test_metrics_content
         _test_metrics_content += test_row_text
 
     def append_suite_metrics_row(self, name):
+        self._test_names(_test_name, clear='yes')
         self._test_suites(name)
         self._test_passed(int(_spass_tests))
         self._test_failed(int(_sfail_tests))
@@ -189,6 +252,19 @@ class HTMLReporter:
         self._test_xpassed(int(_sxpass_tests))
         self._test_xfailed(int(_sxfail_tests))
         self._test_error(int(_serror_tests))
+
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_pass'] = int(_spass_tests)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_fail'] = int(_sfail_tests)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_skip'] = int(_sskip_tests)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_xpass'] = int(_sxpass_tests)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_xfail'] = int(_sxfail_tests)
+        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_error'] = int(_serror_tests)
 
         suite_row_text = """
             <tr>
@@ -290,6 +366,14 @@ class HTMLReporter:
         global _test_suite_name
         _test_suite_name.append(name.split('/')[-1].replace('.py', ''))
 
+    def _test_names(self, name, **kwargs):
+        global _scenario
+        _scenario.append(name)
+        try:
+            if kwargs['clear'] == 'yes': _scenario = []
+        except Exception:
+            print('skip clear')
+
     def _test_passed(self, value):
         global _test_pass_list
         _test_pass_list.append(value)
@@ -341,4 +425,119 @@ class HTMLReporter:
         template_text = template_text.replace("__test_suites_xpass__", str(_test_xpass_list))
         template_text = template_text.replace("__test_suites_xfail__", str(_test_xfail_list))
         template_text = template_text.replace("__test_suites_error__", str(_test_error_list))
+        template_text = template_text.replace("__archive_status__", str(_archive_tab_content))
+        template_text = template_text.replace("__archive_body_content__", str(_archive_body_content))
+        template_text = template_text.replace("__archive_count__", str(_archive_count))
+        template_text = template_text.replace("__archives__", str(archives))
         return template_text
+
+    def generate_json_data(self, base):
+        global _asskip, _aserror, _aspass, _asfail, _asxpass, _asxfail
+        self.json_data['date'] = self._date()
+        self.json_data['start_time'] = _start_execution_time
+        self.json_data['total_suite'] = len(_test_suite_name)
+
+        suite = self.json_data['content']['suites']
+        for i in suite:
+            for k in self.json_data['content']['suites'][i]['status']:
+                if (k == 'total_fail' or k == 'total_error') and self.json_data['content']['suites'][i]['status'][k] != 0:
+                    self.json_data['status'] = "FAIL"
+                    break
+                else:
+                    continue
+
+            try:
+                if self.json_data['status'] == "FAIL": break
+            except KeyError:
+                if len(_test_suite_name) == i + 1: self.json_data['status'] = "PASS"
+
+        for i in suite:
+            for k in self.json_data['content']['suites'][i]['status']:
+                if k == 'total_pass':
+                    _aspass += self.json_data['content']['suites'][i]['status'][k]
+                elif k == 'total_fail':
+                    _asfail += self.json_data['content']['suites'][i]['status'][k]
+                elif k == 'total_skip':
+                    _asskip += self.json_data['content']['suites'][i]['status'][k]
+                elif k == 'total_error':
+                    _aserror += self.json_data['content']['suites'][i]['status'][k]
+                elif k == 'total_xpass':
+                    _asxpass += self.json_data['content']['suites'][i]['status'][k]
+                elif k == 'total_xfail':
+                    _asxfail += self.json_data['content']['suites'][i]['status'][k]
+
+        _astotal = _aspass + _asfail + _asskip + _aserror + _asxpass + _asxfail
+
+        self.json_data.setdefault('status_list', {})['pass'] = str(_aspass)
+        self.json_data.setdefault('status_list', {})['fail'] = str(_asfail)
+        self.json_data.setdefault('status_list', {})['skip'] = str(_asskip)
+        self.json_data.setdefault('status_list', {})['error'] = str(_aserror)
+        self.json_data.setdefault('status_list', {})['xpass'] = str(_asxpass)
+        self.json_data.setdefault('status_list', {})['xfail'] = str(_asxfail)
+        self.json_data['total_tests'] = str(_astotal)
+
+        with open(base + '/output.json', 'w') as outfile:
+            json.dump(self.json_data, outfile)
+
+    def update_archives_template(self, base):
+        global _archive_count, archive_pass, archive_fail, archive_skip, archive_xpass, archive_xfail, archive_error, archives
+
+        def state(data):
+            if data == 'fail':
+                return 'times', '#fc6766'
+            elif data == 'pass':
+                return 'check', '#98cc64'
+
+        f = glob.glob(base+'/archive'+'/*.json')
+        f.sort(reverse=True)
+        _archive_count = len(f)
+        for i, val in enumerate(f):
+            with open(val) as json_file:
+                data = json.load(json_file)
+
+                archive_row_text = """
+                    <a class ="list-group-item list-group-item-action" href="#list-item-__acount__" style="font-size: 1.1rem; color: dimgray;">
+                        <i class="fa fa-__astate__" aria-hidden="true" style="color: __astate_color__"></i>
+                            __astatus__
+                    </a>
+                    """
+                archive_row_text = archive_row_text.replace("__astate__", state(data['status'].lower())[0])
+                archive_row_text = archive_row_text.replace("__astate_color__", state(data['status'].lower())[1])
+                archive_row_text = archive_row_text.replace("__astatus__", 'build #'+str(len(f)-i))
+                archive_row_text = archive_row_text.replace("__acount__", str(len(f)-i))
+
+                global _archive_tab_content
+                _archive_tab_content += archive_row_text
+
+                _archive_body_text = """
+                    <div id="list-item-__acount__" class="archive-body">
+                        <h4 class="archive-header">
+                            Build #__acount__
+                        </h4>
+                        <div id="archive-container-__iloop__" style="padding-top: 7%; position: absolute;">
+                            <div style="">
+                                <span style="font-size: 10.3rem; font-family: sans-serif; color: black; padding-top: 8%;">__total_tests__</span>
+                            </div>
+                            <div id="archive-label-__iloop__">
+                                <span style="font-size: 1.8rem; font-family: sans-serif; color: darkgray;">TEST CASES</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 6%; height: 50%; width: 50%; margin-left: 40%;">
+                            <canvas id="archive-chart-__iloop__" width="240px" height="240px" style="width: 60%; height: 80%; float: right;"></canvas>
+                        </div>
+                    </div>
+                """
+                _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
+                _archive_body_text = _archive_body_text.replace("__acount__", str(len(f)-i))
+                _archive_body_text = _archive_body_text.replace("__total_tests__", data['total_tests'])
+
+                archives.setdefault(str(i), {})['pass'] = data['status_list']['pass']
+                archives.setdefault(str(i), {})['fail'] = data['status_list']['fail']
+                archives.setdefault(str(i), {})['skip'] = data['status_list']['skip']
+                archives.setdefault(str(i), {})['xpass'] = data['status_list']['xpass']
+                archives.setdefault(str(i), {})['xfail'] = data['status_list']['xfail']
+                archives.setdefault(str(i), {})['error'] = data['status_list']['error']
+                archives.setdefault(str(i), {})['total'] = data['total_tests']
+
+                global _archive_body_content
+                _archive_body_content += _archive_body_text
