@@ -464,7 +464,6 @@ def html_template():
                 <script>
                     window.onload = function() {
                         alignTotalCount();
-                        archiveFooter();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
                         createBarGraph('#sm', 0, 2, 5, 'suiteBarID', 'Failure ', 'Suite');
