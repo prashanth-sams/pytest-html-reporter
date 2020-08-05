@@ -1,7 +1,8 @@
 import pytest
 import os, time
-from datetime import date
+from datetime import date, datetime
 from pytest_html_reporter.template import html_template
+from pytest_html_reporter.time_converter import time_converter
 from os.path import isfile, join
 import json
 import glob
@@ -494,40 +495,109 @@ class HTMLReporter:
                 data = json.load(json_file)
 
                 archive_row_text = """
-                    <a class ="list-group-item list-group-item-action" href="#list-item-__acount__" style="font-size: 1.1rem; color: dimgray;">
+                    <a class ="list-group-item list-group-item-action" href="#list-item-__acount__" style="font-size: 1.1rem; color: dimgray; margin-bottom: -7%;">
                         <i class="fa fa-__astate__" aria-hidden="true" style="color: __astate_color__"></i>
-                            __astatus__
+                        <span>__astatus__</span></br>
+                        <span style="font-size: 0.81rem; color: gray; padding-left: 12%;">__adate__</span>
                     </a>
                     """
                 archive_row_text = archive_row_text.replace("__astate__", state(data['status'].lower())[0])
                 archive_row_text = archive_row_text.replace("__astate_color__", state(data['status'].lower())[1])
                 archive_row_text = archive_row_text.replace("__astatus__", 'build #'+str(len(f)-i))
                 archive_row_text = archive_row_text.replace("__acount__", str(len(f)-i))
+                adate = datetime.strptime(
+                    data['date'].split(None, 1)[0][:1 + 2:] + ' ' +
+                    data['date'].split(None, 1)[1].replace(',', ''), "%b %d %Y"
+                )
+
+                atime = "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(':', 1)[0]
+                archive_row_text = archive_row_text.replace("__adate__", str(adate.date())+ ' | ' + str(time_converter(atime)))
 
                 global _archive_tab_content
                 _archive_tab_content += archive_row_text
 
                 _archive_body_text = """
                     <div id="list-item-__acount__" class="archive-body">
-                        <h4 class="archive-header">
-                            Build #__acount__
-                        </h4>
-                        <div id="archive-container-__iloop__" style="padding-top: 7%; position: absolute;">
-                            <div style="">
-                                <span style="font-size: 10.3rem; font-family: sans-serif; color: black; padding-top: 8%;">__total_tests__</span>
-                            </div>
-                            <div id="archive-label-__iloop__">
-                                <span style="font-size: 1.8rem; font-family: sans-serif; color: darkgray;">TEST CASES</span>
+                        <div>
+                            <h4 class="archive-header">
+                                Build #__acount__
+                            </h4>
+                            <div class="archive-date">
+                                <i class="fa fa-calendar-check-o" aria-hidden="true"></i>&nbsp;&nbsp;&nbsp;
+                                __date__
                             </div>
                         </div>
-                        <div style="margin-top: 6%; height: 50%; width: 50%; margin-left: 40%;">
-                            <canvas id="archive-chart-__iloop__" width="240px" height="240px" style="width: 60%; height: 80%; float: right;"></canvas>
+                        <div style="margin-top: -5%;">
+                            <div id="archive-container-__iloop__" style="padding-top: 5%; position: absolute;">
+                                <div style="">
+                                    <span style="font-size: 10.3rem; font-family: sans-serif; color: black; padding-top: 8%;">__total_tests__</span>
+                                </div>
+                                <div id="archive-label-__iloop__">
+                                    <span style="font-size: 1.8rem; font-family: sans-serif; color: darkgray;">TEST CASES</span>
+                                </div>
+                            </div>
+                            <div class="archive-chart-container">
+                                <canvas id="archive-chart-__iloop__" width="240px" height="240px" style="width: 60%; height: 80%; float: right;"></canvas>
+                            </div>
+                        </div>
+                        <div style="padding-top: 8.5%;">
+                            <section id="statistic" class="statistic-section-__status__ one-page-section">
+                                <div class="container" style="margin-top: -2%;">
+                                    <div class="row text-center">
+                                        <div class="col-xs-12 col-md-3" style="max-width: 16.6%;">
+                                            <div class="counter">
+                                                <h2 class="timer count-title count-number">__pass__</h2>
+                                                <p class="stats-text">PASSED</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-12 col-md-3" style="max-width: 16.6%;">
+                                            <div class="counter">
+                                                <h2 class="timer count-title count-number">__fail__
+                                                </h2>
+                                                <p class="stats-text">FAILED</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-12 col-md-3" style="max-width: 16.6%;"v>
+                                            <div class="counter">
+                                                <h2 class="timer count-title count-number">__skip__</h2>
+                                                <p class="stats-text">SKIPPED</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-12 col-md-3" style="max-width: 16.6%;">
+                                            <div class="counter">
+                                                <h2 class="timer count-title count-number">__xpass__</h2>
+                                                <p class="stats-text">XPASSED</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-12 col-md-3" style="max-width: 16.6%;">
+                                            <div class="counter">
+                                                <h2 class="timer count-title count-number">__xfail__</h2>
+                                                <p class="stats-text">XFAILED</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-12 col-md-3" style="max-width: 16.6%;">
+                                            <div class="counter">
+                                                <h2 class="timer count-title count-number">__error__</h2>
+                                                <p class="stats-text">ERROR</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </div>
                 """
                 _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
                 _archive_body_text = _archive_body_text.replace("__acount__", str(len(f)-i))
                 _archive_body_text = _archive_body_text.replace("__total_tests__", data['total_tests'])
+                _archive_body_text = _archive_body_text.replace("__date__", data['date'].upper())
+                _archive_body_text = _archive_body_text.replace("__pass__", data['status_list']['pass'])
+                _archive_body_text = _archive_body_text.replace("__fail__", data['status_list']['fail'])
+                _archive_body_text = _archive_body_text.replace("__skip__", data['status_list']['skip'])
+                _archive_body_text = _archive_body_text.replace("__xpass__", data['status_list']['xpass'])
+                _archive_body_text = _archive_body_text.replace("__xfail__", data['status_list']['xfail'])
+                _archive_body_text = _archive_body_text.replace("__error__", data['status_list']['error'])
+                _archive_body_text = _archive_body_text.replace("__status__", data['status'].lower())
 
                 archives.setdefault(str(i), {})['pass'] = data['status_list']['pass']
                 archives.setdefault(str(i), {})['fail'] = data['status_list']['fail']
