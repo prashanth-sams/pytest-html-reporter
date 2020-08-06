@@ -71,9 +71,15 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 
 |
 
-.. image:: https://i.imgur.com/0Gf4bpV.png
+.. image:: https://i.imgur.com/mkZ2AG2.png
     :align: center
-    :alt: pytest-html-reporter-archives
+    :alt: pytest-html-reporter-archives-fail
+
+|
+
+.. image:: https://i.imgur.com/CllC7tv.png
+    :align: center
+    :alt: pytest-html-reporter-archives-pass
 
 
 Is there a demo available for this gem?

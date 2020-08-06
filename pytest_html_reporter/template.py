@@ -1,4 +1,3 @@
-
 def html_template():
     return """
 	<!DOCTYPE doctype html>
@@ -189,10 +188,24 @@ def html_template():
                   margin-bottom: 5%;
                 }
                 
+                .archive-card__footer {
+                  display: flex;
+                  flex-direction: row;
+                  justify-content: space-between;
+                  margin-bottom: 5%;
+                  max-width: 60%;
+                  padding-top: 5.5%;
+                  padding-left: 5%;
+                }
+                
                 .card__footer-section {
                   text-align: center;
                   width: 33%;
                   # border-right: 1px solid #ccc;
+                }
+                
+                .archive-card__footer-section {
+                  text-align: center;
                 }
                 
                 .card__footer-section:nth-child(3) {
@@ -202,6 +215,11 @@ def html_template():
                 .footer-section__data {
                   font-size: 2.2rem;
                   font-weight: 900;
+                }
+                
+                .archive-footer-section__data {
+                  font-size: 4.2rem;
+                  font-weight: 700;
                 }
                 
                 .footer-section__label {
@@ -230,12 +248,92 @@ def html_template():
                     max-width: 85%;
                     border-radius: 4px;
                     box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
+                    margin-bottom: 0.8%;
                 }
                 
                 .archive-header {
                     padding-top: 4%;
                     padding-left: 5%;
                     color: gray;
+                }
+                
+                .archive-date {
+                    padding-top: 2%;
+                    padding-left: 5%;
+                    color: gray;
+                }
+                
+                .archive-chart-container {
+                    margin-top: 6%;
+                    height: 50%;
+                    width: 50%;
+                    margin-left: 40%;
+                }
+                
+                .statistic-section-pass {
+                     padding-top: 51px;
+                     padding-bottom: 45px;
+                     background: #00c6ff;  /* fallback for old browsers */
+                     background: linear-gradient(to right, #333333, #2b4440);
+                }
+                
+                .statistic-section-fail {
+                     padding-top: 51px;
+                     padding-bottom: 45px;
+                     background: #00c6ff;  /* fallback for old browsers */
+                     background: linear-gradient(to right, #333333, #442b2b);
+                }
+                
+                .count-title {
+                    font-size: 50px;
+                    font-weight: normal;
+                    margin-top: 10px;
+                    margin-bottom: 0;
+                      text-align: center;
+                      font-weight: bold;
+                    color: #fff;
+                }
+                
+                .stats-text {
+                    font-size: 15px;
+                    font-weight: normal;
+                    margin-top: 15px;
+                    margin-bottom: 0;
+                    text-align: center;
+                      color: #fff;
+                      text-transform: uppercase;
+                      font-weight: bold;
+                }
+                
+                .stats-line-black {
+                    margin: 12px auto 0;
+                    width: 55px;
+                    height: 2px;
+                    background-color: #fff;
+                }
+                
+                .stats-icon {
+                      font-size: 35px;
+                      margin: 0 auto;
+                    float: none;
+                    display: table;
+                    color: #fff;
+                }
+                
+                @media (max-width: 992px) {
+                    .counter {
+                        margin-bottom: 40px;
+                    }
+                }
+                
+                .archive-build-row {
+                    right: 0.5%;
+                    width: 200px;
+                    top: 0;
+                    bottom: 0;
+                    position: fixed;
+                    overflow-y: scroll;
+                    overflow-x: hidden;
                 }
                 
             </style>
@@ -418,7 +516,7 @@ def html_template():
             </div>
         </div>
         <div class="tabcontent" id="archives">
-            <div id="list-example" class="list-group" style="right: 0.5%; width: 200px;top: 0; bottom: 0; position: fixed; overflow-y: scroll; overflow-x: hidden;">
+            <div id="list-example" class="list-group archive-build-row">
               __archive_status__
             </div>
             
@@ -705,7 +803,7 @@ def html_template():
                       caretPadding: 13,
                       xPadding: 12,
                       yPadding: 12
-                    }
+                  }
                 }
             });
             
@@ -771,8 +869,23 @@ def html_template():
                             yAxes: [{
                                 stacked: true
                             }]
-                        }
-                
+                        },
+                        tooltips: {
+                          backgroundColor: '#FFF',
+                          titleFontSize: 10,
+                          titleFontColor: '#555555',
+                          bodyFontColor: '#000',
+                          bodyFontSize: 12,
+                          displayColors: false,
+                          borderColor: '#555555',
+                          borderWidth: 2,
+                          multiKeyBackground: '#555555',
+                          cornerRadius: 2,
+                          caretSize: 5,
+                          caretPadding: 5,
+                          xPadding: 5,
+                          yPadding: 5
+                      }
                     }
                 });
             }
