@@ -6,7 +6,7 @@ from pytest_html_reporter.time_converter import time_converter
 from os.path import isfile, join
 import json
 import glob
-
+from collections import Counter
 
 _total = _executed = 0
 _pass = _fail = 0
@@ -55,6 +55,14 @@ archive_xpass = 0
 archive_xfail = 0
 archive_error = 0
 archives = {}
+highlights = {}
+p_highlights = {}
+max_failure_suite_name = ''
+max_failure_suite_name_final = ''
+max_failure_suite_count = 0
+similar_max_failure_suite_count = 0
+max_failure_total_tests = 0
+max_failure_percent = ''
 
 
 def pytest_addoption(parser):
@@ -73,6 +81,54 @@ def pytest_configure(config):
 
     config._html = HTMLReporter(path, config)
     config.pluginmanager.register(config._html)
+
+
+def suite_highlights(data):
+    global highlights, p_highlights
+
+    for i in data['content']['suites']:
+        if data['content']['suites'][i]['status']['total_fail'] == 0:
+            l = data['content']['suites'][i]['suite_name']
+            if l not in p_highlights:
+                p_highlights[l] = 1
+            else:
+                p_highlights[l] += 1
+        else:
+            k = data['content']['suites'][i]['suite_name']
+
+            if k not in highlights:
+                highlights[k] = 1
+            else:
+                highlights[k] += 1
+
+
+def generate_suite_highlights():
+    global max_failure_suite_name, max_failure_suite_count, similar_max_failure_suite_count, max_failure_total_tests
+    global max_failure_percent, max_failure_suite_name_final
+
+    if highlights == {}:
+        max_failure_suite_name_final = 'No failures in History'
+        max_failure_suite_count = 0
+        max_failure_percent = '0'
+        return
+
+    max_failure_suite_name = max(highlights, key=highlights.get)
+    max_failure_suite_count = highlights[max_failure_suite_name]
+
+    if max_failure_suite_name in p_highlights:
+        max_failure_total_tests = p_highlights[max_failure_suite_name] + max_failure_suite_count
+    else:
+        max_failure_total_tests = max_failure_suite_count
+
+    max_failure_percent = (max_failure_suite_count / max_failure_total_tests) * 100
+
+    if max_failure_suite_name.__len__() > 25:
+        max_failure_suite_name_final = ".." + max_failure_suite_name[-23:]
+    else:
+        max_failure_suite_name_final = max_failure_suite_name
+
+    res = Counter(highlights.values())
+    if max(res.values()) > 1: similar_max_failure_suite_count = max(res.values())
 
 
 class HTMLReporter:
@@ -140,7 +196,10 @@ class HTMLReporter:
         self.generate_json_data(base)
 
         # generate archive template
-        if len(glob.glob(base+'/archive/*.json')) > 0: self.update_archives_template(base)
+        if len(glob.glob(base + '/archive/*.json')) > 0: self.update_archives_template(base)
+
+        # generate suite highlights
+        generate_suite_highlights()
 
         # generate html report
         live_logs_file = open(path, 'w')
@@ -428,6 +487,11 @@ class HTMLReporter:
         template_text = template_text.replace("__archive_body_content__", str(_archive_body_content))
         template_text = template_text.replace("__archive_count__", str(_archive_count))
         template_text = template_text.replace("__archives__", str(archives))
+        template_text = template_text.replace("__max_failure_suite_name_final__", str(max_failure_suite_name_final))
+        template_text = template_text.replace("__max_failure_suite_count__", str(max_failure_suite_count))
+        template_text = template_text.replace("__similar_max_failure_suite_count__", str(similar_max_failure_suite_count))
+        template_text = template_text.replace("__max_failure_total_tests__", str(max_failure_total_tests))
+        template_text = template_text.replace("__max_failure_percent__", str(max_failure_percent))
         return template_text
 
     def generate_json_data(self, base):
@@ -439,7 +503,8 @@ class HTMLReporter:
         suite = self.json_data['content']['suites']
         for i in suite:
             for k in self.json_data['content']['suites'][i]['status']:
-                if (k == 'total_fail' or k == 'total_error') and self.json_data['content']['suites'][i]['status'][k] != 0:
+                if (k == 'total_fail' or k == 'total_error') and self.json_data['content']['suites'][i]['status'][
+                    k] != 0:
                     self.json_data['status'] = "FAIL"
                     break
                 else:
@@ -487,13 +552,14 @@ class HTMLReporter:
             elif data == 'pass':
                 return 'check', '#98cc64'
 
-        f = glob.glob(base+'/archive'+'/*.json')
+        f = glob.glob(base + '/archive' + '/*.json')
         f.sort(reverse=True)
         _archive_count = len(f)
         for i, val in enumerate(f):
             with open(val) as json_file:
                 data = json.load(json_file)
 
+                suite_highlights(data)
                 archive_row_text = """
                     <a class ="list-group-item list-group-item-action" href="#list-item-__acount__" style="font-size: 1.1rem; color: dimgray; margin-bottom: -7%;">
                         <i class="fa fa-__astate__" aria-hidden="true" style="color: __astate_color__"></i>
@@ -503,15 +569,19 @@ class HTMLReporter:
                     """
                 archive_row_text = archive_row_text.replace("__astate__", state(data['status'].lower())[0])
                 archive_row_text = archive_row_text.replace("__astate_color__", state(data['status'].lower())[1])
-                archive_row_text = archive_row_text.replace("__astatus__", 'build #'+str(len(f)-i))
-                archive_row_text = archive_row_text.replace("__acount__", str(len(f)-i))
+                archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(len(f) - i))
+                archive_row_text = archive_row_text.replace("__acount__", str(len(f) - i))
                 adate = datetime.strptime(
                     data['date'].split(None, 1)[0][:1 + 2:] + ' ' +
                     data['date'].split(None, 1)[1].replace(',', ''), "%b %d %Y"
                 )
 
-                atime = "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(':', 1)[0]
-                archive_row_text = archive_row_text.replace("__adate__", str(adate.date())+ ' | ' + str(time_converter(atime)))
+                atime = \
+                    "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(
+                        ':',
+                        1)[0]
+                archive_row_text = archive_row_text.replace("__adate__",
+                                                            str(adate.date()) + ' | ' + str(time_converter(atime)))
 
                 global _archive_tab_content
                 _archive_tab_content += archive_row_text
@@ -588,7 +658,7 @@ class HTMLReporter:
                     </div>
                 """
                 _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
-                _archive_body_text = _archive_body_text.replace("__acount__", str(len(f)-i))
+                _archive_body_text = _archive_body_text.replace("__acount__", str(len(f) - i))
                 _archive_body_text = _archive_body_text.replace("__total_tests__", data['total_tests'])
                 _archive_body_text = _archive_body_text.replace("__date__", data['date'].upper())
                 _archive_body_text = _archive_body_text.replace("__pass__", data['status_list']['pass'])

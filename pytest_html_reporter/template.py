@@ -336,6 +336,70 @@ def html_template():
                     overflow-x: hidden;
                 }
                 
+                .loading {
+                    height: 200px;
+                    padding-top: 35px;
+                }
+                
+                .loading p {
+                    font-size: 1.1rem;
+                    padding-top: 5%;
+                    margin: 0px 0 45px;
+                    color: dimgrey;
+                    float: right;
+                }
+                
+                .loading .icon {
+                    padding-right: 15px;
+                }
+                
+                .loading .percentage {
+                    float: right;
+                    padding: 6px 35px 0 0;
+                }
+                
+                .loading .progress-bar {
+                    height: 20px;
+                    background: #50597b;
+                    border-radius: 5px;
+                    margin: 0 auto;
+                    margin-top: -4%;
+                }
+                
+                .progress-bar.downloading {
+                    background: -webkit-linear-gradient(left, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* Chrome10+,Safari5.1+ */
+                    background: -ms-linear-gradient(left, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* IE10+ */
+                    background: linear-gradient(to right, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* W3C */
+                }
+                
+                .arrow {
+                    left: 50%;
+                    color: #403b3b;
+                }
+                
+               .tooltip {
+                    position: relative;
+                    display: inline-block;
+                    margin: 10px 20px;
+                    opacity: 1;
+                }
+                
+                .tooltip-inner {
+                    background-color: #403b3b;
+                }
+                
+                .bs-tooltip-top .arrow::before {
+                    border-top-color: #403b3b;
+                }
+                
+                .suite-highlights-header {
+                    font-size: 0.95rem;
+                    padding-top: 5%;
+                    margin: 0px 0 45px;
+                    color: dimgrey;
+                    float: right;
+                }
+                
             </style>
         </head>
     </html>
@@ -449,7 +513,23 @@ def html_template():
                     </div>
                     <div class="col-md-4 card border-left" style="max-width: 32.4%; padding-left: 3%; padding-top: 2%; margin-left: 0.75%;">
                         <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
-                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><i class="fa fa-bolt" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>Suite Highlights</div>
+                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;">
+                                <i class="fa fa-bolt" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>
+                                Suite Highlights
+                            </div>
+                            <div>
+                                <div class="loading">
+                                    <div style="display: flow-root;">
+                                        <div class="tooltip bs-tooltip-top tooltip-dark" role="tooltip">
+                                           <div class="arrow" style="left: 50%"></div>
+                                           <div class="tooltip-inner">__max_failure_suite_name_final__</div>
+                                        </div>
+                                        <p class="percentage">__max_failure_suite_count__<sup> /__max_failure_total_tests__</sup> Times</p>
+                                    </div>
+                                    <div class="progress-bar downloading"></div>
+                                    <span class="suite-highlights-header">MOST FAILED SUITE</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
