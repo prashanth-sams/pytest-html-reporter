@@ -154,7 +154,7 @@ class HTMLReporter:
         _start_execution_time = round(time.time())
 
     def pytest_sessionfinish(self, session):
-        self.append_suite_metrics_row(_suite_name)
+        if _suite_name is not None: self.append_suite_metrics_row(_suite_name)
         self.reset_counts()
 
     def archive_data(self, base, filename):
@@ -190,29 +190,30 @@ class HTMLReporter:
         global _total
         _total = _pass + _fail + _xpass + _xfail + _skip + _error
 
-        base = self.report_path[0]
-        path = os.path.join(base, self.report_path[1])
+        if _suite_name is not None:
+            base = self.report_path[0]
+            path = os.path.join(base, self.report_path[1])
 
-        self.archive_data(base, self.report_path[1])
-        os.makedirs(base, exist_ok=True)
+            self.archive_data(base, self.report_path[1])
+            os.makedirs(base, exist_ok=True)
 
-        # generate json file
-        self.generate_json_data(base)
+            # generate json file
+            self.generate_json_data(base)
 
-        # generate trends
-        self.update_trends(base)
+            # generate trends
+            self.update_trends(base)
 
-        # generate archive template
-        if len(glob.glob(base + '/archive/*.json')) > 0: self.update_archives_template(base)
+            # generate archive template
+            if len(glob.glob(base + '/archive/*.json')) > 0: self.update_archives_template(base)
 
-        # generate suite highlights
-        generate_suite_highlights()
+            # generate suite highlights
+            generate_suite_highlights()
 
-        # generate html report
-        live_logs_file = open(path, 'w')
-        message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
-        live_logs_file.write(message)
-        live_logs_file.close()
+            # generate html report
+            live_logs_file = open(path, 'w')
+            message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
+            live_logs_file.write(message)
+            live_logs_file.close()
 
     @pytest.hookimpl(tryfirst=True, hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
