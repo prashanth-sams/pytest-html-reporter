@@ -63,6 +63,10 @@ max_failure_suite_count = 0
 similar_max_failure_suite_count = 0
 max_failure_total_tests = 0
 max_failure_percent = ''
+trends_label = []
+tpass = []
+tfail = []
+tskip = []
 
 
 def pytest_addoption(parser):
@@ -194,6 +198,9 @@ class HTMLReporter:
 
         # generate json file
         self.generate_json_data(base)
+
+        # generate trends
+        self.update_trends(base)
 
         # generate archive template
         if len(glob.glob(base + '/archive/*.json')) > 0: self.update_archives_template(base)
@@ -489,9 +496,14 @@ class HTMLReporter:
         template_text = template_text.replace("__archives__", str(archives))
         template_text = template_text.replace("__max_failure_suite_name_final__", str(max_failure_suite_name_final))
         template_text = template_text.replace("__max_failure_suite_count__", str(max_failure_suite_count))
-        template_text = template_text.replace("__similar_max_failure_suite_count__", str(similar_max_failure_suite_count))
+        template_text = template_text.replace("__similar_max_failure_suite_count__",
+                                              str(similar_max_failure_suite_count))
         template_text = template_text.replace("__max_failure_total_tests__", str(max_failure_total_tests))
         template_text = template_text.replace("__max_failure_percent__", str(max_failure_percent))
+        template_text = template_text.replace("__trends_label__", str(trends_label))
+        template_text = template_text.replace("__tpass__", str(tpass))
+        template_text = template_text.replace("__tfail__", str(tfail))
+        template_text = template_text.replace("__tskip__", str(tskip))
         return template_text
 
     def generate_json_data(self, base):
@@ -679,3 +691,48 @@ class HTMLReporter:
 
                 global _archive_body_content
                 _archive_body_content += _archive_body_text
+
+    def update_trends(self, base):
+        global tpass, tfail, tskip
+
+        f2 = glob.glob(base + '/output.json')
+        with open(f2[0]) as json_file:
+            data = json.load(json_file)
+            adate = datetime.strptime(
+                data['date'].split(None, 1)[0][:1 + 2:] + ' ' +
+                data['date'].split(None, 1)[1].replace(',', ''), "%b %d %Y"
+            )
+            atime = \
+                "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(
+                    ':',
+                    1)[0]
+            trends_label.append(str(time_converter(atime)).upper() + ' | ' + str(adate.date().strftime("%b")) + ' '
+                                + str(adate.date().strftime("%d")))
+
+            tpass.append(data['status_list']['pass'])
+            tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
+            tskip.append(data['status_list']['skip'])
+
+        f = glob.glob(base + '/archive' + '/*.json')
+        f.sort(reverse=True)
+
+        for i, val in enumerate(f):
+            with open(val) as json_file:
+                data = json.load(json_file)
+
+                adate = datetime.strptime(
+                    data['date'].split(None, 1)[0][:1 + 2:] + ' ' +
+                    data['date'].split(None, 1)[1].replace(',', ''), "%b %d %Y"
+                )
+                atime = \
+                    "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(
+                        ':',
+                        1)[0]
+                trends_label.append(str(time_converter(atime)).upper() + ' | ' + str(adate.date().strftime("%b")) + ' '
+                                    + str(adate.date().strftime("%d")))
+
+                tpass.append(data['status_list']['pass'])
+                tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
+                tskip.append(data['status_list']['skip'])
+
+                if i == 4: break
