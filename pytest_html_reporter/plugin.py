@@ -194,8 +194,8 @@ class HTMLReporter:
             base = self.report_path[0]
             path = os.path.join(base, self.report_path[1])
 
-            self.archive_data(base, self.report_path[1])
             os.makedirs(base, exist_ok=True)
+            self.archive_data(base, self.report_path[1])
 
             # generate json file
             self.generate_json_data(base)
@@ -204,7 +204,7 @@ class HTMLReporter:
             self.update_trends(base)
 
             # generate archive template
-            if len(glob.glob(base + '/archive/*.json')) > 0: self.update_archives_template(base)
+            self.update_archives_template(base)
 
             # generate suite highlights
             generate_suite_highlights()
@@ -557,7 +557,22 @@ class HTMLReporter:
             json.dump(self.json_data, outfile)
 
     def update_archives_template(self, base):
-        global _archive_count, archive_pass, archive_fail, archive_skip, archive_xpass, archive_xfail, archive_error, archives
+        global _archive_count
+
+        f = glob.glob(base + '/archive/*.json')
+        cf = glob.glob(base + '/output.json')
+        if len(f) > 0:
+            _archive_count = len(f) + 1
+            self.load_archive(cf, value='current')
+
+            f.sort(reverse=True)
+            self.load_archive(f, value='history')
+        else:
+            _archive_count = 1
+            self.load_archive(cf, value='current')
+
+    def load_archive(self, f, value):
+        global archive_pass, archive_fail, archive_skip, archive_xpass, archive_xfail, archive_error, archives
 
         def state(data):
             if data == 'fail':
@@ -565,9 +580,6 @@ class HTMLReporter:
             elif data == 'pass':
                 return 'check', '#98cc64'
 
-        f = glob.glob(base + '/archive' + '/*.json')
-        f.sort(reverse=True)
-        _archive_count = len(f)
         for i, val in enumerate(f):
             with open(val) as json_file:
                 data = json.load(json_file)
@@ -582,8 +594,13 @@ class HTMLReporter:
                     """
                 archive_row_text = archive_row_text.replace("__astate__", state(data['status'].lower())[0])
                 archive_row_text = archive_row_text.replace("__astate_color__", state(data['status'].lower())[1])
-                archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(len(f) - i))
-                archive_row_text = archive_row_text.replace("__acount__", str(len(f) - i))
+                if value == "current":
+                    archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(_archive_count))
+                    archive_row_text = archive_row_text.replace("__acount__", str(_archive_count))
+                else:
+                    archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(len(f) - i))
+                    archive_row_text = archive_row_text.replace("__acount__", str(len(f) - i))
+
                 adate = datetime.strptime(
                     data['date'].split(None, 1)[0][:1 + 2:] + ' ' +
                     data['date'].split(None, 1)[1].replace(',', ''), "%b %d %Y"
@@ -670,8 +687,14 @@ class HTMLReporter:
                         </div>
                     </div>
                 """
-                _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
-                _archive_body_text = _archive_body_text.replace("__acount__", str(len(f) - i))
+
+                if value == "current":
+                    _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
+                    _archive_body_text = _archive_body_text.replace("__acount__", str(_archive_count))
+                else:
+                    _archive_body_text = _archive_body_text.replace("__iloop__", str(i+1))
+                    _archive_body_text = _archive_body_text.replace("__acount__", str(len(f) - i))
+
                 _archive_body_text = _archive_body_text.replace("__total_tests__", data['total_tests'])
                 _archive_body_text = _archive_body_text.replace("__date__", data['date'].upper())
                 _archive_body_text = _archive_body_text.replace("__pass__", data['status_list']['pass'])
@@ -682,13 +705,15 @@ class HTMLReporter:
                 _archive_body_text = _archive_body_text.replace("__error__", data['status_list']['error'])
                 _archive_body_text = _archive_body_text.replace("__status__", data['status'].lower())
 
-                archives.setdefault(str(i), {})['pass'] = data['status_list']['pass']
-                archives.setdefault(str(i), {})['fail'] = data['status_list']['fail']
-                archives.setdefault(str(i), {})['skip'] = data['status_list']['skip']
-                archives.setdefault(str(i), {})['xpass'] = data['status_list']['xpass']
-                archives.setdefault(str(i), {})['xfail'] = data['status_list']['xfail']
-                archives.setdefault(str(i), {})['error'] = data['status_list']['error']
-                archives.setdefault(str(i), {})['total'] = data['total_tests']
+                index = i
+                if value != "current": index = i + 1
+                archives.setdefault(str(index), {})['pass'] = data['status_list']['pass']
+                archives.setdefault(str(index), {})['fail'] = data['status_list']['fail']
+                archives.setdefault(str(index), {})['skip'] = data['status_list']['skip']
+                archives.setdefault(str(index), {})['xpass'] = data['status_list']['xpass']
+                archives.setdefault(str(index), {})['xfail'] = data['status_list']['xfail']
+                archives.setdefault(str(index), {})['error'] = data['status_list']['error']
+                archives.setdefault(str(index), {})['total'] = data['total_tests']
 
                 global _archive_body_content
                 _archive_body_content += _archive_body_text
