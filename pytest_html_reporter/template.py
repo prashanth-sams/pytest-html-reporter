@@ -447,7 +447,7 @@ def html_template():
                           </div>
                           <div>
                               <div style="height: 350px; margin-left: 22%;margin-top: -50%;">
-                                <canvas id="myChart" style="margin-top: 16%; height: 261px; width: 514px; margin-left: 16%;"></canvas>
+                                <canvas id="myChart" style="margin-top: 16%; height: 64%; width: 100%; margin-left: 16%;"></canvas>
                               </div>
                               <div style="margin-top: -11%;">
                                   <div class="card__footer">
