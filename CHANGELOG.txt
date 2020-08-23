@@ -6,6 +6,7 @@ Change Log
 - Added report icon
 - Updated tooltips for trends
 - Added reusable CSS file
+- Fixed Test suite details
 
 0.0.1 (13/07/2020)
 -------------------

@@ -352,6 +352,9 @@ class HTMLReporter:
         suite_row_text = suite_row_text.replace("__sxfail__", str(_sxfail_tests))
         suite_row_text = suite_row_text.replace("__serror__", str(_serror_tests))
 
+        global _suite_metrics_content
+        _suite_metrics_content += suite_row_text
+
     def set_initial_trigger(self):
         global _initial_trigger
         _initial_trigger = False
