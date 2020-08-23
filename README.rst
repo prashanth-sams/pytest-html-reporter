@@ -2,6 +2,10 @@
 pytest-html-reporter
 =====================
 
+.. image:: https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg
+   :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
+   :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 .. image:: https://badge.fury.io/py/pytest-html-reporter.svg
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
