@@ -344,12 +344,6 @@ th, td, tr {
     margin-top: -4%;
 }
 
-.progress-bar.downloading {
-    background: -webkit-linear-gradient(left, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* Chrome10+,Safari5.1+ */
-    background: -ms-linear-gradient(left, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* IE10+ */
-    background: linear-gradient(to right, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* W3C */
-}
-
 .arrow {
     left: 50%;
     color: #403b3b;

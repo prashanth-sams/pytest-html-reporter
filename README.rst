@@ -69,7 +69,7 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 
 **Note:** If you fail to provide ``--html`` tag, it consider your project's home directory as the base
 
-.. image:: https://i.imgur.com/1wVmwoW.png
+.. image:: https://i.imgur.com/ZNYi5ct.png
     :align: center
     :alt: pytest-html-reporter-overview
 

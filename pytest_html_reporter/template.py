@@ -29,6 +29,13 @@ def html_template():
             <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
             <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
             <style> __css_styles__ </style>
+            <style>
+                .progress-bar.downloading {
+                    background: -webkit-linear-gradient(left, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* Chrome10+,Safari5.1+ */
+                    background: -ms-linear-gradient(left, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* IE10+ */
+                    background: linear-gradient(to right, #fc6665 __max_failure_percent__%,#50597b __max_failure_percent__%); /* W3C */
+                }
+            </style>
         </head>
     </html>
     <body>
@@ -723,7 +730,6 @@ def html_template():
                         display: false
                     },
                     responsive: true,
-                    steppedLine: true,
                     tooltips: {
                         mode: 'point',
                         intersect: false,
