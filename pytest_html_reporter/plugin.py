@@ -7,6 +7,7 @@ from os.path import isfile, join
 import json
 import glob
 from collections import Counter
+import codecs
 
 _total = _executed = 0
 _pass = _fail = 0
@@ -351,6 +352,9 @@ class HTMLReporter:
         suite_row_text = suite_row_text.replace("__sxfail__", str(_sxfail_tests))
         suite_row_text = suite_row_text.replace("__serror__", str(_serror_tests))
 
+        global _suite_metrics_content
+        _suite_metrics_content += suite_row_text
+
     def set_initial_trigger(self):
         global _initial_trigger
         _initial_trigger = False
@@ -505,6 +509,8 @@ class HTMLReporter:
         template_text = template_text.replace("__tpass__", str(tpass))
         template_text = template_text.replace("__tfail__", str(tfail))
         template_text = template_text.replace("__tskip__", str(tskip))
+        template_text = template_text.replace("__css_styles__",
+                                              str(codecs.open('pytest_html_reporter/style.css', encoding='utf-8').read()))
         return template_text
 
     def generate_json_data(self, base):
