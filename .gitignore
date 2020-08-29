@@ -11,4 +11,5 @@ tests/__pycache__/
 dist/
 xtests/
 ytests/
+ztests/
 report/

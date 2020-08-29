@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+0.1.6 (29/08/2020)
+-------------------
+- pytest-rerunfailures library support
+
 0.1.5 (23/08/2020)
 -------------------
 - Added report icon

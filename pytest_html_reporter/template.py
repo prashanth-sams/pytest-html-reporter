@@ -48,7 +48,7 @@ def html_template():
                 <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites</a>
             <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics</a>
-            <a class="tablink" href="#" onclick="openPage('archives', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
+            <a class="tablink" href="#" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives</a>
         </div>
         <div class="main col-md-9 ml-sm-auto col-lg-10 px-4" style="height: 100%;">
@@ -109,6 +109,10 @@ def html_template():
                                     <div class="card__footer-section">
                                       <div class="footer-section__data" style="color:#b13635">__error__</div>
                                       <div class="footer-section__label">error</div>
+                                    </div>
+                                    <div class="card__footer-section">
+                                      <div class="footer-section__data" style="color:#e6a800">__rerun__</div>
+                                      <div class="footer-section__label">rerun</div>
                                     </div>
                                   </div>
                               </div>
@@ -175,14 +179,10 @@ def html_template():
                         alignTotalCount();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
-                        createBarGraph('#sm', 0, 2, 5, 'suiteBarID', 'Failure ', 'Suite');
-                        createBarGraph('#tm', 1, 3, 10, 'testsBarID', 'Elapsed Time (s) ', 'Test');
                     };
                 </script>
             </div>
             <div class="tabcontent" id="suiteMetrics">
-                <h4><b><i class="fa fa-briefcase"></i> Test Suite</b></h4>
-                <hr/>
                 <table class="table row-border tablecard" id="sm">
                     <thead>
                         <tr>
@@ -193,6 +193,7 @@ def html_template():
                             <th>xPass</th>
                             <th>xFail</th>
                             <th>Error</th>
+                            <th>Rerun</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -204,8 +205,6 @@ def html_template():
                 </div>
             </div>
         <div class="tabcontent" id="testMetrics">
-            <h4><b><i class="fa fa-table"></i> Test Metrics</b></h4>
-            <hr/>
             <table class="table row-border tablecard" id="tm">
                 <thead>
                     <tr>
