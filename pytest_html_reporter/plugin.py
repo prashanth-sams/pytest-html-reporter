@@ -9,6 +9,9 @@ import json
 import glob
 from collections import Counter
 import codecs
+from PIL import Image
+from io import BytesIO
+import shutil
 
 _total = _executed = 0
 _pass = _fail = 0
@@ -75,6 +78,9 @@ _previous_test_name = ''
 _suite_error = 0
 _suite_fail = 0
 _pvalue = 0
+screen_base = ''
+screen_img = None
+_attach_screenshot_details = ''
 
 
 def pytest_addoption(parser):
@@ -90,6 +96,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     path = config.getoption("path")
+    clean_screenshots(path)
 
     config._html = HTMLReporter(path, config)
     config.pluginmanager.register(config._html)
@@ -155,8 +162,20 @@ def max_rerun():
         return None
 
 
-class HTMLReporter:
+def screenshot(data=None):
+    global screen_base, screen_img
 
+    screen_base = HTMLReporter.base_path
+    screen_img = Image.open(BytesIO(data))
+
+
+def clean_screenshots(path):
+    screenshot_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(path))) + '/pytest_screenshots'
+    if os.path.isdir(screenshot_dir):
+        shutil.rmtree(screenshot_dir)
+
+
+class HTMLReporter(object):
     def __init__(self, path, config):
         self.json_data = {'content': {'suites': {0: {'status': {}, 'tests': {0: {}}, }, }}}
         self.path = path
@@ -207,9 +226,11 @@ class HTMLReporter:
             path = '.' if '.html' in self.path.rsplit('/', 1)[0] else self.path.rsplit('/', 1)[0]
             if path == '': path = '.'
             logfile = os.path.expanduser(os.path.expandvars(path))
+            HTMLReporter.base_path = os.path.abspath(logfile)
             return os.path.abspath(logfile), self.path.split('/')[-1]
         else:
             logfile = os.path.expanduser(os.path.expandvars(self.path))
+            HTMLReporter.base_path = os.path.abspath(logfile)
             return os.path.abspath(logfile), 'pytest_html_report.html'
 
     @pytest.hookimpl(hookwrapper=True)
@@ -328,7 +349,10 @@ class HTMLReporter:
         if (self.rerun is not None) and (max_rerun() is not None):
             if (_test_status == 'FAIL') or (_test_status == 'ERROR'): _pvalue += 1
 
-            if (_pvalue == max_rerun()+1) or (_test_status == 'PASS'):
+            if (_pvalue == max_rerun() + 1) or (_test_status == 'PASS'):
+                if ((_test_status == 'FAIL') or (_test_status == 'ERROR')) and (
+                        screen_base != ''): self.generate_screenshot_data()
+
                 test_row_text = test_row_text.replace("__sname__", str(_suite_name))
                 test_row_text = test_row_text.replace("__name__", str(_test_name))
                 test_row_text = test_row_text.replace("__stat__", str(_test_status))
@@ -337,7 +361,8 @@ class HTMLReporter:
 
                 _test_metrics_content += test_row_text
                 _pvalue = 0
-            elif (self.rerun is not None) and ((_test_status == 'xFAIL') or (_test_status == 'xPASS') or (_test_status == 'SKIP')):
+            elif (self.rerun is not None) and (
+                    (_test_status == 'xFAIL') or (_test_status == 'xPASS') or (_test_status == 'SKIP')):
                 test_row_text = test_row_text.replace("__sname__", str(_suite_name))
                 test_row_text = test_row_text.replace("__name__", str(_test_name))
                 test_row_text = test_row_text.replace("__stat__", str(_test_status))
@@ -347,6 +372,9 @@ class HTMLReporter:
                 _test_metrics_content += test_row_text
 
         elif (self.rerun is None) or (max_rerun() is None):
+            if ((_test_status == 'FAIL') or (_test_status == 'ERROR')) and (
+                    screen_base != ''): self.generate_screenshot_data()
+
             test_row_text = test_row_text.replace("__sname__", str(_suite_name))
             test_row_text = test_row_text.replace("__name__", str(_test_name))
             test_row_text = test_row_text.replace("__stat__", str(_test_status))
@@ -364,15 +392,36 @@ class HTMLReporter:
             len(_scenario) - 1, {})['test_name'] = str(_test_name)
 
         if (self.rerun is not None) and (max_rerun() is not None):
-            self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
+            self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests',
+                                                                                                 {}).setdefault(
                 len(_scenario) - 1, {})['rerun'] = str(self.rerun)
         else:
             self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests',
                                                                                                  {}).setdefault(
                 len(_scenario) - 1, {})['rerun'] = '0'
 
+    def generate_screenshot_data(self):
+        os.makedirs(screen_base + '/pytest_screenshots', exist_ok=True)
+
+        _screenshot_name = round(time.time())
+        _screenshot_suite_name = _suite_name.split('/')[-1:][0].replace('.py', '')
+        _screenshot_test_name = _test_name
+        if len(_test_name) >= 19: _screenshot_test_name = _test_name[-17:]
+        _screenshot_error = _current_error
+
+        screen_img.save(
+            screen_base + '/pytest_screenshots/' + str(_screenshot_name) + '.png'
+        )
+
+        # attach screenshots
+        self.attach_screenshots(_screenshot_name, _screenshot_suite_name, _screenshot_test_name, _screenshot_error)
+        _screenshot_name = ''
+        _screenshot_suite_name = ''
+        _screenshot_test_name = ''
+        _screenshot_error = ''
+
     def append_suite_metrics_row(self, name):
-        global _spass_tests, _sfail_tests, _sskip_tests, _sxpass_tests, _sxfail_tests, _serror_tests, _srerun_tests,\
+        global _spass_tests, _sfail_tests, _sskip_tests, _sxpass_tests, _sxfail_tests, _serror_tests, _srerun_tests, \
             _error, _suite_error, _suite_fail
 
         self._test_names(_test_name, clear='yes')
@@ -602,6 +651,7 @@ class HTMLReporter:
         template_text = template_text.replace("__css_styles__",
                                               str(codecs.open('pytest_html_reporter/style.css',
                                                               encoding='utf-8').read()))
+        template_text = template_text.replace("__attach_screenshot_details__", str(_attach_screenshot_details))
         return template_text
 
     def generate_json_data(self, base):
@@ -881,3 +931,37 @@ class HTMLReporter:
                 tskip.append(data['status_list']['skip'])
 
                 if i == 4: break
+
+    def attach_screenshots(self, screen_name, test_suite, test_case, test_error):
+        global _attach_screenshot_details
+
+        _screenshot_details = """
+            <div class="img-hover col-md-6 col-xl-3 p-3">
+              <div>
+                <a class="video" href="__screenshot_base__/pytest_screenshots/__screen_name__.png" data-toggle="lightbox" style="background-image: url('__screenshot_base__/pytest_screenshots/__screen_name__.png');" data-fancybox="images" data-caption="SUITE: __ts__ :: SCENARIO: __tc__">
+                    <span class="video-hover-desc video-hover-small"> <span style="font-size:23px;display: block;margin-bottom: 15px;"> __tc__</span>
+                    <span>__te__</span> </span>
+                </a>
+                <p class="text-desc"><strong>__ts__</strong><br />
+                 __te__</p>
+              </div>
+            </div>
+            <div class="desc-video-none">
+              <div class="desc-video" id="Video-desc-01">
+                <h2>__tc__</h2>
+
+                <p><strong>__ts__</strong><br />
+                  __te__</p>
+              </div>
+            </div>
+        """
+
+        if len(test_case) == 17: test_case = '..' + test_case
+
+        _screenshot_details = _screenshot_details.replace("__screen_name__", str(screen_name))
+        _screenshot_details = _screenshot_details.replace("__ts__", str(test_suite))
+        _screenshot_details = _screenshot_details.replace("__tc__", str(test_case))
+        _screenshot_details = _screenshot_details.replace("__te__", str(test_error))
+        _screenshot_details = _screenshot_details.replace("__screenshot_base__", str(screen_base))
+
+        _attach_screenshot_details += _screenshot_details

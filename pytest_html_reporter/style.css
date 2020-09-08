@@ -74,7 +74,7 @@ th, td, tr {
     width: 100%;
     height: 100%;
     z-index: 9999;
-    background: url('https://i.ibb.co/cXnKsNR/Cube-1s-200px.gif') 50% 50% no-repeat rgb(249, 249, 249);
+    background: url('https://i.imgur.com/n3Tcoxz.gif') 50% 50% no-repeat rgb(249, 249, 249);
 }
 
 .card-wrapper {
@@ -370,4 +370,67 @@ th, td, tr {
     margin: 0px 0 45px;
     color: dimgrey;
     float: right;
+}
+
+.desc-video h2 {
+	 margin-top: 0px;
+}
+ .desc-video-none {
+	 display: none;
+}
+ .video {
+	 display: block;
+	 position: relative;
+	 padding-top: 60%;
+	 overflow: hidden;
+	 background-repeat: no-repeat;
+	 background-position: center center;
+	 background-size: cover;
+}
+ .video:hover .video-hover-desc {
+	 margin-top: -170px;
+	 height: 170px;
+}
+ .video:hover .video-hover-desc:before {
+	 background: linear-gradient(to top,rgba(35,72,133,0.82),rgba(35,72,133,0));
+	 transition: .3s;
+}
+ .img-hover .text-desc {
+	 display: none;
+}
+ .below-desc {
+	 display: block;
+	 height: 70px;
+	 width: 100%;
+	 padding: 10px;
+}
+ .video-hover-desc {
+	 display: block;
+	 padding: 10px 20px;
+	 background-color: #234885;
+	 background-color: rgba(35,72,133,0.82);
+	 height: 90px;
+	 margin-top: -90px;
+	 transition: .3s;
+	 color: white;
+	 text-shadow: none;
+}
+ .video-hover-desc:before {
+	 display: block;
+	 position: absolute;
+	 content: '';
+	 left: 0;
+	 right: 0;
+	 height: 116px;
+	 transition: .3s;
+	 margin-top: -126px;
+}
+ .video-hover-desc h2 {
+	 color: white;
+	 margin-top: 0px;
+	 height: 50px;
+}
+ .video-hover-desc.video-hover-small {
+	 height: 50px;
+	 margin-top: -50px;
 }

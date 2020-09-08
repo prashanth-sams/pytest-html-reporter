@@ -11,15 +11,10 @@ def html_template():
             <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" />
             <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" />
             <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
-            <script src="https://code.jquery.com/jquery-3.3.1.js" type="text/javascript"></script>
-            <!-- Bootstrap core Googleccharts -->
-            <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
-            <script src="https://www.gstatic.com/charts/loader.js" type="text/javascript"></script>
-            <script type="text/javascript">
-                google.charts.load('current', {
-                    packages: ['corechart']
-                });
-            </script>
+            <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+            <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+            
             <!-- Bootstrap core Datatable-->
             <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js" type="text/javascript"></script>
@@ -43,13 +38,20 @@ def html_template():
         <div class="sidenav">
             <a><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
             <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
-                <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard</a>
+                <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
+            </a>
             <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
-                <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites</a>
+                <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites
+            </a>
             <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
-                <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics</a>
+                <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics
+            </a>
             <a class="tablink" href="#" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
-                <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives</a>
+                <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives
+            </a>
+            <a class="tablink" href="#" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
+                <i class="fa fa-camera" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Screenshots
+            </a>
         </div>
         <div class="main col-md-9 ml-sm-auto col-lg-10 px-4" style="height: 100%;">
             <div class="tabcontent" id="dashboard">
@@ -177,6 +179,7 @@ def html_template():
                 <script>
                     window.onload = function() {
                         alignTotalCount();
+                        failureScreenshots();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
                     };
@@ -230,6 +233,22 @@ def html_template():
             
             <div data-spy="scroll" data-target="#list-example" data-offset="0" class="scrollspy-example">
                 __archive_body_content__
+            </div>
+        </div>
+        <div class="tabcontent" id="screenshots">
+            <div id="content">
+              <div class="fold-main">
+                <div class="container-fluid">
+                  <div id="main-content">
+                    <div class="bg-highlight p-4 mt-3">
+                      <div class="row">
+                        __attach_screenshot_details__
+                        <div class="below-desc"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
         </div>
         <script>
@@ -749,6 +768,17 @@ def html_template():
                     }
                 }
             });
+        </script>
+        <script>
+            function failureScreenshots() {
+                $('.video').hover(function (e) {
+                  var hoverText = $(this).siblings('.text-desc').html();
+                
+                  $(e.target).closest('.bg-highlight').find('.below-desc').first().html(hoverText);
+                }, function (e) {
+                  $(e.target).closest('.bg-highlight').find('.below-desc').first().html('');
+                });
+            }
         </script>
         
     </body>

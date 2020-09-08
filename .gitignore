@@ -9,7 +9,6 @@ pytest_html_reporter/__pycache__/
 pytest_html_reporter.egg-info/
 tests/__pycache__/
 dist/
-xtests/
-ytests/
-ztests/
+test_draft/
 report/
+__pycache__/
