@@ -35,6 +35,7 @@ Features
     - Suite Highlights
     - Test suite details
 - Archives / History
+- Screenshots on failure
 - Test Rerun support
 
 Installation
@@ -81,6 +82,10 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 |
 
 .. image:: https://i.imgur.com/ge6OCM6.gif
+
+|
+
+.. image:: https://i.imgur.com/b1UFgHc.gif
 
 
 Is there a demo available for this gem?
