@@ -13,3 +13,6 @@ test_draft/
 report/
 __pycache__/
 .coverage
+archive
+output.json
+pytest_html_report.html
