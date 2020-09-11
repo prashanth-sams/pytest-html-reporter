@@ -16,17 +16,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-        run: |
-          python3 -m pip3 install --upgrade pip3
-          pips install -r requirements.txt
+      run: |
+        python3 -m pip3 install --upgrade pip3
+        pips install -r requirements.txt
 
     - name: Running tests
-        run: pytest --cov=.
+      run: pytest --cov=.
 
     - name: Send report to Coveralls
       uses: AndreMiras/coveralls-python-action@v20200413
