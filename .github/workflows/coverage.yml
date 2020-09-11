@@ -1,8 +1,8 @@
-name: Coverage
+name: Code Coverage
 on: pull_request
 
 jobs:
-  test:
+  coveralls:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -20,14 +20,3 @@ jobs:
       uses: AndreMiras/coveralls-python-action@v20200413
       with:
         parallel: true
-
-  coveralls_finish:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-    - name: Coveralls Finished
-      uses: AndreMiras/coveralls-python-action@v20200413
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        parallel-finished: true
-        debug: true
