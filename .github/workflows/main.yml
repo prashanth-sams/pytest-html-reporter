@@ -1,5 +1,4 @@
-name: checklist
-on: push
+on: pull_request
 
 jobs:
   lint:
