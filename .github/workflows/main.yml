@@ -1,8 +1,43 @@
-on: push
-name: Lint Python
+name: push
+on: [push, pull_request]
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: cclauss/Find-Python-syntax-errors-action@master
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+        run: |
+          python3 -m pip3 install --upgrade pip3
+          pips install -r requirements.txt
+
+    - name: Running tests
+        run: pytest --cov=.
+
+    - name: Send report to Coveralls
+      uses: AndreMiras/coveralls-python-action@v20200413
+      with:
+        parallel: true
+
+  coveralls_finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: AndreMiras/coveralls-python-action@v20200413
+      with:
+        parallel-finished: true
