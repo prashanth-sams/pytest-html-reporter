@@ -1,13 +1,7 @@
-name: build
+name: coverage
 on: pull_request
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: cclauss/Find-Python-syntax-errors-action@master
-
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -26,8 +20,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Running coverage tests
-      run: pytest --cov=pytest_html_reporter/
+    - name: Generate coverage
+      run: py.test --cov ./pytest_html_reporter/ tests/
 
     - name: Send report to Coveralls
       uses: AndreMiras/coveralls-python-action@v20200413
