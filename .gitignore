@@ -12,3 +12,4 @@ dist/
 test_draft/
 report/
 __pycache__/
+.coverage
