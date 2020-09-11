@@ -1,5 +1,5 @@
-name: push
-on: [push, pull_request]
+name: checklist
+on: push
 
 jobs:
   lint:
@@ -22,8 +22,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python3 -m pip3 install --upgrade pip3
-        pips install -r requirements.txt
+        sudo apt install python3-pip
+        pip3 install -r requirements.txt
 
     - name: Running tests
       run: pytest --cov=.
