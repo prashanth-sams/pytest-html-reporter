@@ -20,6 +20,4 @@ jobs:
       uses: AndreMiras/coveralls-python-action@v20200413
       with:
         github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        parallel: true
-        parallel-finished: true
         debug: true
