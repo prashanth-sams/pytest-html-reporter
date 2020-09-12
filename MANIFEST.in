@@ -1,7 +1,7 @@
 include LICENSE
 include README.rst
 
-global-include *.css *.py
+global-include *.py
 prune tests/
 prune test_draft/
 prune venv/

@@ -648,9 +648,6 @@ class HTMLReporter(object):
         template_text = template_text.replace("__tpass__", str(tpass))
         template_text = template_text.replace("__tfail__", str(tfail))
         template_text = template_text.replace("__tskip__", str(tskip))
-        template_text = template_text.replace("__css_styles__",
-                                              str(codecs.open('pytest_html_reporter/style.css',
-                                                              encoding='utf-8').read()))
         template_text = template_text.replace("__attach_screenshot_details__", str(_attach_screenshot_details))
         return template_text
 
