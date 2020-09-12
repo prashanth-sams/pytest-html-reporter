@@ -2,7 +2,6 @@ import pytest
 
 
 class DB:
-
     def __init__(self):
         self.data = []
 
@@ -13,13 +12,12 @@ class DB:
         self.data.pop()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def db():
     return DB()
 
 
 class TestDB:
-
     @pytest.fixture(autouse=True)
     def transact(self, request, db):
         db.begin(request.function.__name__)
@@ -27,7 +25,7 @@ class TestDB:
         db.rollback()
 
     def test_dbx1(self, db):
-        assert db.data == ['test_dbx1']
+        assert db.data == ["test_dbx1"]
 
     def test_dbx2(self, db):
-        assert db.data == ['test_dbx2']
+        assert db.data == ["test_dbx2"]

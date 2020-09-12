@@ -14,10 +14,10 @@ jobs:
         pip install -r requirements.txt
 
     - name: Generate coverage
-      run: py.test --cov ./pytest_html_reporter/ xtests/
+      run: py.test --cov ./pytest_html_reporter/ unittests/
 
     - name: Send report to Coveralls
       uses: AndreMiras/coveralls-python-action@v20200413
-      with: j8t3RuNLxUBlpjIUMwSnmBfvvgevTcIoQ
+      with:
         github-token: false
         debug: true

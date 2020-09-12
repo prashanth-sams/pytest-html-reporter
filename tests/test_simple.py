@@ -3,8 +3,8 @@ def test_pass():
 
 
 def test_fail():
-    raise Exception('fail')
+    raise Exception("fail")
 
 
 def test_failx2():
-    raise Exception('fail')
+    raise Exception("fail")
