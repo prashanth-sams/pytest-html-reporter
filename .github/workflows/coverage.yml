@@ -17,7 +17,6 @@ jobs:
       run: py.test --cov ./pytest_html_reporter/ unittests/
 
     - name: Send report to Coveralls
-      uses: AndreMiras/coveralls-python-action@v20200413
+      uses: coverallsapp/github-action@master
       with:
         github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        debug: true
