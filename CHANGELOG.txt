@@ -3,7 +3,8 @@ Change Log
 
 0.1.9 (12/09/2020)
 -------------------
--
+- Optimize library size
+- Add unit tests
 
 0.1.8 (12/09/2020)
 -------------------
