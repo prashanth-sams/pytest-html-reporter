@@ -14,6 +14,9 @@ pytest-html-reporter
     :target: https://travis-ci.com/prashanth-sams/pytest-html-reporter
     :alt: Build Status
 
+.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=master
+    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=master
+
 .. image:: https://pepy.tech/badge/pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter
     :alt: Downloads
@@ -106,4 +109,4 @@ Is there a demo available for this gem?
 
 Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter::
 
-    $ pytest tests/
+    $ pytest tests/functional/
