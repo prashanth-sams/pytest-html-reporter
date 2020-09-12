@@ -18,6 +18,7 @@ jobs:
 
     - name: Send report to Coveralls
       uses: AndreMiras/coveralls-python-action@v20200413
-      with: j8t3RuNLxUBlpjIUMwSnmBfvvgevTcIoQ
-        github-token: false
+      with:
+        default: j8t3RuNLxUBlpjIUMwSnmBfvvgevTcIoQ
+        github-token: true
         debug: true
