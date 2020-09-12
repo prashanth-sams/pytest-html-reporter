@@ -1,4 +1,9 @@
 include LICENSE
-include README.md
+include README.rst
 
-global-include *.txt *.py
+global-include *.py
+prune tests/
+prune test_draft/
+prune venv/
+exclude CHANGELOG.txt
+exclude requirements.txt

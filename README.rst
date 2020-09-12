@@ -14,8 +14,8 @@ pytest-html-reporter
     :target: https://travis-ci.com/prashanth-sams/pytest-html-reporter
     :alt: Build Status
 
-.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=refactor
-    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=refactor
+.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=master
+    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=master
 
 .. image:: https://pepy.tech/badge/pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter
