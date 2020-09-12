@@ -1,7 +1,7 @@
 Change Log
 ==========
 
-0.1.8 (11/09/2020)
+0.1.8 (12/09/2020)
 -------------------
 - Replaced report path CLI
 - Coverage measurement
