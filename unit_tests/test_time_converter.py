@@ -1,4 +1,9 @@
-from pytest_html_reporter.time_converter import time_converter, clamp_to_twelve, is_midnight
+import sys
+import os
+
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../')
+from pytest_html_reporter.time_converter import *
 import datetime
 
 
