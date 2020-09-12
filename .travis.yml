@@ -1,7 +1,7 @@
 language: python
 python:
   - "3.8"
-install: pip install coveralls pytest-cov pytest
+install: pip install coveralls pytest-cov
 script: py.test --cov ./pytest_html_reporter/ unittests/
 after_success:
   - coveralls
