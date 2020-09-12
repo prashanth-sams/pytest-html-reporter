@@ -6,21 +6,21 @@ import pytest
 [pytest]
 usefixtures = cleandir
 """
+
+
 @pytest.fixture
 def cleandir():
-    print('before executing test')
+    print("before executing test")
     yield
-    print('after executing test')
+    print("after executing test")
 
 
-@pytest.mark.usefixtures('cleandir')
+@pytest.mark.usefixtures("cleandir")
 class TestClass:
-
     def test_fixture_pass(self):
-        print('executing tests x1')
+        print("executing tests x1")
         pass
 
-
     def test_fixture_fail(self):
-        print('executing tests x2')
+        print("executing tests x2")
         pass

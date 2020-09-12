@@ -86,7 +86,7 @@ _attach_screenshot_details = ''
 def pytest_addoption(parser):
     group = parser.getgroup("report generator")
     group.addoption(
-        "--html",
+        "--html-report",
         action="store",
         dest="path",
         default=".",

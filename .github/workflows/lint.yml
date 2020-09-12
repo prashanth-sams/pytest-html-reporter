@@ -1,5 +1,5 @@
 on: push
-name: Lint Python
+name: Python Lint
 jobs:
   lint:
     runs-on: ubuntu-latest
