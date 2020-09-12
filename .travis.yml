@@ -2,6 +2,6 @@ language: python
 python:
   - "3.8"
 install: pip install pytest pytest-cov coveralls Pillow
-script: py.test --cov ./pytest_html_reporter/ unit_tests/
+script: py.test --cov ./pytest_html_reporter/ tests/unit/
 after_success:
   - coveralls

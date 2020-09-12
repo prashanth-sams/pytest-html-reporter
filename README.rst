@@ -106,4 +106,4 @@ Is there a demo available for this gem?
 
 Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter::
 
-    $ pytest tests/
+    $ pytest tests/functional/
