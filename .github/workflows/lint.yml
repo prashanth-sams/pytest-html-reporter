@@ -1,5 +1,5 @@
 on: push
-name: Syntax Checker
+name: Python Lint
 jobs:
   lint:
     runs-on: ubuntu-latest
