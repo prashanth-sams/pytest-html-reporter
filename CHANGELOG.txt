@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+0.2.2 (13/09/2020)
+-------------------
+- Codecov
+- Added unit tests for plugin
+- UI Alignment fixes
+
 0.2.1 (12/09/2020)
 -------------------
 - Hot Fix css issue
