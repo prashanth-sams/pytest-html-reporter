@@ -88,24 +88,12 @@ Import ``attach`` from the library and call it with the selenium command as give
     ...
     attach(data=self.driver.get_screenshot_as_png())
 
-Simulation
-------------
 
-.. image:: https://i.imgur.com/yteLaRL.png
-    :align: center
-    :alt: pytest-html-reporter-overview
-
-|
-
-.. image:: https://i.imgur.com/ge6OCM6.gif
-
-|
-
-.. image:: https://i.imgur.com/b1UFgHc.gif
+.. image:: https://i.imgur.com/1HSYkdC.gif
 
 
 Is there a demo available for this gem?
-------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter::
 
