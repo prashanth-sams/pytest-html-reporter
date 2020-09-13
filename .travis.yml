@@ -5,3 +5,4 @@ install: pip install pytest pytest-cov coveralls Pillow
 script: py.test --cov ./pytest_html_reporter/ tests/unit/
 after_success:
   - coveralls
+  - bash <(curl -s https://codecov.io/bash)
