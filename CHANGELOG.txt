@@ -5,6 +5,7 @@ Change Log
 -------------------
 - Codecov
 - Added unit tests for plugin
+- UI Alignment fixes
 
 0.2.1 (12/09/2020)
 -------------------
