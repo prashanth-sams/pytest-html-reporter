@@ -31,7 +31,7 @@ def html_template():
                 
                 .sidenav {
                     height: 100%;
-                    width: 240px;
+                    width: 220px;
                     position: fixed;
                     z-index: 1;
                     top: 0;
@@ -79,7 +79,7 @@ def html_template():
                 
                 .tablecard {
                     background-color: white;
-                    font-size: 15px;
+                    font-size: 14px;
                 }
                 tr {
                     height: 40px;
@@ -229,7 +229,7 @@ def html_template():
                 .footer-section__label {
                   text-transform: uppercase;
                   color: slategrey;
-                  font-size: 1.0rem;
+                  font-size: 9pt;
                 }
                 
                 .list-group-item {
@@ -249,7 +249,7 @@ def html_template():
                 .archive-body {
                     height: 100%;
                     background-color: #ffff;
-                    max-width: 85%;
+                    max-width: 80%;
                     border-radius: 4px;
                     box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
                     margin-bottom: 0.8%;
@@ -473,7 +473,7 @@ def html_template():
     <body>
         <div class="loader"></div>
         <div class="sidenav">
-            <a><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
+            <a onclick="openPage('dashboard', this, '', '', '')"><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
             <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
             </a>
@@ -520,7 +520,7 @@ def html_template():
                               </div>
                           </div>
                           <div>
-                              <div style="height: 350px; margin-left: 22%;margin-top: -50%;">
+                              <div style="height: 320px; margin-left: 22%;margin-top: -50%;">
                                 <canvas id="myChart" style="margin-top: 16%; height: 64%; width: 100%; margin-left: 16%;"></canvas>
                               </div>
                               <div style="margin-top: -11%;">
@@ -663,11 +663,11 @@ def html_template():
                 <div class="col-md-12" style="height:25px;width:auto;"></div>
             </div>
         </div>
-        <div class="tabcontent" id="archives">
+        <div class="tabcontent" id="archives" class="height:100%;width:100%">
             <div id="list-example" class="list-group archive-build-row">
-              __archive_status__
+                __archive_status__
             </div>
-            
+        
             <div data-spy="scroll" data-target="#list-example" data-offset="0" class="scrollspy-example">
                 __archive_body_content__
             </div>
