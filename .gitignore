@@ -16,3 +16,5 @@ __pycache__/
 archive
 output.json
 pytest_html_report.html
+pytest_screenshots
+coverage.xml
