@@ -663,7 +663,7 @@ def html_template():
                 <div class="col-md-12" style="height:25px;width:auto;"></div>
             </div>
         </div>
-        <div class="tabcontent" id="archives" class="height:100%;width:100%">
+        <div class="tabcontent" id="archives">
             <div id="list-example" class="list-group archive-build-row">
                 __archive_status__
             </div>
