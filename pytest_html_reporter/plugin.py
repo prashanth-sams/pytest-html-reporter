@@ -307,16 +307,21 @@ class HTMLReporter(object):
                     self.increment_fail()
                     self.update_test_status("FAIL")
                     if rep.longrepr:
+                        longerr = ""
                         for line in rep.longreprtext.splitlines():
                             exception = line.startswith("E   ")
                             if exception:
-                                self.update_test_error(line.replace("E    ", ""))
+                                # self.update_test_error(line.replace("E    ", ""))
+                                longerr += line + "\n"
+                        self.update_test_error(longerr)
             else:
                 self.increment_error()
                 self.update_test_status("ERROR")
                 if rep.longrepr:
+                    longerr = ""
                     for line in rep.longreprtext.splitlines():
-                        self.update_test_error(line)
+                        longerr += line + "\n"
+                    self.update_test_error(longerr)
 
         if rep.skipped:
             if hasattr(rep, "wasxfail"):
