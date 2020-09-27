@@ -311,9 +311,8 @@ class HTMLReporter(object):
                         for line in rep.longreprtext.splitlines():
                             exception = line.startswith("E   ")
                             if exception:
-                                # self.update_test_error(line.replace("E    ", ""))
                                 longerr += line + "\n"
-                        self.update_test_error(longerr)
+                        self.update_test_error(longerr.replace("E    ", ""))
             else:
                 self.increment_error()
                 self.update_test_status("ERROR")
