@@ -331,7 +331,7 @@ def html_template():
                 
                 .archive-build-row {
                     right: 0.5%;
-                    width: 200px;
+                    width: 220px;
                     top: 0;
                     bottom: 0;
                     position: fixed;
@@ -472,20 +472,22 @@ def html_template():
     <body>
         <div class="loader"></div>
         <div class="sidenav">
-            <a onclick="openPage('dashboard', this, '', '', '')"><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
-            <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
+            <a onclick="openPage('dashboard', this, '', '', '')" href="#dashboard">
+                <img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" />
+            </a>
+            <a class="tablink" href="#dashboard" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
             </a>
-            <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
+            <a class="tablink" href="#suites" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
                 <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites
             </a>
-            <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
+            <a class="tablink" href="#test-metrics" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics
             </a>
-            <a class="tablink" href="#" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
+            <a class="tablink" href="#archives" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives
             </a>
-            <a class="tablink" href="#" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
+            <a class="tablink" href="#screenshots" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-camera" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Screenshots
             </a>
         </div>
