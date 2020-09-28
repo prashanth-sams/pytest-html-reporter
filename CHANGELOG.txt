@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+0.2.3 (28/09/2020)
+-------------------
+- Fixed UI bugs in dashboard and Archives layout
+- Added error details on failed test cases
+
 0.2.2 (13/09/2020)
 -------------------
 - Codecov
