@@ -247,7 +247,6 @@ def html_template():
                 }
                 
                 .archive-body {
-                    height: 100%;
                     background-color: #ffff;
                     max-width: 80%;
                     border-radius: 4px;
