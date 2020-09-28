@@ -217,7 +217,7 @@ def html_template():
                 }
                 
                 .footer-section__data {
-                  font-size: 2.2rem;
+                  font-size: 2.6rem;
                   font-weight: 900;
                 }
                 
@@ -229,7 +229,7 @@ def html_template():
                 .footer-section__label {
                   text-transform: uppercase;
                   color: slategrey;
-                  font-size: 9pt;
+                  font-size: 10pt;
                 }
                 
                 .list-group-item {
@@ -520,9 +520,11 @@ def html_template():
                               </div>
                           </div>
                           <div>
-                              <div style="height: 320px; margin-left: 22%;margin-top: -50%;">
-                                <canvas id="myChart" style="margin-top: 16%; height: 64%; width: 100%; margin-left: 16%;"></canvas>
+                              <div style="margin-left: 50%;margin-top: -43%; max-height: 43%;">
+                                <canvas id="myChart" style="margin-top: 16%; height: 41%; margin-left: 16%; max-width: 75%;"></canvas>
                               </div>
+                          </div>
+                          <div style="margin-top: 23%;position: static;">
                               <div style="margin-top: -11%;">
                                   <div class="card__footer">
                                     <div class="card__footer-section">
@@ -554,7 +556,7 @@ def html_template():
                                       <div class="footer-section__label">rerun</div>
                                     </div>
                                   </div>
-                              </div>
+                              </div>                          
                           </div>
                         </div>
                       </div>
