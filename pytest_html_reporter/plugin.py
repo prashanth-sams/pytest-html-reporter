@@ -327,16 +327,20 @@ class HTMLReporter(object):
                 self.increment_xfail()
                 self.update_test_status("xFAIL")
                 if rep.longrepr:
+                    longerr = ""
                     for line in rep.longreprtext.splitlines():
                         exception = line.startswith("E   ")
                         if exception:
-                            self.update_test_error(line.replace("E    ", ""))
+                            longerr += line + "\n"
+                    self.update_test_error(longerr.replace("E    ", ""))
             else:
                 self.increment_skip()
                 self.update_test_status("SKIP")
                 if rep.longrepr:
+                    longerr = ""
                     for line in rep.longreprtext.splitlines():
-                        self.update_test_error(line)
+                        longerr += line + "\n"
+                    self.update_test_error(longerr)
 
     def append_test_metrics_row(self):
         global _test_metrics_content, _pvalue
