@@ -7,22 +7,26 @@ def html_template():
             <title>Pytest HTML Reporter</title>
             <meta charset="utf-8" />
             <meta content="width=device-width, initial-scale=1" name="viewport" />
-            <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
-            <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+            <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" crossorigin="anonymous"/>
+            <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" crossorigin="anonymous" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous"/>
             <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" crossorigin="anonymous"/>
             <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
             
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+
             <!-- Bootstrap core Datatable-->
-            <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript"></script>
+            <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript" crossorigin="anonymous"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js" type="text/javascript"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.print.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
             <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
+
             <style>
                 body {
                     font-family: -apple-system, sans-serif;
@@ -473,7 +477,7 @@ def html_template():
         <div class="loader"></div>
         <div class="sidenav">
             <a onclick="openPage('dashboard', this, '', '', '')" href="#dashboard">
-                <img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" />
+                <img id="wrimagecard" class="wrimagecard" src="__custom_logo__" style="max-width:98%;" />
             </a>
             <a class="tablink" href="#dashboard" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
@@ -498,9 +502,9 @@ def html_template():
                     <div class="col-md-6 card" style="max-width: 49%;">
                       <div style="width:100%;height:500px;text-align: center;">
                         <div class="card__content">
-                          <div style="margin-bottom: -6%; margin-left: 40%;">
+                          <div style="margin-bottom: -4%; margin-left: 40%;">
                             <span style="color: darkgray; font-size: 17px;">
-                                <i class="fa fa-clock-o" style="color:currentcolor; margin: 2% 2% 0% 29%; font-size: 25px;"></i>
+                                <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
                                     Time taken __execution_time__ secs
                             </span>
                           </div>
@@ -564,6 +568,9 @@ def html_template():
                     </div>
                     
                     <div class="col-md-6 card" style="margin-left: 0.75%;">
+                      <a href="#" id="download" download="pytest-html-reporter.pdf" target="_self">
+                        <i class="fa fa-download" style="color:dimgrey; font-size: 1.75rem; padding-top: 2%; float: right; position: fixed; right: 50px;"></i>
+                      </a>
                       <div style="text-align: center;">
                         <div>
                             <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
@@ -580,7 +587,8 @@ def html_template():
                 <div class="row rowcard" style="padding-top: 0.8%;">
                     <div class="col-md-8 card border-right">
                         <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
-                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><i class="fa fa-area-chart" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>Test Suite
+                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 5%;">
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="1.34em" height="1em" style="margin-top: -1%; margin-right: 2%; padding-left: 0.9%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 2048 1536"><path d="M2048 1408v128H0V0h128v1408h1920zM1664 384l256 896H256V704l448-576l576 576z" fill="#a9a9a9"/></svg>Test Suite
                                 __test_suite_length__
                             </div>
                         </div>
@@ -1220,6 +1228,16 @@ def html_template():
                   $(e.target).closest('.bg-highlight').find('.below-desc').first().html('');
                 });
             }
+            
+            $('#download').click(function () {
+                domtoimage.toPng(document.getElementById('dashboard'))
+                .then(function (blob) {
+                    var pdf = new jsPDF('l', 'pt', [$('#dashboard').width()+20, $('#dashboard').height()]);
+                    pdf.addImage(blob, 'PNG', 10, 10, $('#dashboard').width(), $('#dashboard').height());
+                    pdf.save("pytest_html_reporter.pdf");
+                });
+            });
+
         </script>
         
     </body>
