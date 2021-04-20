@@ -46,7 +46,7 @@ Installation
 
 .. code-block:: console
 
-    $ pip install pytest-html-reporter
+    $ pip3 install pytest-html-reporter
 
 
 Usage
