@@ -8,7 +8,6 @@ from os.path import isfile, join
 import json
 import glob
 from collections import Counter
-import codecs
 from PIL import Image
 from io import BytesIO
 import shutil
@@ -184,8 +183,11 @@ class HTMLReporter(object):
         self.rerun = 0 if has_rerun else None
 
     def pytest_runtest_teardown(self, item, nextitem):
-        global _test_name
+        global _test_name, _duration
         _test_name = item.name
+
+        _test_end_time = time.time()
+        _duration = _test_end_time - _start_execution_time
 
         if (self.rerun is not None) and (max_rerun() is not None): self.previous_test_name(_test_name)
         self._test_names(_test_name)
@@ -203,7 +205,7 @@ class HTMLReporter(object):
 
     def pytest_runtest_setup(item):
         global _start_execution_time
-        _start_execution_time = round(time.time())
+        _start_execution_time = time.time()
 
     def pytest_sessionfinish(self, session):
         if _suite_name is not None: self.append_suite_metrics_row(_suite_name)
@@ -343,7 +345,7 @@ class HTMLReporter(object):
                     self.update_test_error(longerr)
 
     def append_test_metrics_row(self):
-        global _test_metrics_content, _pvalue
+        global _test_metrics_content, _pvalue, _duration
 
         test_row_text = """
             <tr>
