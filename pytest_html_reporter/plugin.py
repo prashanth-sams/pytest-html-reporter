@@ -242,6 +242,11 @@ class HTMLReporter(object):
         global _execution_time
         _execution_time = time.time() - terminalreporter._sessionstarttime
 
+        if _execution_time < 60:
+            _execution_time = str(round(_execution_time, 2)) + " secs"
+        else:
+            _execution_time = str(time.strftime("%H:%M:%S", time.gmtime(round(_execution_time)))) + " Hrs"
+
         global _total
         _total = _pass + _fail + _xpass + _xfail + _skip + _error
 
@@ -663,7 +668,7 @@ class HTMLReporter(object):
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
-        template_text = template_text.replace("__execution_time__", str(round(_execution_time, 2)))
+        template_text = template_text.replace("__execution_time__", str(_execution_time))
         # template_text = template_text.replace("__executed_by__", str(platform.uname()[1]))
         # template_text = template_text.replace("__os_name__", str(platform.uname()[0]))
         # template_text = template_text.replace("__python_version__", str(sys.version.split(' ')[0]))

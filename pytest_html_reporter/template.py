@@ -514,10 +514,10 @@ def html_template():
                     <div class="col-md-6 card" style="max-width: 49%;">
                       <div style="width:100%;height:500px;text-align: center;">
                         <div class="card__content">
-                          <div style="margin-bottom: -4%; margin-left: 40%;">
+                          <div style="margin-bottom: -4%; margin-left: 30%;">
                             <span style="color: darkgray; font-size: 17px;">
                                 <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
-                                    Time taken __execution_time__ secs
+                                    Time taken __execution_time__
                             </span>
                           </div>
                           <div>
@@ -538,7 +538,7 @@ def html_template():
                           </div>
                           <div>
                               <div style="margin-left: 50%;margin-top: -43%; max-height: 43%;">
-                                <canvas id="myChart" style="margin-top: 16%; height: 41%; margin-left: 16%; max-width: 75%;"></canvas>
+                                <canvas id="myChart" style="margin-top: 16%; height: 38%; margin-left: 16%; max-width: 75%;"></canvas>
                               </div>
                           </div>
                           <div style="margin-top: 23%;position: static;">
