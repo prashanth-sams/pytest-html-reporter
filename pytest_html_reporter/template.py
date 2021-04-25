@@ -17,6 +17,7 @@ def html_template():
             
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
 
             <!-- Bootstrap core Datatable-->
             <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript" crossorigin="anonymous"></script>
@@ -462,6 +463,17 @@ def html_template():
                  .video-hover-desc.video-hover-small {
                      height: 50px;
                      margin-top: -50px;
+                }
+                .modal p {
+                    word-wrap: break-word;
+                }
+                
+                .modal-footer {
+                    border-top: 0px solid #e9ecef;
+                }
+                .btn-primary {
+                    background-color: #3571a3;
+                    border-color: #3571a3;
                 }
             </style>
             <style>
