@@ -92,7 +92,9 @@ Import ``attach`` from the library and call it with the selenium command as give
     ...
     attach(data=self.driver.get_screenshot_as_png())
 
-[![Attach screenshot snippet](https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b)
+.. image:: https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white
+   :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b
+
 
 .. image:: https://i.imgur.com/1HSYkdC.gif
 
