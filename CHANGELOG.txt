@@ -1,6 +1,32 @@
 Change Log
 ==========
 
+0.2.8 (11/02/2022)
+-------------------
+- Fixed all the code related inconsistencies
+
+0.2.7 (11/02/2022)
+-------------------
+- Added custom title on Dashboard
+
+0.2.6 (25/04/2021)
+-------------------
+- Dashboard Execution Time in H:M:S Hour:Minute:Second format
+- Shortened long error text to open in a dialog box
+
+0.2.5 (20/04/2021)
+-------------------
+- Fixed incorrect execution time in the test metrics
+
+0.2.4 (19/04/2021)
+-------------------
+- Added support to download the current report (dashboard) in pdf format
+
+0.2.3 (28/09/2020)
+-------------------
+- Fixed UI bugs in dashboard and Archives layout
+- Added error details on failed test cases
+
 0.2.2 (13/09/2020)
 -------------------
 - Codecov

@@ -7,22 +7,27 @@ def html_template():
             <title>Pytest HTML Reporter</title>
             <meta charset="utf-8" />
             <meta content="width=device-width, initial-scale=1" name="viewport" />
-            <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" />
-            <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+            <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" crossorigin="anonymous"/>
+            <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" crossorigin="anonymous" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous"/>
             <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" crossorigin="anonymous"/>
             <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
             
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+
             <!-- Bootstrap core Datatable-->
-            <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript"></script>
+            <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript" crossorigin="anonymous"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js" type="text/javascript"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.print.min.js" type="text/javascript"></script>
             <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
             <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
+
             <style>
                 body {
                     font-family: -apple-system, sans-serif;
@@ -217,7 +222,7 @@ def html_template():
                 }
                 
                 .footer-section__data {
-                  font-size: 2.2rem;
+                  font-size: 2.6rem;
                   font-weight: 900;
                 }
                 
@@ -229,7 +234,7 @@ def html_template():
                 .footer-section__label {
                   text-transform: uppercase;
                   color: slategrey;
-                  font-size: 9pt;
+                  font-size: 10pt;
                 }
                 
                 .list-group-item {
@@ -247,7 +252,6 @@ def html_template():
                 }
                 
                 .archive-body {
-                    height: 100%;
                     background-color: #ffff;
                     max-width: 80%;
                     border-radius: 4px;
@@ -332,7 +336,7 @@ def html_template():
                 
                 .archive-build-row {
                     right: 0.5%;
-                    width: 200px;
+                    width: 220px;
                     top: 0;
                     bottom: 0;
                     position: fixed;
@@ -460,6 +464,17 @@ def html_template():
                      height: 50px;
                      margin-top: -50px;
                 }
+                .modal p {
+                    word-wrap: break-word;
+                }
+                
+                .modal-footer {
+                    border-top: 0px solid #e9ecef;
+                }
+                .btn-primary {
+                    background-color: #3571a3;
+                    border-color: #3571a3;
+                }
             </style>
             <style>
                 .progress-bar.downloading {
@@ -473,20 +488,22 @@ def html_template():
     <body>
         <div class="loader"></div>
         <div class="sidenav">
-            <a onclick="openPage('dashboard', this, '', '', '')"><img class="wrimagecard" src="__custom_logo__" style="max-width:98%;" /></a>
-            <a class="tablink" href="#" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
+            <a onclick="openPage('dashboard', this, '', '', '')" href="#dashboard">
+                <img id="wrimagecard" class="wrimagecard" src="__custom_logo__" style="max-width:98%;" />
+            </a>
+            <a class="tablink" href="#dashboard" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
             </a>
-            <a class="tablink" href="#" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
+            <a class="tablink" href="#suites" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
                 <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites
             </a>
-            <a class="tablink" href="#" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
+            <a class="tablink" href="#test-metrics" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics
             </a>
-            <a class="tablink" href="#" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
+            <a class="tablink" href="#archives" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives
             </a>
-            <a class="tablink" href="#" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
+            <a class="tablink" href="#screenshots" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-camera" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Screenshots
             </a>
         </div>
@@ -497,10 +514,10 @@ def html_template():
                     <div class="col-md-6 card" style="max-width: 49%;">
                       <div style="width:100%;height:500px;text-align: center;">
                         <div class="card__content">
-                          <div style="margin-bottom: -6%; margin-left: 40%;">
+                          <div style="margin-bottom: -4%; margin-left: 30%;">
                             <span style="color: darkgray; font-size: 17px;">
-                                <i class="fa fa-clock-o" style="color:currentcolor; margin: 2% 2% 0% 29%; font-size: 25px;"></i>
-                                    Time taken __execution_time__ secs
+                                <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
+                                    Time taken __execution_time__
                             </span>
                           </div>
                           <div>
@@ -520,9 +537,11 @@ def html_template():
                               </div>
                           </div>
                           <div>
-                              <div style="height: 320px; margin-left: 22%;margin-top: -50%;">
-                                <canvas id="myChart" style="margin-top: 16%; height: 64%; width: 100%; margin-left: 16%;"></canvas>
+                              <div style="margin-left: 50%;margin-top: -43%; max-height: 43%;">
+                                <canvas id="myChart" style="margin-top: 16%; height: 38%; margin-left: 16%; max-width: 75%;"></canvas>
                               </div>
+                          </div>
+                          <div style="margin-top: 23%;position: static;">
                               <div style="margin-top: -11%;">
                                   <div class="card__footer">
                                     <div class="card__footer-section">
@@ -554,20 +573,23 @@ def html_template():
                                       <div class="footer-section__label">rerun</div>
                                     </div>
                                   </div>
-                              </div>
+                              </div>                          
                           </div>
                         </div>
                       </div>
                     </div>
                     
                     <div class="col-md-6 card" style="margin-left: 0.75%;">
-                      <div style="width:100%;height:500px;text-align: center;">
-                        <div class="card__content">
+                      <a href="#" id="download" download="pytest-html-reporter.pdf" target="_self">
+                        <i class="fa fa-download" style="color:dimgrey; font-size: 1.75rem; padding-top: 2%; float: right; position: fixed; right: 50px;"></i>
+                      </a>
+                      <div style="text-align: center;">
+                        <div>
                             <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
                                 <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><svg height="32pt" viewBox="0 0 512 512.00007" width="25pt" xmlns="http://www.w3.org/2000/svg"><path style="fill: currentColor;" d="m509.785156 15.433594c-.773437-6.972656-6.277344-12.480469-13.253906-13.253906-118.703125-13.183594-219.890625 34.300781-302.429688 119.265624-23.621093 24.316407-44.109374 50.054688-61.597656 74.894532-29.597656-1.203125-62.414062 12.1875-85.679687 35.453125l-42.429688 42.429687c-4.800781 4.800782-5.777343 12.230469-2.382812 18.109375 3.394531 5.878907 10.3125 8.742188 16.875 6.988281 9.84375-2.644531 25.839843-5.71875 41.207031-6.433593 5.617188-.261719 10.285156-.179688 14.164062.117187-9.363281 18.007813-16.539062 33.09375-18.917968 36.871094-3.726563 5.929688-2.863282 13.644531 2.089844 18.597656l24.550781 24.550782c-35.730469 48.730468-36.320313 73.6875-36.195313 77.222656.261719 7.488281 6.101563 14.503906 15.773438 14.503906 8.375 0 32.394531-3.554688 76.121094-36.027344l25.824218 25.824219c4.988282 4.988281 12.78125 5.824219 18.71875 2.011719 4.039063-2.597656 18.238282-9.472656 35.265625-18.371094.28125 12.691406-1.441406 31.328125-5.179687 56.589844-2.125 14.328125 15.292968 22.953125 25.445312 12.804687l42.429688-42.429687c21.878906-21.878906 34.566406-54.375 33.628906-84.859375 26.167969-18.285157 53.390625-39.855469 78.808594-64.78125 84.15625-82.527344 130.179687-182.949219 117.164062-300.078125zm-28.695312 15.4375c2.394531 32.34375-.160156 63.695312-7.601563 94.035156-18.480469-5.820312-36.546875-17.253906-52.863281-33.566406-16.375-16.378906-27.832031-34.519532-33.628906-53.066406 30.328125-7.332032 61.699218-9.816407 94.09375-7.402344zm-422.953125 232.039062 9.898437-9.902344c11.972656-11.96875 27.542969-20.589843 43.027344-24.464843-8.089844 12.839843-15.300781 25.101562-21.660156 36.417969-9.824219-2.167969-20.746094-2.570313-31.265625-2.050782zm28.386719 72.230469c3.246093-6.40625 7.171874-14.4375 14.378906-28.054687l19.746094 19.75c-7.347657 7.882812-13.980469 15.371093-19.957032 22.46875zm73.355468-5.738281c10.929688-10.925782 21.410156-12.921875 34.429688-13.203125-.285156 12.6875-2.320313 23.523437-13.214844 34.417969-46.570312 46.570312-78.492188 67.367187-97.582031 76.648437 9.417969-19.457031 30.269531-51.765625 76.367187-97.863281zm16.871094 95.964844-15.46875-15.472657c7.0625-6 14.527344-12.652343 22.402344-20.027343l21.019531 21.019531c-13.820313 7.378906-19.585937 10.15625-27.953125 14.480469zm82.214844 18.570312-12.007813 12.011719c.972657-14.550781.636719-25.152344-.738281-33.332031 11.03125-6.210938 23.011719-13.253907 35.566406-21.132813-3.578125 15.859375-11.621094 31.257813-22.820312 42.453125zm-26.953125-48.167969-26.894531-26.898437c19.902343-21.898438 19.160156-43 19.160156-67.652344 0-8.285156-6.714844-15-15-15-23.03125 0-45.195313-1.234375-67.652344 19.164062l-25.683594-25.683593c70.132813-122.980469 151.199219-200.839844 242.28125-232.902344 7.210938 23.332031 21.246094 45.8125 41.191406 65.757813 19.851563 19.855468 42.226563 33.855468 65.457032 41.09375-32.25 90.582031-110.089844 171.597656-232.859375 242.121093zm0 0"/><path style="fill: currentColor;" d="m378.199219 133.765625c-29.246094-29.242187-76.832031-29.242187-106.074219 0-29.242188 29.246094-29.242188 76.832031 0 106.074219 29.242188 29.242187 76.828125 29.246094 106.074219 0 29.242187-29.242188 29.242187-76.828125 0-106.074219zm-21.214844 84.859375c-17.546875 17.546875-46.101563 17.546875-63.644531 0-17.546875-17.546875-17.546875-46.097656 0-63.644531 17.542968-17.542969 46.09375-17.546875 63.644531 0 17.546875 17.546875 17.546875 46.097656 0 63.644531zm0 0"/></svg>&nbsp;&nbsp;Trends
                                 </div>
                             </div>
-                            <canvas id="trends" width="100%" height="55%" style="margin-top: 10%;"></canvas>
+                            <canvas id="trends" width="100%" height="360px" style="margin-top: 10%; max-height: 375px; padding-bottom: 4%;"></canvas>
                         </div>
                       </div>
                     </div>
@@ -577,7 +599,8 @@ def html_template():
                 <div class="row rowcard" style="padding-top: 0.8%;">
                     <div class="col-md-8 card border-right">
                         <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
-                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><i class="fa fa-area-chart" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>Test Suite
+                            <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 5%;">
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="1.34em" height="1em" style="margin-top: -1%; margin-right: 2%; padding-left: 0.9%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 2048 1536"><path d="M2048 1408v128H0V0h128v1408h1920zM1664 384l256 896H256V704l448-576l576 576z" fill="#a9a9a9"/></svg>Test Suite
                                 __test_suite_length__
                             </div>
                         </div>
@@ -1185,6 +1208,7 @@ def html_template():
                         display: false
                     },
                     responsive: true,
+                    maintainAspectRatio: false,
                     tooltips: {
                         mode: 'point',
                         intersect: false,
@@ -1216,6 +1240,16 @@ def html_template():
                   $(e.target).closest('.bg-highlight').find('.below-desc').first().html('');
                 });
             }
+            
+            $('#download').click(function () {
+                domtoimage.toPng(document.getElementById('dashboard'))
+                .then(function (blob) {
+                    var pdf = new jsPDF('l', 'pt', [$('#dashboard').width()+20, $('#dashboard').height()]);
+                    pdf.addImage(blob, 'PNG', 10, 10, $('#dashboard').width(), $('#dashboard').height());
+                    pdf.save("pytest_html_reporter.pdf");
+                });
+            });
+
         </script>
         
     </body>

@@ -8,7 +8,6 @@ from os.path import isfile, join
 import json
 import glob
 from collections import Counter
-import codecs
 from PIL import Image
 from io import BytesIO
 import shutil
@@ -203,8 +202,11 @@ class HTMLReporter(object):
         self.rerun = 0 if has_rerun else None
 
     def pytest_runtest_teardown(self, item, nextitem):
-        global _test_name
+        global _test_name, _duration
         _test_name = item.name
+
+        _test_end_time = time.time()
+        _duration = _test_end_time - _start_execution_time
 
         if (self.rerun is not None) and (max_rerun() is not None): self.previous_test_name(_test_name)
         self._test_names(_test_name)
@@ -222,7 +224,7 @@ class HTMLReporter(object):
 
     def pytest_runtest_setup(item):
         global _start_execution_time
-        _start_execution_time = round(time.time())
+        _start_execution_time = time.time()
 
     def pytest_sessionfinish(self, session):
         if _suite_name is not None: self.append_suite_metrics_row(_suite_name)
@@ -258,6 +260,11 @@ class HTMLReporter(object):
 
         global _execution_time
         _execution_time = time.time() - terminalreporter._sessionstarttime
+
+        if _execution_time < 60:
+            _execution_time = str(round(_execution_time, 2)) + " secs"
+        else:
+            _execution_time = str(time.strftime("%H:%M:%S", time.gmtime(round(_execution_time)))) + " Hrs"
 
         global _total
         _total = _pass + _fail + _xpass + _xfail + _skip + _error
@@ -330,9 +337,8 @@ class HTMLReporter(object):
                         for line in rep.longreprtext.splitlines():
                             exception = line.startswith("E   ")
                             if exception:
-                                # self.update_test_error(line.replace("E    ", ""))
                                 longerr += line + "\n"
-                        self.update_test_error(longerr)
+                        self.update_test_error(longerr.replace("E    ", ""))
             else:
                 self.increment_error()
                 self.update_test_status("ERROR")
@@ -347,19 +353,23 @@ class HTMLReporter(object):
                 self.increment_xfail()
                 self.update_test_status("xFAIL")
                 if rep.longrepr:
+                    longerr = ""
                     for line in rep.longreprtext.splitlines():
                         exception = line.startswith("E   ")
                         if exception:
-                            self.update_test_error(line.replace("E    ", ""))
+                            longerr += line + "\n"
+                    self.update_test_error(longerr.replace("E    ", ""))
             else:
                 self.increment_skip()
                 self.update_test_status("SKIP")
                 if rep.longrepr:
+                    longerr = ""
                     for line in rep.longreprtext.splitlines():
-                        self.update_test_error(line)
+                        longerr += line + "\n"
+                    self.update_test_error(longerr)
 
     def append_test_metrics_row(self):
-        global _test_metrics_content, _pvalue
+        global _test_metrics_content, _pvalue, _duration
 
         test_row_text = """
             <tr>
@@ -367,9 +377,32 @@ class HTMLReporter(object):
                 <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">__name__</td>
                 <td>__stat__</td>
                 <td>__dur__</td>
-                <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left"">__msg__</td>
+                <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left"">
+                    __msg__
+                    __floating_error_text__
+                </td>
             </tr>
         """
+
+        floating_error_text = """
+            <a data-toggle="modal" href="#myModal-__runt__" class="">(...)</a>
+            <div class="modal fade in" id="myModal-__runt__" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body">
+                            <p>
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="1.12em" height="1em" style="-ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1856 1664"><path d="M1056 1375v-190q0-14-9.5-23.5t-22.5-9.5H832q-13 0-22.5 9.5T800 1185v190q0 14 9.5 23.5t22.5 9.5h192q13 0 22.5-9.5t9.5-23.5zm-2-374l18-459q0-12-10-19q-13-11-24-11H818q-11 0-24 11q-10 7-10 21l17 457q0 10 10 16.5t24 6.5h185q14 0 23.5-6.5t10.5-16.5zm-14-934l768 1408q35 63-2 126q-17 29-46.5 46t-63.5 17H160q-34 0-63.5-17T50 1601q-37-63-2-126L816 67q17-31 47-49t65-18t65 18t47 49z" fill="#DC143C"/></svg>
+                                __full_msg__
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        """
+
         if (self.rerun is not None) and (max_rerun() is not None):
             if (_test_status == 'FAIL') or (_test_status == 'ERROR'): _pvalue += 1
 
@@ -381,7 +414,15 @@ class HTMLReporter(object):
                 test_row_text = test_row_text.replace("__name__", str(_test_name))
                 test_row_text = test_row_text.replace("__stat__", str(_test_status))
                 test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
-                test_row_text = test_row_text.replace("__msg__", str(_current_error))
+                test_row_text = test_row_text.replace("__msg__", str(_current_error[:50]))
+                floating_error_text = floating_error_text.replace("__runt__", str(time.time()).replace('.', ''))
+
+                if len(_current_error) < 49:
+                    test_row_text = test_row_text.replace("__floating_error_text__", str(''))
+                else:
+                    test_row_text = test_row_text.replace("__floating_error_text__", str(floating_error_text))
+                    test_row_text = test_row_text.replace("__full_msg__", str(_current_error))
+
 
                 _test_metrics_content += test_row_text
                 _pvalue = 0
@@ -391,7 +432,14 @@ class HTMLReporter(object):
                 test_row_text = test_row_text.replace("__name__", str(_test_name))
                 test_row_text = test_row_text.replace("__stat__", str(_test_status))
                 test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
-                test_row_text = test_row_text.replace("__msg__", str(_current_error))
+                test_row_text = test_row_text.replace("__msg__", str(_current_error[:50]))
+                floating_error_text = floating_error_text.replace("__runt__", str(time.time()).replace('.', ''))
+
+                if len(_current_error) < 49:
+                    test_row_text = test_row_text.replace("__floating_error_text__", str(''))
+                else:
+                    test_row_text = test_row_text.replace("__floating_error_text__", str(floating_error_text))
+                    test_row_text = test_row_text.replace("__full_msg__", str(_current_error))
 
                 _test_metrics_content += test_row_text
 
@@ -403,7 +451,14 @@ class HTMLReporter(object):
             test_row_text = test_row_text.replace("__name__", str(_test_name))
             test_row_text = test_row_text.replace("__stat__", str(_test_status))
             test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
-            test_row_text = test_row_text.replace("__msg__", str(_current_error))
+            test_row_text = test_row_text.replace("__msg__", str(_current_error[:50]))
+            floating_error_text = floating_error_text.replace("__runt__", str(time.time()).replace('.', ''))
+
+            if len(_current_error) < 49:
+                test_row_text = test_row_text.replace("__floating_error_text__", str(''))
+            else:
+                test_row_text = test_row_text.replace("__floating_error_text__", str(floating_error_text))
+                test_row_text = test_row_text.replace("__full_msg__", str(_current_error))
 
             _test_metrics_content += test_row_text
 
@@ -632,7 +687,7 @@ class HTMLReporter(object):
     def renew_template_text(self, logo_url):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
-        template_text = template_text.replace("__execution_time__", str(round(_execution_time, 2)))
+        template_text = template_text.replace("__execution_time__", str(_execution_time))
         template_text = template_text.replace("__title__", _title)
         # template_text = template_text.replace("__executed_by__", str(platform.uname()[1]))
         # template_text = template_text.replace("__os_name__", str(platform.uname()[0]))
