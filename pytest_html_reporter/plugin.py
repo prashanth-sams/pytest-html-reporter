@@ -81,10 +81,12 @@ _pvalue = 0
 screen_base = ''
 screen_img = None
 _attach_screenshot_details = ''
+_title = 'PYTEST REPORT'
 
 
 def pytest_addoption(parser):
     group = parser.getgroup("report generator")
+    
     group.addoption(
         "--html-report",
         action="store",
@@ -93,10 +95,21 @@ def pytest_addoption(parser):
         help="path to generate html report",
     )
 
+    group.addoption(
+        "--title",
+        action="store",
+        dest="title",
+        default="PYTEST REPORT",
+        help="customize report title",
+    )
+
 
 def pytest_configure(config):
     path = config.getoption("path")
     clean_screenshots(path)
+
+    title = config.getoption("title")
+    custom_title(title)
 
     config._html = HTMLReporter(path, config)
     config.pluginmanager.register(config._html)
@@ -173,6 +186,12 @@ def clean_screenshots(path):
     screenshot_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(path))) + '/pytest_screenshots'
     if os.path.isdir(screenshot_dir):
         shutil.rmtree(screenshot_dir)
+
+
+def custom_title(title):
+    global _title
+    
+    _title = title[:26] + '...' if title.__len__() > 29 else title
 
 
 class HTMLReporter(object):
@@ -614,6 +633,7 @@ class HTMLReporter(object):
         template_text = html_template()
         template_text = template_text.replace("__custom_logo__", logo_url)
         template_text = template_text.replace("__execution_time__", str(round(_execution_time, 2)))
+        template_text = template_text.replace("__title__", _title)
         # template_text = template_text.replace("__executed_by__", str(platform.uname()[1]))
         # template_text = template_text.replace("__os_name__", str(platform.uname()[0]))
         # template_text = template_text.replace("__python_version__", str(sys.version.split(' ')[0]))
