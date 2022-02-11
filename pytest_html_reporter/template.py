@@ -506,7 +506,7 @@ def html_template():
                           <div>
                               <div class="card__header">
                                 <div class="header__title">
-                                  PYTEST REPORT
+                                  __title__
                                 </div>
                               </div>
                               <div class="card__header">

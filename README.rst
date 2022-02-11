@@ -60,12 +60,16 @@ either one of them if not needed::
 
 ..
 
-        Custom path and filename
+        Custom path, filename, and title
 
 Add ``--html-report`` tag followed by path location and filename to customize the report location and filename::
 
     $ pytest tests/ --html-report=./report
     $ pytest tests/ --html-report=./report/report.html
+
+Add ``--title`` tag followed by the report title::
+
+    $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 
 ..
 
@@ -74,7 +78,7 @@ Add ``--html-report`` tag followed by path location and filename to customize th
 Alternate option is to add this snippet in the ``pytest.ini`` file::
 
     [pytest]
-    addopts = -vs -rf --html-report=./report
+    addopts = -vs -rf --html-report=./report --title='PYTEST REPORT'
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
