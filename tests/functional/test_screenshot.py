@@ -4,7 +4,7 @@ from pytest_html_reporter import attach
 import pytest
 
 
-# @pytest.mark.skip(reason="skipping screenshot tests")
+@pytest.mark.skip(reason="skipping screenshot tests")
 class TestClass(unittest.TestCase):
     def __init__(self, driver):
         super().__init__(driver)
