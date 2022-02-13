@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+0.2.9 (13/02/2022)
+-------------------
+- Fixed desktop css inconsistencies
+
 0.2.8 (11/02/2022)
 -------------------
 - Fixed all the code related inconsistencies
