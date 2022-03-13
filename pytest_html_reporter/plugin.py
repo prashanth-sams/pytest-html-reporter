@@ -1,16 +1,25 @@
-import pytest
-import os, time
-import sys
-from datetime import date, datetime
-from pytest_html_reporter.template import html_template
-from pytest_html_reporter.time_converter import time_converter
-from os.path import isfile, join
-import json
 import glob
-from collections import Counter
-from PIL import Image
-from io import BytesIO
+import json
+import os
 import shutil
+import sys
+import time
+from collections import Counter
+from datetime import date, datetime
+from io import BytesIO
+from os.path import isfile, join
+
+import pytest
+from PIL import Image
+
+from html_page.archive_body import ArchiveBody
+from html_page.archive_row import ArchiveRow
+from html_page.floating_error import FloatingError
+from html_page.screenshot_details import ScreenshotDetails
+from html_page.suite_row import SuiteRow
+from html_page.template import HtmlTemplate
+from html_page.test_row import TestRow
+from pytest_html_reporter.time_converter import time_converter
 
 _total = _executed = 0
 _pass = _fail = 0
@@ -371,37 +380,9 @@ class HTMLReporter(object):
     def append_test_metrics_row(self):
         global _test_metrics_content, _pvalue, _duration
 
-        test_row_text = """
-            <tr>
-                <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">__sname__</td>
-                <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">__name__</td>
-                <td>__stat__</td>
-                <td>__dur__</td>
-                <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left"">
-                    __msg__
-                    __floating_error_text__
-                </td>
-            </tr>
-        """
+        test_row_text = TestRow()
 
-        floating_error_text = """
-            <a data-toggle="modal" href="#myModal-__runt__" class="">(...)</a>
-            <div class="modal fade in" id="myModal-__runt__" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-body">
-                            <p>
-                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="1.12em" height="1em" style="-ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1856 1664"><path d="M1056 1375v-190q0-14-9.5-23.5t-22.5-9.5H832q-13 0-22.5 9.5T800 1185v190q0 14 9.5 23.5t22.5 9.5h192q13 0 22.5-9.5t9.5-23.5zm-2-374l18-459q0-12-10-19q-13-11-24-11H818q-11 0-24 11q-10 7-10 21l17 457q0 10 10 16.5t24 6.5h185q14 0 23.5-6.5t10.5-16.5zm-14-934l768 1408q35 63-2 126q-17 29-46.5 46t-63.5 17H160q-34 0-63.5-17T50 1601q-37-63-2-126L816 67q17-31 47-49t65-18t65 18t47 49z" fill="#DC143C"/></svg>
-                                __full_msg__
-                            </p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        """
+        floating_error_text = FloatingError()
 
         if (self.rerun is not None) and (max_rerun() is not None):
             if (_test_status == 'FAIL') or (_test_status == 'ERROR'): _pvalue += 1
@@ -539,18 +520,7 @@ class HTMLReporter(object):
         self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
             'total_error'] = _suite_error
 
-        suite_row_text = """
-            <tr>
-                <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">__sname__</td>
-                <td>__spass__</td>
-                <td>__sfail__</td>
-                <td>__sskip__</td>
-                <td>__sxpass__</td>
-                <td>__sxfail__</td>
-                <td>__serror__</td>
-                <td>__srerun__</td>
-            </tr>
-        """
+        suite_row_text = SuiteRow()
         suite_row_text = suite_row_text.replace("__sname__", str(name))
         suite_row_text = suite_row_text.replace("__spass__", str(_spass_tests))
         suite_row_text = suite_row_text.replace("__sfail__", str(_suite_fail))
@@ -685,7 +655,7 @@ class HTMLReporter(object):
         _test_error_list.append(value)
 
     def renew_template_text(self, logo_url):
-        template_text = html_template()
+        template_text = HtmlTemplate()
         template_text = template_text.replace("__custom_logo__", logo_url)
         template_text = template_text.replace("__execution_time__", str(_execution_time))
         template_text = template_text.replace("__title__", _title)
@@ -813,13 +783,7 @@ class HTMLReporter(object):
                 data = json.load(json_file)
 
                 suite_highlights(data)
-                archive_row_text = """
-                    <a class ="list-group-item list-group-item-action" href="#list-item-__acount__" style="font-size: 1.1rem; color: dimgray; margin-bottom: -7%;">
-                        <i class="fa fa-__astate__" aria-hidden="true" style="color: __astate_color__"></i>
-                        <span>__astatus__</span></br>
-                        <span style="font-size: 0.81rem; color: gray; padding-left: 12%;">__adate__</span>
-                    </a>
-                    """
+                archive_row_text = ArchiveRow()
                 archive_row_text = archive_row_text.replace("__astate__", state(data['status'].lower())[0])
                 archive_row_text = archive_row_text.replace("__astate_color__", state(data['status'].lower())[1])
                 if value == "current":
@@ -844,83 +808,7 @@ class HTMLReporter(object):
                 global _archive_tab_content
                 _archive_tab_content += archive_row_text
 
-                _archive_body_text = """
-                    <div id="list-item-__acount__" class="archive-body">
-                        <div>
-                            <h4 class="archive-header">
-                                Build #__acount__
-                            </h4>
-                            <div class="archive-date">
-                                <i class="fa fa-calendar-check-o" aria-hidden="true"></i>&nbsp;&nbsp;&nbsp;
-                                __date__
-                            </div>
-                        </div>
-                        <div style="margin-top: -5%;">
-                            <div id="archive-container-__iloop__" style="padding-top: 5%; position: absolute;">
-                                <div style="">
-                                    <span class="total__tests">__total_tests__</span>
-                                </div>
-                                <div id="archive-label-__iloop__">
-                                    <span class="archive__label">TEST CASES</span>
-                                </div>
-                            </div>
-                            <div class="archive-chart-container">
-                                <canvas id="archive-chart-__iloop__" style="margin-top: 10%; padding-left: 25%; margin-right: -16%; float: right;"></canvas>
-                            </div>
-                        </div>
-                        <div class="archive__bar">
-                            <section id="statistic" class="statistic-section-__status__ one-page-section">
-                                <div class="container" style="margin-top: -2%;">
-                                    <div class="row text-center">
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;">
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__pass__</h2>
-                                                <p class="stats-text">PASSED</p>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;">
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__fail__
-                                                </h2>
-                                                <p class="stats-text">FAILED</p>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;"v>
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__skip__</h2>
-                                                <p class="stats-text">SKIPPED</p>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;">
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__xpass__</h2>
-                                                <p class="stats-text">XPASSED</p>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;">
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__xfail__</h2>
-                                                <p class="stats-text">XFAILED</p>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;">
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__error__</h2>
-                                                <p class="stats-text">ERROR</p>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-md-3" style="max-width: 14.2%;">
-                                            <div class="counter">
-                                                <h2 class="timer count-title count-number">__rerun__</h2>
-                                                <p class="stats-text">RERUN</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    </div>
-                """
+                _archive_body_text = ArchiveBody()
 
                 if value == "current":
                     _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
@@ -1012,26 +900,7 @@ class HTMLReporter(object):
     def attach_screenshots(self, screen_name, test_suite, test_case, test_error):
         global _attach_screenshot_details
 
-        _screenshot_details = """
-            <div class="img-hover col-md-6 col-xl-3 p-3">
-              <div>
-                <a class="video" href="__screenshot_base__/pytest_screenshots/__screen_name__.png" data-toggle="lightbox" style="background-image: url('__screenshot_base__/pytest_screenshots/__screen_name__.png');" data-fancybox="images" data-caption="SUITE: __ts__ :: SCENARIO: __tc__">
-                    <span class="video-hover-desc video-hover-small"> <span style="font-size:23px;display: block;margin-bottom: 15px;"> __tc__</span>
-                    <span>__te__</span> </span>
-                </a>
-                <p class="text-desc"><strong>__ts__</strong><br />
-                 __te__</p>
-              </div>
-            </div>
-            <div class="desc-video-none">
-              <div class="desc-video" id="Video-desc-01">
-                <h2>__tc__</h2>
-
-                <p><strong>__ts__</strong><br />
-                  __te__</p>
-              </div>
-            </div>
-        """
+        _screenshot_details = ScreenshotDetails()
 
         if len(test_case) == 17: test_case = '..' + test_case
 
