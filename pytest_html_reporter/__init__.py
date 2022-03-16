@@ -1,1 +1,1 @@
-from .plugin import screenshot as attach
+from .util import screenshot as attach

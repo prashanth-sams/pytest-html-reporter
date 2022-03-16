@@ -9,7 +9,7 @@ def background():
     global driver
 
     driver = webdriver.Remote(
-        command_executor="https://0.0.0.0:8080/wd/hub",
+        command_executor="http://0.0.0.0:8080",
         desired_capabilities={"browserName": "chrome", "javascriptEnabled": True},
     )
     driver.get("https://google.ae")
