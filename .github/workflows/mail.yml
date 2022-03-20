@@ -1,0 +1,22 @@
+on:
+  pull_request:
+    branches: [ master ]
+name: CI
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cclauss/Find-Python-syntax-errors-action@master
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Tests
+        run: |
+          pip install pytest pytest-cov coveralls Pillow
+          py.test --cov ./pytest_html_reporter/ tests/unit/
+          coveralls --service=github
+          bash <(curl -s https://codecov.io/bash)
