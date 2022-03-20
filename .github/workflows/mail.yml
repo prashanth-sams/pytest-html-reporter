@@ -20,5 +20,3 @@ jobs:
           py.test --cov ./pytest_html_reporter/ tests/unit/
           coveralls --service=github
           bash <(curl -s https://codecov.io/bash)
-
-

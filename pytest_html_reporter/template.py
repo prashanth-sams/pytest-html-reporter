@@ -129,6 +129,11 @@ def html_template():
                   font-family: sans-serif;
                 }
                 
+                .time__taken {
+                    color: darkgray;
+                    font-size: 17px;
+                }
+                
                 .card__header {
                   display: flex;
                   flex-direction: row;
@@ -272,10 +277,10 @@ def html_template():
                 }
                 
                 .archive-chart-container {
-                    margin-top: 6%;
                     height: 50%;
-                    width: 50%;
+                    width: 48%;
                     margin-left: 40%;
+                    margin-top: 6%;
                 }
                 
                 .statistic-section-pass {
@@ -352,7 +357,7 @@ def html_template():
                 .loading p {
                     font-size: 1.1rem;
                     padding-top: 5%;
-                    margin: 0px 0 45px;
+                    margin: 0px 0 32px;
                     color: dimgrey;
                     float: right;
                 }
@@ -363,7 +368,6 @@ def html_template():
                 
                 .loading .percentage {
                     float: right;
-                    padding: 6px 35px 0 0;
                 }
                 
                 .loading .progress-bar {
@@ -475,6 +479,255 @@ def html_template():
                     background-color: #3571a3;
                     border-color: #3571a3;
                 }
+                
+                .dashboard__headers {
+                    font-size: 1.9rem;
+                    color: darkgrey;
+                    margin-bottom: -4%;
+                }
+
+                .outer_my_chart {
+                    margin-left: 50%;
+                    margin-top: -40%;
+                    max-height: 43%;
+                }
+                
+                .inner_my_chart {
+                    margin-top: 31%;
+                    height: 48%;
+                    margin-left: 16%;
+                    max-width: 75%;
+                }
+                
+                .archive__chart {
+                    width: "440px";
+                    height: "440px";
+                }
+                
+                @media screen and (max-width: 3560px) {   
+                    .footer-section__data {
+                        font-size: 3.6rem;
+                    }
+                    .suite_count_section {
+                        margin-top: -16%;
+                    }
+                }
+                
+                @media screen and (max-width: 2442px) {
+                    .outer_my_chart {
+                        margin-top: -40%;
+                    }
+                    .inner_my_chart {
+                        margin-top: 31%;
+                    }
+                    .footer-section__data {
+                        font-size: 3.4rem;
+                    }
+                    .suite_count_section {
+                        margin-top: -17%;
+                    }
+                }
+                
+                @media screen and (max-width: 2156px) {
+                    .outer_my_chart {
+                        margin-top: -42%;
+                    }
+                    .inner_my_chart {
+                        margin-top: 25%;
+                    }
+                    .suite_count_section {
+                        margin-top: -16%;
+                    }
+                }
+                
+                @media screen and (max-width: 1940px) {
+                    .outer_my_chart {
+                        margin-top: -41%;
+                    }
+                    .inner_my_chart {
+                        margin-top: 16%;
+                    }
+                    .footer-section__data {
+                        font-size: 2.6rem;
+                    }
+                    .suite_count_section {
+                        margin-top: -11%;
+                    }
+                }
+                
+                @media screen and (max-width: 1662px) {
+                    .outer_my_chart {
+                        margin-top: -45%;
+                    }
+                }
+                
+                @media screen and (max-width: 1307px) {
+                    .outer_my_chart {
+                        margin-top: -50%;
+                    }
+                    .px-4 {
+                        padding-left: 2.5rem!important;
+                    }
+                    .loading p {
+                        margin: 0px -14px 32px;
+                    }
+                    .dashboard__headers {
+                        font-size: 1.8rem;
+                    }
+                }
+                
+                @media screen and (max-width: 1209px) {
+                    .outer_my_chart {
+                        margin-top: -41%;
+                    }
+                    .px-4 {
+                        padding-left: 4.5rem!important;
+                    }
+                    .inner_my_chart {
+                        margin-top: 0%;
+                    }
+                    .footer-section__label {
+                        font-size: 8pt;
+                    }
+                    .time__taken {
+                        font-size: 14px;
+                    }
+                    .total__count {
+                        font-size: 4.3rem;
+                    }
+                    .total_count__label {
+                        font-size: 1.2rem;
+                    }
+                    .loading p {
+                        font-size: 0.8rem;
+                    }
+                    .dashboard__headers {
+                        font-size: 1.7rem;
+                    }
+                    .header__title {
+                        font-size: 1.3rem;
+                        padding-top: 8%;
+                    }
+                }
+                
+                @media screen and (max-width: 1148px) {
+                    .outer_my_chart {
+                        margin-top: -43%;
+                    }
+                    .dashboard__headers {
+                        font-size: 1.5rem;
+                    }
+                    .header__title {
+                        font-size: 1.2rem;
+                    }
+                    .tooltip-inner {
+                        font-size: 75%;
+                    }
+                    .time__taken {
+                        font-size: 13px;
+                    }
+                }
+                
+                @media screen and (max-width: 1076px) {
+                    .outer_my_chart {
+                        margin-top: -52%;
+                    }
+                    .footer-section__label {
+                        font-size: 7pt;
+                    }
+                    .total__count {
+                        padding-top: 13%;
+                    }
+                }
+                
+                @media screen and (max-width: 1031px) {
+                    .time__taken {
+                        margin-left: -5%;
+                    }
+                    .dashboard__headers {
+                        font-size: 1.3rem;
+                    }
+                    .suite-highlights-header {
+                        font-size: 0.75rem;
+                    }
+                    .tooltip-inner {
+                        font-size: 70%;
+                    }
+                    .header__title {
+                        padding-top: 10%;
+                    }
+                }
+                
+                .total__tests {
+                    font-size: 10.3rem;
+                    font-family: sans-serif;
+                    color: black;
+                    padding-top: 8%;
+                }
+                
+                .archive__label {
+                    font-size: 1.8rem;
+                    font-family: sans-serif;
+                    color: darkgray;
+                }
+                
+                .archive__bar {
+                    padding-top: 8.5%;
+                }
+                
+                @media screen and (max-width: 1497px) {
+                    .total__tests {
+                        font-size: 9.3rem;
+                    }
+                    .archive__label {
+                        font-size: 1.7rem;
+                    }
+                    .archive__bar {
+                        padding-top: 4.5%;
+                    }
+                }
+                
+                @media screen and (max-width: 1314px) {
+                    .total__tests {
+                        font-size: 6.3rem;
+                    }
+                    .archive__label {
+                        font-size: 1.3rem;
+                    }
+                    .archive__bar {
+                        margin-top: -12%;
+                        padding-top: 0%;
+                    }
+                    .count-title {
+                        font-size: 40px;
+                    }
+                    .archive-build-row {
+                        right: -2.9%;
+                    }
+                }
+                
+                @media screen and (max-width: 1114px) {
+                    .total__tests {
+                        font-size: 5.3rem;
+                    }
+                    .archive__label {
+                        font-size: 1.1rem;
+                    }
+                    .archive__bar {
+                        margin-top: -25%;
+                        padding-top: 0%;
+                    }
+                    .count-title {
+                        font-size: 40px;
+                    }
+                    .archive-build-row {
+                        right: -4.9%;
+                    }
+                    .list-group-item {
+                        padding: 0.75rem 0.25rem;
+                    }
+                }
+                
             </style>
             <style>
                 .progress-bar.downloading {
@@ -515,7 +768,7 @@ def html_template():
                       <div style="width:100%;height:500px;text-align: center;">
                         <div class="card__content">
                           <div style="margin-bottom: -4%; margin-left: 30%;">
-                            <span style="color: darkgray; font-size: 17px;">
+                            <span class="time__taken">
                                 <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
                                     Time taken __execution_time__
                             </span>
@@ -537,12 +790,12 @@ def html_template():
                               </div>
                           </div>
                           <div>
-                              <div style="margin-left: 50%;margin-top: -43%; max-height: 43%;">
-                                <canvas id="myChart" style="margin-top: 16%; height: 38%; margin-left: 16%; max-width: 75%;"></canvas>
+                              <div class="outer_my_chart">
+                                <canvas id="myChart" class="inner_my_chart" style="height: 38%;"></canvas>
                               </div>
                           </div>
                           <div style="margin-top: 23%;position: static;">
-                              <div style="margin-top: -11%;">
+                              <div class="suite_count_section">
                                   <div class="card__footer">
                                     <div class="card__footer-section">
                                       <div class="footer-section__data" style="color:#98cc64">__pass__</div>
@@ -585,7 +838,7 @@ def html_template():
                       </a>
                       <div style="text-align: center;">
                         <div>
-                            <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
+                            <div class="dashboard__headers">
                                 <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><svg height="32pt" viewBox="0 0 512 512.00007" width="25pt" xmlns="http://www.w3.org/2000/svg"><path style="fill: currentColor;" d="m509.785156 15.433594c-.773437-6.972656-6.277344-12.480469-13.253906-13.253906-118.703125-13.183594-219.890625 34.300781-302.429688 119.265624-23.621093 24.316407-44.109374 50.054688-61.597656 74.894532-29.597656-1.203125-62.414062 12.1875-85.679687 35.453125l-42.429688 42.429687c-4.800781 4.800782-5.777343 12.230469-2.382812 18.109375 3.394531 5.878907 10.3125 8.742188 16.875 6.988281 9.84375-2.644531 25.839843-5.71875 41.207031-6.433593 5.617188-.261719 10.285156-.179688 14.164062.117187-9.363281 18.007813-16.539062 33.09375-18.917968 36.871094-3.726563 5.929688-2.863282 13.644531 2.089844 18.597656l24.550781 24.550782c-35.730469 48.730468-36.320313 73.6875-36.195313 77.222656.261719 7.488281 6.101563 14.503906 15.773438 14.503906 8.375 0 32.394531-3.554688 76.121094-36.027344l25.824218 25.824219c4.988282 4.988281 12.78125 5.824219 18.71875 2.011719 4.039063-2.597656 18.238282-9.472656 35.265625-18.371094.28125 12.691406-1.441406 31.328125-5.179687 56.589844-2.125 14.328125 15.292968 22.953125 25.445312 12.804687l42.429688-42.429687c21.878906-21.878906 34.566406-54.375 33.628906-84.859375 26.167969-18.285157 53.390625-39.855469 78.808594-64.78125 84.15625-82.527344 130.179687-182.949219 117.164062-300.078125zm-28.695312 15.4375c2.394531 32.34375-.160156 63.695312-7.601563 94.035156-18.480469-5.820312-36.546875-17.253906-52.863281-33.566406-16.375-16.378906-27.832031-34.519532-33.628906-53.066406 30.328125-7.332032 61.699218-9.816407 94.09375-7.402344zm-422.953125 232.039062 9.898437-9.902344c11.972656-11.96875 27.542969-20.589843 43.027344-24.464843-8.089844 12.839843-15.300781 25.101562-21.660156 36.417969-9.824219-2.167969-20.746094-2.570313-31.265625-2.050782zm28.386719 72.230469c3.246093-6.40625 7.171874-14.4375 14.378906-28.054687l19.746094 19.75c-7.347657 7.882812-13.980469 15.371093-19.957032 22.46875zm73.355468-5.738281c10.929688-10.925782 21.410156-12.921875 34.429688-13.203125-.285156 12.6875-2.320313 23.523437-13.214844 34.417969-46.570312 46.570312-78.492188 67.367187-97.582031 76.648437 9.417969-19.457031 30.269531-51.765625 76.367187-97.863281zm16.871094 95.964844-15.46875-15.472657c7.0625-6 14.527344-12.652343 22.402344-20.027343l21.019531 21.019531c-13.820313 7.378906-19.585937 10.15625-27.953125 14.480469zm82.214844 18.570312-12.007813 12.011719c.972657-14.550781.636719-25.152344-.738281-33.332031 11.03125-6.210938 23.011719-13.253907 35.566406-21.132813-3.578125 15.859375-11.621094 31.257813-22.820312 42.453125zm-26.953125-48.167969-26.894531-26.898437c19.902343-21.898438 19.160156-43 19.160156-67.652344 0-8.285156-6.714844-15-15-15-23.03125 0-45.195313-1.234375-67.652344 19.164062l-25.683594-25.683593c70.132813-122.980469 151.199219-200.839844 242.28125-232.902344 7.210938 23.332031 21.246094 45.8125 41.191406 65.757813 19.851563 19.855468 42.226563 33.855468 65.457032 41.09375-32.25 90.582031-110.089844 171.597656-232.859375 242.121093zm0 0"/><path style="fill: currentColor;" d="m378.199219 133.765625c-29.246094-29.242187-76.832031-29.242187-106.074219 0-29.242188 29.246094-29.242188 76.832031 0 106.074219 29.242188 29.242187 76.828125 29.246094 106.074219 0 29.242187-29.242188 29.242187-76.828125 0-106.074219zm-21.214844 84.859375c-17.546875 17.546875-46.101563 17.546875-63.644531 0-17.546875-17.546875-17.546875-46.097656 0-63.644531 17.542968-17.542969 46.09375-17.546875 63.644531 0 17.546875 17.546875 17.546875 46.097656 0 63.644531zm0 0"/></svg>&nbsp;&nbsp;Trends
                                 </div>
                             </div>
@@ -598,7 +851,7 @@ def html_template():
                 
                 <div class="row rowcard" style="padding-top: 0.8%;">
                     <div class="col-md-8 card border-right">
-                        <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
+                        <div class="dashboard__headers">
                             <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 5%;">
                                 <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="1.34em" height="1em" style="margin-top: -1%; margin-right: 2%; padding-left: 0.9%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 2048 1536"><path d="M2048 1408v128H0V0h128v1408h1920zM1664 384l256 896H256V704l448-576l576 576z" fill="#a9a9a9"/></svg>Test Suite
                                 __test_suite_length__
@@ -607,7 +860,7 @@ def html_template():
                         <canvas class="chart" id="groupBarChart" style="margin-top: 6%; height: 451px; width: 903px;"></canvas>
                     </div>
                     <div class="col-md-4 card border-left" style="max-width: 32.4%; padding-left: 3%; padding-top: 2%; margin-left: 0.75%;">
-                        <div style="font-size: 1.9rem; color: darkgrey; margin-bottom: -4%;">
+                        <div class="dashboard__headers">
                             <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;">
                                 <i class="fa fa-bolt" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>
                                 Suite Highlights
@@ -1051,7 +1304,7 @@ def html_template():
                         legend: {
                             display: false
                         },
-                        responsive: false,
+                        responsive: true,
                         scales: {
                             yAxes: [{
                                 stacked: true

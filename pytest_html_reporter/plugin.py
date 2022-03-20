@@ -858,17 +858,17 @@ class HTMLReporter(object):
                         <div style="margin-top: -5%;">
                             <div id="archive-container-__iloop__" style="padding-top: 5%; position: absolute;">
                                 <div style="">
-                                    <span style="font-size: 10.3rem; font-family: sans-serif; color: black; padding-top: 8%;">__total_tests__</span>
+                                    <span class="total__tests">__total_tests__</span>
                                 </div>
                                 <div id="archive-label-__iloop__">
-                                    <span style="font-size: 1.8rem; font-family: sans-serif; color: darkgray;">TEST CASES</span>
+                                    <span class="archive__label">TEST CASES</span>
                                 </div>
                             </div>
                             <div class="archive-chart-container">
-                                <canvas id="archive-chart-__iloop__" width="240px" height="240px" style="width: 60%; height: 80%; float: right;"></canvas>
+                                <canvas id="archive-chart-__iloop__" style="margin-top: 10%; padding-left: 25%; margin-right: -16%; float: right;"></canvas>
                             </div>
                         </div>
-                        <div style="padding-top: 8.5%;">
+                        <div class="archive__bar">
                             <section id="statistic" class="statistic-section-__status__ one-page-section">
                                 <div class="container" style="margin-top: -2%;">
                                     <div class="row text-center">
