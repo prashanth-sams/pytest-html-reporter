@@ -16,74 +16,7 @@ from html_page.template import HtmlTemplate
 from html_page.test_row import TestRow
 from pytest_html_reporter.util import suite_highlights, generate_suite_highlights, max_rerun
 from pytest_html_reporter.time_converter import time_converter
-
-_total = _executed = 0
-_pass = _fail = 0
-_skip = _error = 0
-_xpass = _xfail = 0
-_apass = _afail = 0
-_askip = _aerror = 0
-_axpass = _axfail = 0
-_astotal = 0
-_aspass = 0
-_asfail = 0
-_asskip = 0
-_aserror = 0
-_asxpass = 0
-_asxfail = 0
-_asrerun = 0
-_current_error = ""
-_suite_name = _test_name = None
-_scenario = []
-_test_suite_name = []
-_test_pass_list = []
-_test_fail_list = []
-_test_skip_list = []
-_test_xpass_list = []
-_test_xfail_list = []
-_test_error_list = []
-_test_status = None
-_start_execution_time = 0
-_execution_time = _duration = 0
-_test_metrics_content = _suite_metrics_content = ""
-_previous_suite_name = "None"
-_initial_trigger = True
-_spass_tests = 0
-_sfail_tests = 0
-_sskip_tests = 0
-_serror_tests = 0
-_srerun_tests = 0
-_sxfail_tests = 0
-_sxpass_tests = 0
-_suite_length = 0
-_archive_tab_content = ""
-_archive_body_content = ""
-_archive_count = ""
-archive_pass = 0
-archive_fail = 0
-archive_skip = 0
-archive_xpass = 0
-archive_xfail = 0
-archive_error = 0
-archives = {}
-max_failure_suite_name = ''
-max_failure_suite_name_final = ''
-max_failure_suite_count = 0
-similar_max_failure_suite_count = 0
-max_failure_total_tests = 0
-max_failure_percent = ''
-trends_label = []
-tpass = []
-tfail = []
-tskip = []
-_previous_test_name = ''
-_suite_error = 0
-_suite_fail = 0
-_pvalue = 0
-screen_base = ''
-screen_img = None
-_attach_screenshot_details = ''
-_title = 'PYTEST REPORT'
+from pytest_html_reporter import const_vars
 
 class HTMLReporter(object):
     def __init__(self, path, config):
@@ -94,34 +27,33 @@ class HTMLReporter(object):
         self.rerun = 0 if has_rerun else None
 
     def pytest_runtest_teardown(self, item, nextitem):
-        global _test_name, _duration
-        _test_name = item.name
+        const_vars._test_name = item.name
 
         _test_end_time = time.time()
-        _duration = _test_end_time - _start_execution_time
+        const_vars._duration = _test_end_time - const_vars._start_execution_time
 
-        if (self.rerun is not None) and (max_rerun() is not None): self.previous_test_name(_test_name)
-        self._test_names(_test_name)
+        if (self.rerun is not None) and (max_rerun() is not None): self.previous_test_name(const_vars._test_name)
+        self._test_names(const_vars._test_name)
         self.append_test_metrics_row()
 
     def previous_test_name(self, _test_name):
-        global _previous_test_name
 
-        if _previous_test_name == _test_name:
+        if const_vars._previous_test_name == _test_name:
             self.rerun += 1
         else:
-            _scenario.append(_test_name)
+            const_vars._scenario.append(_test_name)
             self.rerun = 0
-            _previous_test_name = _test_name
+            const_vars._previous_test_name = _test_name
 
     def pytest_runtest_setup(item):
-        global _start_execution_time
-        _start_execution_time = time.time()
+        const_vars._start_execution_time = time.time()
 
     def pytest_sessionfinish(self, session):
-        if _suite_name is not None: self.append_suite_metrics_row(_suite_name)
+
+        if const_vars._suite_name is not None: self.append_suite_metrics_row(const_vars._suite_name)
 
     def archive_data(self, base, filename):
+
         path = os.path.join(base, filename)
 
         if os.path.isfile(path) is True:
@@ -131,7 +63,7 @@ class HTMLReporter(object):
             if isfile(join(base, f)):
                 fname = os.path.splitext(f)
                 os.rename(base + '/' + f, os.path.join(base + '/archive', fname[0] + '_' +
-                                                       str(_start_execution_time) + fname[1]))
+                                                       str(const_vars._start_execution_time) + fname[1]))
 
     @property
     def report_path(self):
@@ -148,20 +80,17 @@ class HTMLReporter(object):
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
-        yield
 
-        global _execution_time
+        yield
         _execution_time = time.time() - terminalreporter._sessionstarttime
 
-        if _execution_time < 60:
-            _execution_time = str(round(_execution_time, 2)) + " secs"
+        if const_vars._execution_time < 60:
+            const_vars._execution_time = str(round(_execution_time, 2)) + " secs"
         else:
             _execution_time = str(time.strftime("%H:%M:%S", time.gmtime(round(_execution_time)))) + " Hrs"
+        const_vars._total = const_vars._pass + const_vars._fail + const_vars._xpass + const_vars._xfail + const_vars._skip + const_vars._error
 
-        global _total
-        _total = _pass + _fail + _xpass + _xfail + _skip + _error
-
-        if _suite_name is not None:
+        if const_vars._suite_name is not None:
             base = self.report_path[0]
             path = os.path.join(base, self.report_path[1])
 
@@ -188,18 +117,17 @@ class HTMLReporter(object):
 
     @pytest.hookimpl(tryfirst=True, hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
+
         outcome = yield
         rep = outcome.get_result()
+        const_vars._suite_name = rep.nodeid.split("::")[0]
 
-        global _suite_name
-        _suite_name = rep.nodeid.split("::")[0]
-
-        if _initial_trigger:
+        if const_vars._initial_trigger:
             self.update_previous_suite_name()
             self.set_initial_trigger()
 
-        if str(_previous_suite_name) != str(_suite_name):
-            self.append_suite_metrics_row(_previous_suite_name)
+        if str(const_vars._previous_suite_name) != str(const_vars._suite_name):
+            self.append_suite_metrics_row(const_vars._previous_suite_name)
             self.update_previous_suite_name()
         else:
             self.update_counts(rep)
@@ -208,7 +136,6 @@ class HTMLReporter(object):
             if hasattr(rep, "wasxfail"):
                 self.increment_xpass()
                 self.update_test_status("xPASS")
-                global _current_error
                 self.update_test_error("")
             else:
                 self.increment_pass()
@@ -261,98 +188,98 @@ class HTMLReporter(object):
                     self.update_test_error(longerr)
 
     def append_test_metrics_row(self):
-        global _test_metrics_content, _pvalue, _duration
 
         test_row_text = TestRow()
 
         floating_error_text = FloatingError()
 
         if (self.rerun is not None) and (max_rerun() is not None):
-            if (_test_status == 'FAIL') or (_test_status == 'ERROR'): _pvalue += 1
+            if (const_vars._test_status == 'FAIL') or (const_vars._test_status == 'ERROR'): const_vars._pvalue += 1
 
-            if (_pvalue == max_rerun() + 1) or (_test_status == 'PASS'):
-                if ((_test_status == 'FAIL') or (_test_status == 'ERROR')) and (
-                        screen_base != ''): self.generate_screenshot_data()
+            if (const_vars._pvalue == max_rerun() + 1) or (const_vars._test_status == 'PASS'):
+                if ((const_vars._test_status == 'FAIL') or (const_vars._test_status == 'ERROR')) and (
+                        const_vars.screen_base != ''): self.generate_screenshot_data()
 
-                test_row_text = test_row_text.replace("__sname__", str(_suite_name))
-                test_row_text = test_row_text.replace("__name__", str(_test_name))
-                test_row_text = test_row_text.replace("__stat__", str(_test_status))
-                test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
-                test_row_text = test_row_text.replace("__msg__", str(_current_error[:50]))
+                test_row_text = test_row_text.replace("__sname__", str(const_vars._suite_name))
+                test_row_text = test_row_text.replace("__name__", str(const_vars._test_name))
+                test_row_text = test_row_text.replace("__stat__", str(const_vars._test_status))
+                test_row_text = test_row_text.replace("__dur__", str(round(const_vars._duration, 2)))
+                test_row_text = test_row_text.replace("__msg__", str(const_vars._current_error[:50]))
                 floating_error_text = floating_error_text.replace("__runt__", str(time.time()).replace('.', ''))
 
-                if len(_current_error) < 49:
+                if len(const_vars._current_error) < 49:
                     test_row_text = test_row_text.replace("__floating_error_text__", str(''))
                 else:
                     test_row_text = test_row_text.replace("__floating_error_text__", str(floating_error_text))
-                    test_row_text = test_row_text.replace("__full_msg__", str(_current_error))
+                    test_row_text = test_row_text.replace("__full_msg__", str(const_vars._current_error))
 
-                _test_metrics_content += test_row_text
-                _pvalue = 0
+                const_vars._test_metrics_content += test_row_text
+                const_vars._pvalue = 0
             elif (self.rerun is not None) and (
-                    (_test_status == 'xFAIL') or (_test_status == 'xPASS') or (_test_status == 'SKIP')):
-                test_row_text = test_row_text.replace("__sname__", str(_suite_name))
-                test_row_text = test_row_text.replace("__name__", str(_test_name))
-                test_row_text = test_row_text.replace("__stat__", str(_test_status))
-                test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
-                test_row_text = test_row_text.replace("__msg__", str(_current_error[:50]))
+                    (const_vars._test_status == 'xFAIL') or (const_vars._test_status == 'xPASS') or (const_vars._test_status == 'SKIP')):
+                test_row_text = test_row_text.replace("__sname__", str(const_vars._suite_name))
+                test_row_text = test_row_text.replace("__name__", str(const_vars._test_name))
+                test_row_text = test_row_text.replace("__stat__", str(const_vars._test_status))
+                test_row_text = test_row_text.replace("__dur__", str(round(const_vars._duration, 2)))
+                test_row_text = test_row_text.replace("__msg__", str(const_vars._current_error[:50]))
                 floating_error_text = floating_error_text.replace("__runt__", str(time.time()).replace('.', ''))
 
-                if len(_current_error) < 49:
+                if len(const_vars._current_error) < 49:
                     test_row_text = test_row_text.replace("__floating_error_text__", str(''))
                 else:
                     test_row_text = test_row_text.replace("__floating_error_text__", str(floating_error_text))
-                    test_row_text = test_row_text.replace("__full_msg__", str(_current_error))
+                    test_row_text = test_row_text.replace("__full_msg__", str(const_vars._current_error))
 
-                _test_metrics_content += test_row_text
+                const_vars._test_metrics_content += test_row_text
 
         elif (self.rerun is None) or (max_rerun() is None):
-            if ((_test_status == 'FAIL') or (_test_status == 'ERROR')) and (
-                    screen_base != ''): self.generate_screenshot_data()
+            if ((const_vars._test_status == 'FAIL') or (const_vars._test_status == 'ERROR')) and (
+                    const_vars.screen_base != ''): self.generate_screenshot_data()
 
-            test_row_text = test_row_text.replace("__sname__", str(_suite_name))
-            test_row_text = test_row_text.replace("__name__", str(_test_name))
-            test_row_text = test_row_text.replace("__stat__", str(_test_status))
-            test_row_text = test_row_text.replace("__dur__", str(round(_duration, 2)))
-            test_row_text = test_row_text.replace("__msg__", str(_current_error[:50]))
+            test_row_text = test_row_text.replace("__sname__", str(const_vars._suite_name))
+            test_row_text = test_row_text.replace("__name__", str(const_vars._test_name))
+            test_row_text = test_row_text.replace("__stat__", str(const_vars._test_status))
+            test_row_text = test_row_text.replace("__dur__", str(round(const_vars._duration, 2)))
+            test_row_text = test_row_text.replace("__msg__", str(const_vars._current_error[:50]))
             floating_error_text = floating_error_text.replace("__runt__", str(time.time()).replace('.', ''))
 
-            if len(_current_error) < 49:
+            if len(const_vars._current_error) < 49:
                 test_row_text = test_row_text.replace("__floating_error_text__", str(''))
             else:
                 test_row_text = test_row_text.replace("__floating_error_text__", str(floating_error_text))
-                test_row_text = test_row_text.replace("__full_msg__", str(_current_error))
+                test_row_text = test_row_text.replace("__full_msg__", str(const_vars._current_error))
 
-            _test_metrics_content += test_row_text
+            const_vars._test_metrics_content += test_row_text
 
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {})['suite_name'] = str(_suite_name)
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
-            len(_scenario) - 1, {})['status'] = str(_test_status)
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
-            len(_scenario) - 1, {})['message'] = str(_current_error)
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests', {}).setdefault(
-            len(_scenario) - 1, {})['test_name'] = str(_test_name)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name), {})['suite_name'] = str(const_vars._suite_name)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name), {}).setdefault('tests', {}).setdefault(
+            len(const_vars._scenario) - 1, {})['status'] = str(const_vars._test_status)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name), {}).setdefault('tests', {}).setdefault(
+            len(const_vars._scenario) - 1, {})['message'] = str(const_vars._current_error)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name), {}).setdefault('tests', {}).setdefault(
+            len(const_vars._scenario) - 1, {})['test_name'] = str(const_vars._test_name)
 
         if (self.rerun is not None) and (max_rerun() is not None):
-            self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests',
+            self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name), {}).setdefault('tests',
                                                                                                  {}).setdefault(
-                len(_scenario) - 1, {})['rerun'] = str(self.rerun)
+                len(const_vars._scenario) - 1, {})['rerun'] = str(self.rerun)
         else:
-            self.json_data['content']['suites'].setdefault(len(_test_suite_name), {}).setdefault('tests',
+            self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name), {}).setdefault('tests',
                                                                                                  {}).setdefault(
-                len(_scenario) - 1, {})['rerun'] = '0'
+                len(const_vars._scenario) - 1, {})['rerun'] = '0'
 
     def generate_screenshot_data(self):
-        os.makedirs(screen_base + '/pytest_screenshots', exist_ok=True)
+
+        os.makedirs(const_vars.screen_base + '/pytest_screenshots', exist_ok=True)
 
         _screenshot_name = round(time.time())
-        _screenshot_suite_name = _suite_name.split('/')[-1:][0].replace('.py', '')
-        _screenshot_test_name = _test_name
-        if len(_test_name) >= 19: _screenshot_test_name = _test_name[-17:]
-        _screenshot_error = _current_error
+        _screenshot_suite_name = const_vars._suite_name.split('/')[-1:][0].replace('.py', '')
+        _screenshot_test_name = const_vars._test_name
+        if len(const_vars._test_name) >= 19: const_vars._screenshot_test_name = const_vars._test_name[-17:]
+        _screenshot_error = const_vars._current_error
 
-        screen_img.save(
-            screen_base + '/pytest_screenshots/' + str(_screenshot_name) + '.png'
+        const_vars.screen_img.save(
+            const_vars.screen_base + '/pytest_screenshots/' + str(_screenshot_name) + '.png'
         )
 
         # attach screenshots
@@ -363,232 +290,205 @@ class HTMLReporter(object):
         _screenshot_error = ''
 
     def append_suite_metrics_row(self, name):
-        global _spass_tests, _sfail_tests, _sskip_tests, _sxpass_tests, _sxfail_tests, _serror_tests, _srerun_tests, \
-            _error, _suite_error, _suite_fail
-
-        self._test_names(_test_name, clear='yes')
+        self._test_names(const_vars._test_name, clear='yes')
         self._test_suites(name)
 
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-            'total_pass'] = int(_spass_tests)
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-            'total_skip'] = int(_sskip_tests)
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-            'total_xpass'] = int(_sxpass_tests)
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-            'total_xfail'] = int(_sxfail_tests)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_pass'] = int(const_vars._spass_tests)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_skip'] = int(const_vars._sskip_tests)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_xpass'] = int(const_vars._sxpass_tests)
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_xfail'] = int(const_vars._sxfail_tests)
 
         if (self.rerun is not None) and (max_rerun() is not None):
-            _base_suite = self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {})['tests']
+            _base_suite = self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {})['tests']
             for i in _base_suite:
-                _srerun_tests += int(_base_suite[int(i)]['rerun'])
+                const_vars._srerun_tests += int(_base_suite[int(i)]['rerun'])
 
-            self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-                'total_rerun'] = int(_srerun_tests)
+            self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+                'total_rerun'] = int(const_vars._srerun_tests)
         else:
-            self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
+            self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
                 'total_rerun'] = 0
 
-        for i in self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {})['tests']:
-            if 'ERROR' in self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {})['tests'][i][
+        for i in self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {})['tests']:
+            if 'ERROR' in self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {})['tests'][i]['status']:
+                const_vars._suite_error += 1
+            elif 'FAIL' == self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {})['tests'][i][
                 'status']:
-                _suite_error += 1
-            elif 'FAIL' == self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {})['tests'][i][
-                'status']:
-                _suite_fail += 1
+                const_vars._suite_fail += 1
 
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-            'total_fail'] = _suite_fail
-        self.json_data['content']['suites'].setdefault(len(_test_suite_name) - 1, {}).setdefault('status', {})[
-            'total_error'] = _suite_error
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_fail'] = const_vars._suite_fail
+        self.json_data['content']['suites'].setdefault(len(const_vars._test_suite_name) - 1, {}).setdefault('status', {})[
+            'total_error'] = const_vars._suite_error
 
         suite_row_text = SuiteRow()
         suite_row_text = suite_row_text.replace("__sname__", str(name))
-        suite_row_text = suite_row_text.replace("__spass__", str(_spass_tests))
-        suite_row_text = suite_row_text.replace("__sfail__", str(_suite_fail))
-        suite_row_text = suite_row_text.replace("__sskip__", str(_sskip_tests))
-        suite_row_text = suite_row_text.replace("__sxpass__", str(_sxpass_tests))
-        suite_row_text = suite_row_text.replace("__sxfail__", str(_sxfail_tests))
-        suite_row_text = suite_row_text.replace("__serror__", str(_suite_error))
-        suite_row_text = suite_row_text.replace("__srerun__", str(_srerun_tests))
+        suite_row_text = suite_row_text.replace("__spass__", str(const_vars._spass_tests))
+        suite_row_text = suite_row_text.replace("__sfail__", str(const_vars._suite_fail))
+        suite_row_text = suite_row_text.replace("__sskip__", str(const_vars._sskip_tests))
+        suite_row_text = suite_row_text.replace("__sxpass__", str(const_vars._sxpass_tests))
+        suite_row_text = suite_row_text.replace("__sxfail__", str(const_vars._sxfail_tests))
+        suite_row_text = suite_row_text.replace("__serror__", str(const_vars._suite_error))
+        suite_row_text = suite_row_text.replace("__srerun__", str(const_vars._srerun_tests))
 
-        global _suite_metrics_content
-        _suite_metrics_content += suite_row_text
+        const_vars._suite_metrics_content += suite_row_text
 
-        self._test_passed(int(_spass_tests))
-        self._test_failed(int(_suite_fail))
-        self._test_skipped(int(_sskip_tests))
-        self._test_xpassed(int(_sxpass_tests))
-        self._test_xfailed(int(_sxfail_tests))
-        self._test_error(int(_suite_error))
+        self._test_passed(int(const_vars._spass_tests))
+        self._test_failed(int(const_vars._suite_fail))
+        self._test_skipped(int(const_vars._sskip_tests))
+        self._test_xpassed(int(const_vars._sxpass_tests))
+        self._test_xfailed(int(const_vars._sxfail_tests))
+        self._test_error(int(const_vars._suite_error))
 
-        _spass_tests = 0
-        _sfail_tests = 0
-        _sskip_tests = 0
-        _sxpass_tests = 0
-        _sxfail_tests = 0
-        _serror_tests = 0
-        _srerun_tests = 0
-        _suite_fail = 0
-        _suite_error = 0
+        const_vars._spass_tests = 0
+        const_vars._sfail_tests = 0
+        const_vars._sskip_tests = 0
+        const_vars._sxpass_tests = 0
+        const_vars._sxfail_tests = 0
+        const_vars._serror_tests = 0
+        const_vars._srerun_tests = 0
+        const_vars._suite_fail = 0
+        const_vars._suite_error = 0
 
     def set_initial_trigger(self):
-        global _initial_trigger
-        _initial_trigger = False
+        const_vars._initial_trigger = False
 
     def update_previous_suite_name(self):
-        global _previous_suite_name
-        _previous_suite_name = _suite_name
+        const_vars._previous_suite_name = const_vars._suite_name
 
     def update_counts(self, rep):
-        global _sfail_tests, _spass_tests, _sskip_tests, _serror_tests, _sxfail_tests, _sxpass_tests
-
         if rep.when == "call" and rep.passed:
             if hasattr(rep, "wasxfail"):
-                _sxpass_tests += 1
+                const_vars._sxpass_tests += 1
             else:
-                _spass_tests += 1
+                const_vars._spass_tests += 1
 
         if rep.failed:
             if getattr(rep, "when", None) == "call":
                 if hasattr(rep, "wasxfail"):
-                    _sxpass_tests += 1
+                    const_vars._sxpass_tests += 1
                 else:
-                    _sfail_tests += 1
+                    const_vars._sfail_tests += 1
             else:
                 pass
 
         if rep.skipped:
             if hasattr(rep, "wasxfail"):
-                _sxfail_tests += 1
+                const_vars._sxfail_tests += 1
             else:
-                _sskip_tests += 1
+                const_vars._sskip_tests += 1
 
     def update_test_error(self, msg):
-        global _current_error
-        _current_error = msg
+        const_vars._current_error = msg
 
     def update_test_status(self, status):
-        global _test_status
-        _test_status = status
+        const_vars._test_status = status
 
     def increment_xpass(self):
-        global _xpass
-        _xpass += 1
+        const_vars._xpass += 1
 
     def increment_xfail(self):
-        global _xfail
-        _xfail += 1
+        const_vars._xfail += 1
 
     def increment_pass(self):
-        global _pass
-        _pass += 1
+        const_vars._pass += 1
 
     def increment_fail(self):
-        global _fail
-        _fail += 1
+        const_vars._fail += 1
 
     def increment_skip(self):
-        global _skip
-        _skip += 1
+        const_vars._skip += 1
 
     def increment_error(self):
-        global _error, _serror_tests
-        _error += 1
-        _serror_tests += 1
+        const_vars._error += 1
+        const_vars._serror_tests += 1
 
     def _date(self):
         return date.today().strftime("%B %d, %Y")
 
     def _test_suites(self, name):
-        global _test_suite_name
-        _test_suite_name.append(name.split('/')[-1].replace('.py', ''))
+        const_vars._test_suite_name.append(name.split('/')[-1].replace('.py', ''))
 
     def _test_names(self, name, **kwargs):
-        global _scenario
-        if (self.rerun is None) or (max_rerun() is None): _scenario.append(name)
+        if (self.rerun is None) or (max_rerun() is None): const_vars._scenario.append(name)
         try:
-            if kwargs['clear'] == 'yes': _scenario = []
+            if kwargs['clear'] == 'yes': const_vars._scenario = []
         except Exception:
             pass
 
     def _test_passed(self, value):
-        global _test_pass_list
-        _test_pass_list.append(value)
+        const_vars._test_pass_list.append(value)
 
     def _test_failed(self, value):
-        global _test_fail_list
-        _test_fail_list.append(value)
+        const_vars._test_fail_list.append(value)
 
     def _test_skipped(self, value):
-        global _test_skip_list
-        _test_skip_list.append(value)
+        const_vars._test_skip_list.append(value)
 
     def _test_xpassed(self, value):
-        global _test_xpass_list
-        _test_xpass_list.append(value)
+        const_vars._test_xpass_list.append(value)
 
     def _test_xfailed(self, value):
-        global _test_xfail_list
-        _test_xfail_list.append(value)
+        const_vars._test_xfail_list.append(value)
 
     def _test_error(self, value):
-        global _test_error_list
-        _test_error_list.append(value)
+        const_vars._test_error_list.append(value)
 
     def renew_template_text(self, logo_url):
         template_text = HtmlTemplate()
         template_text = template_text.replace("__custom_logo__", logo_url)
-        template_text = template_text.replace("__execution_time__", str(_execution_time))
-        template_text = template_text.replace("__title__", _title)
+        template_text = template_text.replace("__execution_time__", str(const_vars._execution_time))
+        template_text = template_text.replace("__title__", const_vars._title)
         # template_text = template_text.replace("__executed_by__", str(platform.uname()[1]))
         # template_text = template_text.replace("__os_name__", str(platform.uname()[0]))
         # template_text = template_text.replace("__python_version__", str(sys.version.split(' ')[0]))
         # template_text = template_text.replace("__generated_date__", str(datetime.datetime.now().strftime("%b %d %Y, %H:%M")))
         template_text = template_text.replace("__total__",
-                                              str(_aspass + _asfail + _asskip + _aserror + _asxpass + _asxfail))
-        template_text = template_text.replace("__executed__", str(_executed))
-        template_text = template_text.replace("__pass__", str(_aspass))
-        template_text = template_text.replace("__fail__", str(_asfail))
-        template_text = template_text.replace("__skip__", str(_asskip))
-        template_text = template_text.replace("__error__", str(_aserror))
-        template_text = template_text.replace("__xpass__", str(_asxpass))
-        template_text = template_text.replace("__xfail__", str(_asxfail))
-        template_text = template_text.replace("__rerun__", str(_asrerun))
-        template_text = template_text.replace("__suite_metrics_row__", str(_suite_metrics_content))
-        template_text = template_text.replace("__test_metrics_row__", str(_test_metrics_content))
+                                              str(const_vars._aspass + const_vars._asfail + const_vars._asskip + const_vars._aserror + const_vars._asxpass + const_vars._asxfail))
+        template_text = template_text.replace("__executed__", str(const_vars._executed))
+        template_text = template_text.replace("__pass__", str(const_vars._aspass))
+        template_text = template_text.replace("__fail__", str(const_vars._asfail))
+        template_text = template_text.replace("__skip__", str(const_vars._asskip))
+        template_text = template_text.replace("__error__", str(const_vars._aserror))
+        template_text = template_text.replace("__xpass__", str(const_vars._asxpass))
+        template_text = template_text.replace("__xfail__", str(const_vars._asxfail))
+        template_text = template_text.replace("__rerun__", str(const_vars._asrerun))
+        template_text = template_text.replace("__suite_metrics_row__", str(const_vars._suite_metrics_content))
+        template_text = template_text.replace("__test_metrics_row__", str(const_vars._test_metrics_content))
         template_text = template_text.replace("__date__", str(self._date()))
-        template_text = template_text.replace("__test_suites__", str(_test_suite_name))
-        template_text = template_text.replace("__test_suite_length__", str(len(_test_suite_name)))
-        template_text = template_text.replace("__test_suite_pass__", str(_test_pass_list))
-        template_text = template_text.replace("__test_suites_fail__", str(_test_fail_list))
-        template_text = template_text.replace("__test_suites_skip__", str(_test_skip_list))
-        template_text = template_text.replace("__test_suites_xpass__", str(_test_xpass_list))
-        template_text = template_text.replace("__test_suites_xfail__", str(_test_xfail_list))
-        template_text = template_text.replace("__test_suites_error__", str(_test_error_list))
-        template_text = template_text.replace("__archive_status__", str(_archive_tab_content))
-        template_text = template_text.replace("__archive_body_content__", str(_archive_body_content))
-        template_text = template_text.replace("__archive_count__", str(_archive_count))
-        template_text = template_text.replace("__archives__", str(archives))
-        template_text = template_text.replace("__max_failure_suite_name_final__", str(max_failure_suite_name_final))
-        template_text = template_text.replace("__max_failure_suite_count__", str(max_failure_suite_count))
+        template_text = template_text.replace("__test_suites__", str(const_vars._test_suite_name))
+        template_text = template_text.replace("__test_suite_length__", str(len(const_vars._test_suite_name)))
+        template_text = template_text.replace("__test_suite_pass__", str(const_vars._test_pass_list))
+        template_text = template_text.replace("__test_suites_fail__", str(const_vars._test_fail_list))
+        template_text = template_text.replace("__test_suites_skip__", str(const_vars._test_skip_list))
+        template_text = template_text.replace("__test_suites_xpass__", str(const_vars._test_xpass_list))
+        template_text = template_text.replace("__test_suites_xfail__", str(const_vars._test_xfail_list))
+        template_text = template_text.replace("__test_suites_error__", str(const_vars._test_error_list))
+        template_text = template_text.replace("__archive_status__", str(const_vars._archive_tab_content))
+        template_text = template_text.replace("__archive_body_content__", str(const_vars._archive_body_content))
+        template_text = template_text.replace("__archive_count__", str(const_vars._archive_count))
+        template_text = template_text.replace("__archives__", str(const_vars.archives))
+        template_text = template_text.replace("__max_failure_suite_name_final__", str(const_vars.max_failure_suite_name_final))
+        template_text = template_text.replace("__max_failure_suite_count__", str(const_vars.max_failure_suite_count))
         template_text = template_text.replace("__similar_max_failure_suite_count__",
-                                              str(similar_max_failure_suite_count))
-        template_text = template_text.replace("__max_failure_total_tests__", str(max_failure_total_tests))
-        template_text = template_text.replace("__max_failure_percent__", str(max_failure_percent))
-        template_text = template_text.replace("__trends_label__", str(trends_label))
-        template_text = template_text.replace("__tpass__", str(tpass))
-        template_text = template_text.replace("__tfail__", str(tfail))
-        template_text = template_text.replace("__tskip__", str(tskip))
-        template_text = template_text.replace("__attach_screenshot_details__", str(_attach_screenshot_details))
+                                              str(const_vars.similar_max_failure_suite_count))
+        template_text = template_text.replace("__max_failure_total_tests__", str(const_vars.max_failure_total_tests))
+        template_text = template_text.replace("__max_failure_percent__", str(const_vars.max_failure_percent))
+        template_text = template_text.replace("__trends_label__", str(const_vars.trends_label))
+        template_text = template_text.replace("__tpass__", str(const_vars.tpass))
+        template_text = template_text.replace("__tfail__", str(const_vars.tfail))
+        template_text = template_text.replace("__tskip__", str(const_vars.tskip))
+        template_text = template_text.replace("__attach_screenshot_details__", str(const_vars._attach_screenshot_details))
         return template_text
 
     def generate_json_data(self, base):
-        global _asskip, _aserror, _aspass, _asfail, _asxpass, _asxfail, _asrerun
-
         self.json_data['date'] = self._date()
-        self.json_data['start_time'] = _start_execution_time
-        self.json_data['total_suite'] = len(_test_suite_name)
+        self.json_data['start_time'] = const_vars._start_execution_time
+        self.json_data['total_suite'] = len(const_vars._test_suite_name)
 
         suite = self.json_data['content']['suites']
         for i in suite:
@@ -603,56 +503,54 @@ class HTMLReporter(object):
             try:
                 if self.json_data['status'] == "FAIL": break
             except KeyError:
-                if len(_test_suite_name) == i + 1: self.json_data['status'] = "PASS"
+                if len(const_vars._test_suite_name) == i + 1: self.json_data['status'] = "PASS"
 
         for i in suite:
             for k in self.json_data['content']['suites'][i]['status']:
                 if k == 'total_pass':
-                    _aspass += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._aspass += self.json_data['content']['suites'][i]['status'][k]
                 elif k == 'total_fail':
-                    _asfail += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._asfail += self.json_data['content']['suites'][i]['status'][k]
                 elif k == 'total_skip':
-                    _asskip += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._asskip += self.json_data['content']['suites'][i]['status'][k]
                 elif k == 'total_error':
-                    _aserror += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._aserror += self.json_data['content']['suites'][i]['status'][k]
                 elif k == 'total_xpass':
-                    _asxpass += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._asxpass += self.json_data['content']['suites'][i]['status'][k]
                 elif k == 'total_xfail':
-                    _asxfail += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._asxfail += self.json_data['content']['suites'][i]['status'][k]
                 elif k == 'total_rerun':
-                    _asrerun += self.json_data['content']['suites'][i]['status'][k]
+                    const_vars._asrerun += self.json_data['content']['suites'][i]['status'][k]
 
-        _astotal = _aspass + _asfail + _asskip + _aserror + _asxpass + _asxfail
+        const_vars._astotal = const_vars._aspass + const_vars._asfail + const_vars._asskip + const_vars._aserror + const_vars._asxpass + const_vars._asxfail
 
-        self.json_data.setdefault('status_list', {})['pass'] = str(_aspass)
-        self.json_data.setdefault('status_list', {})['fail'] = str(_asfail)
-        self.json_data.setdefault('status_list', {})['skip'] = str(_asskip)
-        self.json_data.setdefault('status_list', {})['error'] = str(_aserror)
-        self.json_data.setdefault('status_list', {})['xpass'] = str(_asxpass)
-        self.json_data.setdefault('status_list', {})['xfail'] = str(_asxfail)
-        self.json_data.setdefault('status_list', {})['rerun'] = str(_asrerun)
-        self.json_data['total_tests'] = str(_astotal)
+        self.json_data.setdefault('status_list', {})['pass'] = str(const_vars._aspass)
+        self.json_data.setdefault('status_list', {})['fail'] = str(const_vars._asfail)
+        self.json_data.setdefault('status_list', {})['skip'] = str(const_vars._asskip)
+        self.json_data.setdefault('status_list', {})['error'] = str(const_vars._aserror)
+        self.json_data.setdefault('status_list', {})['xpass'] = str(const_vars._asxpass)
+        self.json_data.setdefault('status_list', {})['xfail'] = str(const_vars._asxfail)
+        self.json_data.setdefault('status_list', {})['rerun'] = str(const_vars._asrerun)
+        self.json_data['total_tests'] = str(const_vars._astotal)
 
         with open(base + '/output.json', 'w') as outfile:
             json.dump(self.json_data, outfile)
 
     def update_archives_template(self, base):
-        global _archive_count
 
         f = glob.glob(base + '/archive/*.json')
         cf = glob.glob(base + '/output.json')
         if len(f) > 0:
-            _archive_count = len(f) + 1
+            const_vars._archive_count = len(f) + 1
             self.load_archive(cf, value='current')
 
             f.sort(reverse=True)
             self.load_archive(f, value='history')
         else:
-            _archive_count = 1
+            const_vars._archive_count = 1
             self.load_archive(cf, value='current')
 
     def load_archive(self, f, value):
-        global archive_pass, archive_fail, archive_skip, archive_xpass, archive_xfail, archive_error, archives
 
         def state(data):
             if data == 'fail':
@@ -669,8 +567,8 @@ class HTMLReporter(object):
                 archive_row_text = archive_row_text.replace("__astate__", state(data['status'].lower())[0])
                 archive_row_text = archive_row_text.replace("__astate_color__", state(data['status'].lower())[1])
                 if value == "current":
-                    archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(_archive_count))
-                    archive_row_text = archive_row_text.replace("__acount__", str(_archive_count))
+                    archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(const_vars._archive_count))
+                    archive_row_text = archive_row_text.replace("__acount__", str(const_vars._archive_count))
                 else:
                     archive_row_text = archive_row_text.replace("__astatus__", 'build #' + str(len(f) - i))
                     archive_row_text = archive_row_text.replace("__acount__", str(len(f) - i))
@@ -686,18 +584,16 @@ class HTMLReporter(object):
                         1)[0]
                 archive_row_text = archive_row_text.replace("__adate__",
                                                             str(adate.date()) + ' | ' + str(time_converter(atime)))
-
-                global _archive_tab_content
-                _archive_tab_content += archive_row_text
+                const_vars._archive_tab_content += archive_row_text
 
                 _archive_body_text = ArchiveBody()
 
                 if value == "current":
                     _archive_body_text = _archive_body_text.replace("__iloop__", str(i))
-                    _archive_body_text = _archive_body_text.replace("__acount__", str(_archive_count))
+                    const_vars._archive_body_text = _archive_body_text.replace("__acount__", str(const_vars._archive_count))
                 else:
-                    _archive_body_text = _archive_body_text.replace("__iloop__", str(i + 1))
-                    _archive_body_text = _archive_body_text.replace("__acount__", str(len(f) - i))
+                    const_vars._archive_body_text = _archive_body_text.replace("__iloop__", str(i + 1))
+                    const_vars._archive_body_text = _archive_body_text.replace("__acount__", str(len(f) - i))
 
                 _archive_body_text = _archive_body_text.replace("__total_tests__", data['total_tests'])
                 _archive_body_text = _archive_body_text.replace("__date__", data['date'].upper())
@@ -717,25 +613,22 @@ class HTMLReporter(object):
 
                 index = i
                 if value != "current": index = i + 1
-                archives.setdefault(str(index), {})['pass'] = data['status_list']['pass']
-                archives.setdefault(str(index), {})['fail'] = data['status_list']['fail']
-                archives.setdefault(str(index), {})['skip'] = data['status_list']['skip']
-                archives.setdefault(str(index), {})['xpass'] = data['status_list']['xpass']
-                archives.setdefault(str(index), {})['xfail'] = data['status_list']['xfail']
-                archives.setdefault(str(index), {})['error'] = data['status_list']['error']
+                const_vars.archives.setdefault(str(index), {})['pass'] = data['status_list']['pass']
+                const_vars.archives.setdefault(str(index), {})['fail'] = data['status_list']['fail']
+                const_vars.archives.setdefault(str(index), {})['skip'] = data['status_list']['skip']
+                const_vars.archives.setdefault(str(index), {})['xpass'] = data['status_list']['xpass']
+                const_vars.archives.setdefault(str(index), {})['xfail'] = data['status_list']['xfail']
+                const_vars.archives.setdefault(str(index), {})['error'] = data['status_list']['error']
 
                 try:
-                    archives.setdefault(str(index), {})['rerun'] = data['status_list']['rerun']
+                    const_vars.archives.setdefault(str(index), {})['rerun'] = data['status_list']['rerun']
                 except KeyError:
-                    archives.setdefault(str(index), {})['rerun'] = '0'
+                    const_vars.archives.setdefault(str(index), {})['rerun'] = '0'
 
-                archives.setdefault(str(index), {})['total'] = data['total_tests']
-
-                global _archive_body_content
-                _archive_body_content += _archive_body_text
+                const_vars.archives.setdefault(str(index), {})['total'] = data['total_tests']
+                const_vars._archive_body_content += _archive_body_text
 
     def update_trends(self, base):
-        global tpass, tfail, tskip
 
         f2 = glob.glob(base + '/output.json')
         with open(f2[0]) as json_file:
@@ -748,12 +641,12 @@ class HTMLReporter(object):
                 "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(
                     ':',
                     1)[0]
-            trends_label.append(str(time_converter(atime)).upper() + ' | ' + str(adate.date().strftime("%b")) + ' '
+            const_vars.trends_label.append(str(time_converter(atime)).upper() + ' | ' + str(adate.date().strftime("%b")) + ' '
                                 + str(adate.date().strftime("%d")))
 
-            tpass.append(data['status_list']['pass'])
-            tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
-            tskip.append(data['status_list']['skip'])
+            const_vars.tpass.append(data['status_list']['pass'])
+            const_vars.tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
+            const_vars.tskip.append(data['status_list']['skip'])
 
         f = glob.glob(base + '/archive' + '/*.json')
         f.sort(reverse=True)
@@ -770,17 +663,16 @@ class HTMLReporter(object):
                     "".join(list(filter(lambda x: ':' in x, time.ctime(float(data['start_time'])).split(' ')))).rsplit(
                         ':',
                         1)[0]
-                trends_label.append(str(time_converter(atime)).upper() + ' | ' + str(adate.date().strftime("%b")) + ' '
+                const_vars.trends_label.append(str(time_converter(atime)).upper() + ' | ' + str(adate.date().strftime("%b")) + ' '
                                     + str(adate.date().strftime("%d")))
 
-                tpass.append(data['status_list']['pass'])
-                tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
-                tskip.append(data['status_list']['skip'])
+                const_vars.tpass.append(data['status_list']['pass'])
+                const_vars.tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
+                const_vars.tskip.append(data['status_list']['skip'])
 
                 if i == 4: break
 
     def attach_screenshots(self, screen_name, test_suite, test_case, test_error):
-        global _attach_screenshot_details
 
         _screenshot_details = ScreenshotDetails()
 
@@ -790,6 +682,6 @@ class HTMLReporter(object):
         _screenshot_details = _screenshot_details.replace("__ts__", str(test_suite))
         _screenshot_details = _screenshot_details.replace("__tc__", str(test_case))
         _screenshot_details = _screenshot_details.replace("__te__", str(test_error))
-        _screenshot_details = _screenshot_details.replace("__screenshot_base__", str(screen_base))
+        _screenshot_details = _screenshot_details.replace("__screenshot_base__", str(const_vars.screen_base))
 
-        _attach_screenshot_details += _screenshot_details
+        const_vars._attach_screenshot_details += _screenshot_details
