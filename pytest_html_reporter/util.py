@@ -5,51 +5,51 @@ from collections import Counter
 from io import BytesIO
 from PIL import Image
 
-from pytest_html_reporter import const_vars
+from pytest_html_reporter.const_vars import ConfigVars
 
 def suite_highlights(data):
 
     for i in data['content']['suites']:
         if data['content']['suites'][i]['status']['total_fail'] == 0:
             l = data['content']['suites'][i]['suite_name']
-            if l not in const_vars.p_highlights:
-                const_vars.p_highlights[l] = 1
+            if l not in ConfigVars.p_highlights:
+                ConfigVars.p_highlights[l] = 1
             else:
-                const_vars.p_highlights[l] += 1
+                ConfigVars.p_highlights[l] += 1
         else:
             k = data['content']['suites'][i]['suite_name']
 
-            if k not in const_vars.highlights:
-                const_vars.highlights[k] = 1
+            if k not in ConfigVars.highlights:
+                ConfigVars.highlights[k] = 1
             else:
-                const_vars.highlights[k] += 1
+                ConfigVars.highlights[k] += 1
 
 
 def generate_suite_highlights():
 
-    if const_vars.highlights == {}:
-        const_vars.max_failure_suite_name_final = 'No failures in History'
-        const_vars.max_failure_suite_count = 0
-        const_vars.max_failure_percent = '0'
+    if ConfigVars.highlights == {}:
+        ConfigVars.max_failure_suite_name_final = 'No failures in History'
+        ConfigVars.max_failure_suite_count = 0
+        ConfigVars.max_failure_percent = '0'
         return
 
-    const_vars.max_failure_suite_name = max(const_vars.highlights, key=const_vars.highlights.get)
-    const_vars.max_failure_suite_count = const_vars.highlights[const_vars.max_failure_suite_name]
+    ConfigVars.max_failure_suite_name = max(ConfigVars.highlights, key=ConfigVars.highlights.get)
+    ConfigVars.max_failure_suite_count = ConfigVars.highlights[ConfigVars.max_failure_suite_name]
 
-    if const_vars.max_failure_suite_name in const_vars.p_highlights:
-        const_vars.max_failure_total_tests = const_vars.p_highlights[const_vars.max_failure_suite_name] + const_vars.max_failure_suite_count
+    if ConfigVars.max_failure_suite_name in ConfigVars.p_highlights:
+        ConfigVars.max_failure_total_tests = ConfigVars.p_highlights[ConfigVars.max_failure_suite_name] + ConfigVars.max_failure_suite_count
     else:
-        const_vars.max_failure_total_tests = const_vars.max_failure_suite_count
+        ConfigVars.max_failure_total_tests = ConfigVars.max_failure_suite_count
 
-    const_vars.max_failure_percent = (const_vars.max_failure_suite_count / const_vars.max_failure_total_tests) * 100
+    ConfigVars.max_failure_percent = (ConfigVars.max_failure_suite_count / ConfigVars.max_failure_total_tests) * 100
 
-    if const_vars.max_failure_suite_name.__len__() > 25:
-        const_vars.max_failure_suite_name_final = ".." + const_vars.max_failure_suite_name[-23:]
+    if ConfigVars.max_failure_suite_name.__len__() > 25:
+        ConfigVars.max_failure_suite_name_final = ".." + ConfigVars.max_failure_suite_name[-23:]
     else:
-        const_vars.max_failure_suite_name_final = const_vars.max_failure_suite_name
+        ConfigVars.max_failure_suite_name_final = ConfigVars.max_failure_suite_name
 
-    res = Counter(const_vars.highlights.values())
-    if max(res.values()) > 1: const_vars.similar_max_failure_suite_count = max(res.values())
+    res = Counter(ConfigVars.highlights.values())
+    if max(res.values()) > 1: ConfigVars.similar_max_failure_suite_count = max(res.values())
 
 
 def max_rerun():
@@ -67,8 +67,8 @@ def max_rerun():
 def screenshot(data=None):
     from pytest_html_reporter.html_reporter import HTMLReporter
 
-    const_vars.screen_base = HTMLReporter.base_path
-    const_vars.screen_img = Image.open(BytesIO(data))
+    ConfigVars.screen_base = HTMLReporter.base_path
+    ConfigVars.screen_img = Image.open(BytesIO(data))
 
 
 def clean_screenshots(path):
