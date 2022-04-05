@@ -78,6 +78,4 @@ def clean_screenshots(path):
 
 
 def custom_title(title):
-    global _title
-
-    _title = title[:26] + '...' if title.__len__() > 29 else title
+    ConfigVars._title = title[:26] + '...' if title.__len__() > 29 else title
