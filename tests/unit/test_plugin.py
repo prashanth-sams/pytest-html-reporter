@@ -3,7 +3,8 @@ import os
 
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + '/../../')
-from pytest_html_reporter.plugin import HTMLReporter, max_rerun
+from pytest_html_reporter.util import max_rerun
+from pytest_html_reporter.html_reporter import HTMLReporter
 
 
 def test_report_path():
