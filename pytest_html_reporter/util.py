@@ -7,8 +7,8 @@ from PIL import Image
 
 from pytest_html_reporter.const_vars import ConfigVars
 
-def suite_highlights(data):
 
+def suite_highlights(data):
     for i in data['content']['suites']:
         if data['content']['suites'][i]['status']['total_fail'] == 0:
             l = data['content']['suites'][i]['suite_name']
@@ -26,7 +26,6 @@ def suite_highlights(data):
 
 
 def generate_suite_highlights():
-
     if ConfigVars.highlights == {}:
         ConfigVars.max_failure_suite_name_final = 'No failures in History'
         ConfigVars.max_failure_suite_count = 0
@@ -79,15 +78,3 @@ def clean_screenshots(path):
 
 def custom_title(title):
     ConfigVars._title = title[:26] + '...' if title.__len__() > 29 else title
-
-
-def remove_old_archives(path, archive_count):
-    if archive_count is not '':
-        if int(archive_count) is 0: return
-        archive_count = int(archive_count) - 1
-        archive_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(path))) + '/archive'
-        if os.path.isdir(archive_dir):
-            archives = os.listdir(archive_dir)
-            archives.sort(key=lambda f: os.path.getmtime(os.path.join(archive_dir, f)))
-            for i in range(0, len(archives) - archive_count):
-                os.remove(os.path.join(archive_dir, archives[i]))

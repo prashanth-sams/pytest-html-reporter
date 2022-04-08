@@ -2,6 +2,7 @@ import glob
 import json
 import os
 import time
+import shutil
 from datetime import date, datetime
 from os.path import isfile, join
 
@@ -18,10 +19,12 @@ from pytest_html_reporter.util import suite_highlights, generate_suite_highlight
 from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
 
+
 class HTMLReporter(object):
-    def __init__(self, path, config):
+    def __init__(self, path, archive_count, config):
         self.json_data = {'content': {'suites': {0: {'status': {}, 'tests': {0: {}}, }, }}}
         self.path = path
+        self.archive_count = archive_count
         self.config = config
         has_rerun = config.pluginmanager.hasplugin("rerunfailures")
         self.rerun = 0 if has_rerun else None
@@ -37,7 +40,6 @@ class HTMLReporter(object):
         self.append_test_metrics_row()
 
     def previous_test_name(self, _test_name):
-
         if ConfigVars._previous_test_name == _test_name:
             self.rerun += 1
         else:
@@ -49,11 +51,9 @@ class HTMLReporter(object):
         ConfigVars._start_execution_time = time.time()
 
     def pytest_sessionfinish(self, session):
-
         if ConfigVars._suite_name is not None: self.append_suite_metrics_row(ConfigVars._suite_name)
 
     def archive_data(self, base, filename):
-
         path = os.path.join(base, filename)
 
         if os.path.isfile(path) is True:
@@ -77,6 +77,22 @@ class HTMLReporter(object):
             logfile = os.path.expanduser(os.path.expandvars(self.path))
             HTMLReporter.base_path = os.path.abspath(logfile)
             return os.path.abspath(logfile), 'pytest_html_report.html'
+
+    def remove_old_archives(self):
+        archive_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(self.path))) + '/archive'
+
+        if self.archive_count != '':
+            if int(self.archive_count) == 0:
+                if os.path.isdir(archive_dir):
+                    shutil.rmtree(archive_dir)
+                return
+
+            archive_count = int(self.archive_count) - 1
+            if os.path.isdir(archive_dir):
+                archives = os.listdir(archive_dir)
+                archives.sort(key=lambda f: os.path.getmtime(os.path.join(archive_dir, f)))
+                for i in range(0, len(archives) - archive_count):
+                    os.remove(os.path.join(archive_dir, archives[i]))
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
@@ -104,7 +120,8 @@ class HTMLReporter(object):
             self.update_trends(base)
 
             # generate archive template
-            self.update_archives_template(base)
+            self.remove_old_archives()
+            self.update_archives_template(base) if self.archive_count != '0' else None
 
             # generate suite highlights
             generate_suite_highlights()
@@ -537,7 +554,6 @@ class HTMLReporter(object):
             json.dump(self.json_data, outfile)
 
     def update_archives_template(self, base):
-
         f = glob.glob(base + '/archive/*.json')
         cf = glob.glob(base + '/output.json')
         if len(f) > 0:
@@ -551,7 +567,6 @@ class HTMLReporter(object):
             self.load_archive(cf, value='current')
 
     def load_archive(self, f, value):
-
         def state(data):
             if data == 'fail':
                 return 'times', '#fc6766'
