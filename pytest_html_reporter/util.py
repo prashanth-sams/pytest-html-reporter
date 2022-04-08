@@ -79,3 +79,15 @@ def clean_screenshots(path):
 
 def custom_title(title):
     ConfigVars._title = title[:26] + '...' if title.__len__() > 29 else title
+
+
+def remove_old_archives(path, archive_count):
+    if archive_count is not '':
+        if int(archive_count) is 0: return
+        archive_count = int(archive_count) - 1
+        archive_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(path))) + '/archive'
+        if os.path.isdir(archive_dir):
+            archives = os.listdir(archive_dir)
+            archives.sort(key=lambda f: os.path.getmtime(os.path.join(archive_dir, f)))
+            for i in range(0, len(archives) - archive_count):
+                os.remove(os.path.join(archive_dir, archives[i]))

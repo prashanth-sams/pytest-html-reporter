@@ -72,6 +72,11 @@ Add ``--title`` tag followed by the report title::
 
     $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 
+Add ``--archive-count`` tag followed by an integer to limit showing the number of builds in the Archives section::
+
+    $ pytest tests/ --archive-count 7
+    $ pytest tests/ --html-report=./report --archive-count 7
+
 ..
 
         pytest.ini

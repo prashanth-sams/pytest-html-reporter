@@ -1,5 +1,5 @@
 from pytest_html_reporter.html_reporter import HTMLReporter
-from pytest_html_reporter.util import clean_screenshots, custom_title
+from pytest_html_reporter.util import clean_screenshots, custom_title, remove_old_archives
 
 
 def pytest_addoption(parser):
@@ -21,6 +21,14 @@ def pytest_addoption(parser):
         help="customize report title",
     )
 
+    group.addoption(
+        "--archive-count",
+        action="store",
+        dest="archive_count",
+        default="",
+        help="set archives maximum build count",
+    )
+
 
 def pytest_configure(config):
     path = config.getoption("path")
@@ -28,6 +36,9 @@ def pytest_configure(config):
 
     title = config.getoption("title")
     custom_title(title)
+    
+    archive_count = config.getoption("archive_count")
+    remove_old_archives(path, archive_count)
 
     config._html = HTMLReporter(path, config)
     config.pluginmanager.register(config._html)
