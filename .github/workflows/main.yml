@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run Tests
         run: |
-          pip install pytest pytest-cov coveralls Pillow
+          pip install pytest pytest-cov coveralls Pillow pytest-rerunfailures
           py.test --cov ./pytest_html_reporter/ tests/unit/
           coveralls --service=github
           bash <(curl -s https://codecov.io/bash)
