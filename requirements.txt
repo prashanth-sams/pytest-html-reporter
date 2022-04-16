@@ -6,3 +6,4 @@ twine
 pytest-xdist
 beautifulsoup4
 pytest-rerunfailures
+Pillow
