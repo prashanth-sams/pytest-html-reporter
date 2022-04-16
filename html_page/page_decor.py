@@ -21,7 +21,7 @@ def html_page(cls):
     def __str__(self):
         res = self.content
         for inln in self.inline_attributes:
-            res = res.replace(f"%({inln})s", getattr(self, inln))
+            res = res.replace(f"%({inln})", getattr(self, inln))
 
         for cd_snpt in self.inline_code_snippets:
             res = res.replace(f"$({cd_snpt})s", eval(cd_snpt))
@@ -44,7 +44,7 @@ def html_page(cls):
     @property
     def inline_attributes(self):
         if not self.__inline_attributes:
-            self.__inline_attributes = re.findall("%\((.+?)\)s", self.content)
+            self.__inline_attributes = re.findall("%\((.+?)\)", self.content)
 
         return self.__inline_attributes
 
