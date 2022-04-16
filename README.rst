@@ -32,15 +32,15 @@ pytest-html-reporter
 
 Features
 ------------
-- Generic information
+* Generic information
 
-    - Overview
-    - Trends
-    - Suite Highlights
-    - Test suite details
-- Archives / History
-- Screenshots on failure
-- Test Rerun support
+  - Overview
+  - Trends
+  - Suite Highlights
+  - Test suite details
+* Archives / History
+* Screenshots on failure
+* Test Rerun support
 
 Installation
 ------------

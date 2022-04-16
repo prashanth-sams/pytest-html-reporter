@@ -15,7 +15,8 @@ class ConfigVars:
     _asxfail = 0
     _asrerun = 0
     _current_error = ""
-    _suite_name = _test_name = None
+    _suite_name = None
+    _test_name = None
     _scenario = []
     _test_suite_name = []
     _test_pass_list = []
@@ -27,7 +28,8 @@ class ConfigVars:
     _test_status = None
     _start_execution_time = 0
     _execution_time = _duration = 0
-    _test_metrics_content = _suite_metrics_content = ""
+    _test_metrics_content = ""
+    _suite_metrics_content = ""
     _previous_suite_name = "None"
     _initial_trigger = True
     _spass_tests = 0
