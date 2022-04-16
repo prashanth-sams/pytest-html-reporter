@@ -7,8 +7,8 @@ from PIL import Image
 
 from pytest_html_reporter.const_vars import ConfigVars
 
-def suite_highlights(data):
 
+def suite_highlights(data):
     for i in data['content']['suites']:
         if data['content']['suites'][i]['status']['total_fail'] == 0:
             l = data['content']['suites'][i]['suite_name']
@@ -26,7 +26,6 @@ def suite_highlights(data):
 
 
 def generate_suite_highlights():
-
     if ConfigVars.highlights == {}:
         ConfigVars.max_failure_suite_name_final = 'No failures in History'
         ConfigVars.max_failure_suite_count = 0
