@@ -14,9 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: |
+          pip3 install -r requirements.txt
       - name: Run Tests
         run: |
-          pip install pytest pytest-cov coveralls Pillow pytest-rerunfailures
-          py.test --cov ./pytest_html_reporter/ tests/unit/
+          python3 -m py.test --cov ./pytest_html_reporter/ tests/unit/
           coveralls --service=github
           bash <(curl -s https://codecov.io/bash)
