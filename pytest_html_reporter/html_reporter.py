@@ -703,8 +703,7 @@ class HTMLReporter(object):
             screen_name=str(screen_name),
             ts=str(test_suite),
             tc=str(test_case),
-            te=str(test_error),
-            screenshot_base=str(ConfigVars.screen_base)
+            te=str(test_error)
         )
 
         if len(test_case) == 17: test_case = '..' + test_case
