@@ -109,18 +109,17 @@ def test_floating_error():
 
 
 def test_screenshot_details():
-    screenshot_base = get_random_string()
     screen_name = get_random_string()
     ts = get_random_string()
     tc = get_random_string()
     te = get_random_string()
 
-    screenshot_details = ScreenshotDetails(ts=ts, tc=tc, te=te, screenshot_base=screenshot_base,
+    screenshot_details = ScreenshotDetails(ts=ts, tc=tc, te=te,
                                            screen_name=screen_name)
     soup = BeautifulSoup(str(screenshot_details), "html.parser")
 
     screenshot_link = soup.find("a", class_="video")
-    screen_path = f"{screenshot_base}/pytest_screenshots/{screen_name}.png"
+    screen_path = f"pytest_screenshots/{screen_name}.png"
     assert screenshot_link["href"] == screen_path
     assert screenshot_link["style"] == f"background-image: url('{screen_path}');"
     assert screenshot_link["data-caption"] == f"SUITE: {ts} :: SCENARIO: {tc}"
