@@ -1,5 +1,5 @@
 from pytest_html_reporter.html_reporter import HTMLReporter
-from pytest_html_reporter.util import clean_screenshots, custom_title
+from pytest_html_reporter.util import clean_screenshots, custom_title, custom_env
 
 
 def pytest_addoption(parser):
@@ -36,7 +36,10 @@ def pytest_configure(config):
 
     title = config.getoption("title")
     custom_title(title)
-    
+
+    env = config.getoption("env")
+    custom_env(env)
+
     archive_count = config.getoption("archive_count")
 
     config._html = HTMLReporter(path, archive_count, config)

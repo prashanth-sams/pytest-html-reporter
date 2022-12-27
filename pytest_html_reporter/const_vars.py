@@ -70,3 +70,4 @@ class ConfigVars:
     screen_img = None
     _attach_screenshot_details = ''
     _title = 'PYTEST REPORT'
+    _env = 'Test'
