@@ -12,13 +12,14 @@ def read(fname):
 
 
 setup(
-    name="pytest-html-reporter",
-    version="0.3.0",
-    author="Prashanth Sams",
-    author_email="sams.prashanth@gmail.com",
-    maintainer="Prashanth Sams",
-    maintainer_email="sams.prashanth@gmail.com",
+    name="pytest-html-reporter-netesenz",
+    version="0.0.4",
+    author="Deependra Singh",
+    author_email="",
+    maintainer="Deependra Singh",
+    maintainer_email="",
     license="MIT",
+    long_description_content_type='text/markdown',
     url="https://github.com/prashanth-sams/pytest-html-reporter",
     description="Generates a static html report based on pytest framework",
     long_description=read("README.rst"),
@@ -35,7 +36,7 @@ setup(
     ],
     entry_points={
         "pytest11": [
-            "reporter = pytest_html_reporter.plugin",
+            "reporter = pytest_html_reporter_netesenz.plugin",
         ],
     },
 )
