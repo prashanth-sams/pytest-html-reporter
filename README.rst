@@ -72,6 +72,10 @@ Add ``--title`` tag followed by the report title::
 
     $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 
+Add ``--env`` tag to show env name on report::
+
+    $ pytest tests/ --env='Test' --html-report=./report --title='PYTEST REPORT'
+
 Add ``--archive-count`` tag followed by an integer to limit showing the number of builds in the ``Archives`` section::
 
     $ pytest tests/ --archive-count 7
