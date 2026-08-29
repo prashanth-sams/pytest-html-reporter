@@ -55,234 +55,6 @@
                     margin-left: 180px;
                 }
 
-                @media screen and (max-width: 768px) {
-                    .sidenav {
-                        width: 60px;
-                    }
-                    .sidenav a {
-                        font-size: 0;
-                        padding: 12px 10px 8px 18px;
-                    }
-                    .sidenav a i {
-                        font-size: 18px;
-                    }
-                    .main {
-                        margin-left: 60px;
-                        padding: 10px 10px 15px 10px;
-                    }
-                    .logo-link {
-                        display: none;
-                    }
-                    .row.rowcard {
-                        flex-direction: column;
-                        margin: 0;
-                    }
-                    .col-md-6.card, .col-md-8.card, .col-md-4.card, .dashboard-card {
-                        max-width: 100% !important;
-                        margin-left: 0 !important;
-                        margin-bottom: 15px;
-                        width: 100%;
-                    }
-                    .card__footer {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 10px 5px;
-                        padding: 10px 5px;
-                    }
-                    .card__footer-section {
-                        width: 100%;
-                        min-width: unset;
-                        padding: 8px 2px;
-                    }
-                    .footer-section__data {
-                        font-size: 1.6rem;
-                    }
-                    .footer-section__label {
-                        font-size: 9pt;
-                        text-transform: uppercase;
-                    }
-                    .total__count {
-                        font-size: 3.5rem;
-                        display: block;
-                        text-align: center;
-                        width: 100%;
-                        margin: 10px 0;
-                    }
-                    .total_count__label {
-                        display: block;
-                        text-align: center;
-                        width: 100%;
-                        padding-left: 0 !important;
-                        font-size: 1rem;
-                        margin-bottom: 15px;
-                    }
-                    .header__title {
-                        font-size: 1.1rem;
-                        padding-left: 0 !important;
-                        padding-top: 0 !important;
-                        text-align: center;
-                        width: 100%;
-                        font-weight: 600;
-                    }
-                    .header__date {
-                        font-size: 0.55rem;
-                        padding-left: 10px !important;
-                        text-align: left;
-                        width: auto;
-                        position: absolute !important;
-                        top: 10px !important;
-                        left: 0 !important;
-                        margin-top: 0 !important;
-                        margin-bottom: 0 !important;
-                        color: #999;
-                    }
-                    .card__header {
-                        justify-content: center;
-                        margin-bottom: 20px;
-                        position: relative;
-                        min-height: 30px;
-                    }
-                    .card__header:nth-child(2) {
-                        position: absolute !important;
-                        top: 10px !important;
-                        left: 0 !important;
-                        margin: 0 !important;
-                        width: auto !important;
-                    }
-                    .time__taken {
-                        font-size: 11px;
-                        padding: 0;
-                    }
-                    .time-taken-wrapper {
-                        margin-left: 0 !important;
-                        margin-bottom: 0 !important;
-                        text-align: right;
-                        position: absolute !important;
-                        top: 10px;
-                        right: 10px;
-                    }
-                    .time-taken-wrapper svg {
-                        width: 14px !important;
-                        height: 14px !important;
-                        margin: 0 4px 0 0 !important;
-                    }
-                    /* Mobile layout: first div holds date/time absolutely positioned */
-                    .card__content > div:first-child {
-                        position: relative !important;
-                        margin-bottom: 0 !important;
-                        height: 40px;
-                    }
-                    /* Mobile layout: count left, label below, chart right */
-                    .card__content > div:nth-child(2) {
-                        display: grid !important;
-                        grid-template-columns: 1fr 140px;
-                        grid-template-rows: auto auto;
-                        gap: 15px 20px;
-                        align-items: start;
-                        margin-top: 20px !important;
-                        position: relative;
-                    }
-                    /* Count and label section */
-                    .card__content > div:nth-child(2) > div:first-child {
-                        grid-column: 1;
-                        grid-row: 1 / span 2;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: flex-start;
-                    }
-                    /* Chart section */
-                    .card__content > div:nth-child(3) {
-                        grid-column: 2 !important;
-                        grid-row: 1 / span 2 !important;
-                        margin: 0 !important;
-                        align-self: center;
-                        position: static !important;
-                    }
-                    .outer_my_chart {
-                        position: static !important;
-                        margin: 0 auto !important;
-                        width: 130px !important;
-                        height: 130px !important;
-                        float: none !important;
-                        left: auto !important;
-                        right: auto !important;
-                        top: auto !important;
-                    }
-                    .inner_my_chart {
-                        max-width: 130px !important;
-                        max-height: 130px !important;
-                    }
-                    .total__count {
-                        font-size: 3.2rem;
-                        display: block;
-                        text-align: left;
-                        width: 100%;
-                        margin: 0;
-                        padding-left: 10px;
-                        line-height: 0.9;
-                        font-weight: bold;
-                    }
-                    .total_count__label {
-                        display: block;
-                        text-align: left;
-                        width: 100%;
-                        padding-left: 10px !important;
-                        font-size: 0.7rem;
-                        margin-top: 5px;
-                        margin-bottom: 0;
-                        color: #888;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }
-                    .suite_count_section {
-                        margin-top: 12px;
-                    }
-                    .dashboard__headers {
-                        font-size: 1.1rem;
-                        padding-left: 10px !important;
-                    }
-                    .dashboard-card-inner {
-                        min-height: auto !important;
-                        height: auto !important;
-                        padding: 10px 5px;
-                    }
-                    .suite-stats-wrapper {
-                        margin-top: 15px !important;
-                        position: static !important;
-                    }
-                    .card__content {
-                        padding: 0.5rem 0.3rem;
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    .card__content > div {
-                        position: static !important;
-                        margin-left: 0 !important;
-                    }
-                    .card__content > div[style*="margin-left: 30%"] {
-                        margin-left: 0 !important;
-                    }
-                    #download {
-                        position: relative !important;
-                        display: block;
-                        text-align: right;
-                        margin-bottom: 10px;
-                        padding-right: 10px;
-                    }
-                    #download i {
-                        position: static !important;
-                        float: none !important;
-                    }
-                    .chart {
-                        max-width: 100%;
-                        height: auto !important;
-                    }
-                    canvas#trends, canvas#groupBarChart {
-                        max-width: 100% !important;
-                        height: auto !important;
-                    }
-                }
 
                 @media screen and (max-height: 450px) {
                     .sidenav {
@@ -1215,6 +987,409 @@
                     .dashboard-viewport .row.rowcard:first-of-type > .card:last-of-type,
                     .dashboard-viewport .row.rowcard:nth-of-type(2) > .card {
                         padding-top: 0.4rem;
+                    }
+                }
+
+                /* =========================================================
+                   Compact layout — everything below the 1200px desktop grid.
+                   Kept last in the sheet so it wins over the older width
+                   breakpoints above, whose negative margins assume a wide,
+                   two-column dashboard.
+                   ========================================================= */
+                @media screen and (max-width: 1199px) {
+                    .dashboard-viewport {
+                        display: block;
+                        height: auto;
+                    }
+
+                    /* Bootstrap's -15px row gutters overflow a narrow viewport. */
+                    .main .row {
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                    }
+                    /* .col-md-12 carries no flex-basis below Bootstrap's md
+                       breakpoint, so the footer row collapses to its text. */
+                    .main .row > .col-md-12 {
+                        width: 100% !important;
+                    }
+
+                    .row.rowcard {
+                        display: flex;
+                        flex-direction: column;
+                        margin: 0 !important;
+                        padding-top: 0 !important;
+                    }
+
+                    .col-md-4.card, .col-md-6.card, .col-md-8.card, .dashboard-card {
+                        max-width: 100% !important;
+                        width: 100%;
+                        margin: 0 0 14px 0 !important;
+                    }
+
+                    .dashboard-card-inner {
+                        width: 100% !important;
+                        min-height: 0 !important;
+                        height: auto !important;
+                        text-align: left !important;
+                    }
+
+                    /* Summary card: title/count on the left, doughnut on the
+                       right, the seven counters across the bottom. */
+                    .card__content {
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) auto;
+                        grid-template-areas:
+                            "meta  meta"
+                            "head  chart"
+                            "stats stats";
+                        align-items: center;
+                        padding: 16px 18px;
+                    }
+
+                    .card__content > .time-taken-wrapper {
+                        grid-area: meta;
+                        margin: 0 !important;
+                        text-align: right;
+                    }
+                    .card__content > .time-taken-wrapper svg {
+                        width: 15px !important;
+                        height: 15px !important;
+                        margin: 0 5px 0 0 !important;
+                    }
+                    .time__taken {
+                        font-size: 13px;
+                    }
+
+                    .card__content > div:nth-child(2) {
+                        grid-area: head;
+                        min-width: 0;
+                    }
+                    .card__content > div:nth-child(2) > div {
+                        justify-content: flex-start;
+                    }
+                    .card__content > div:nth-child(3) {
+                        grid-area: chart;
+                        margin: 0 !important;
+                    }
+                    .card__content > .suite-stats-wrapper {
+                        grid-area: stats;
+                        position: static !important;
+                        margin: 20px 0 0 0 !important;
+                    }
+
+                    .card__header {
+                        margin: 0;
+                    }
+                    .header__title {
+                        font-size: 1.35rem;
+                        padding: 0 !important;
+                    }
+                    .header__date {
+                        font-size: 0.85rem;
+                        padding: 0 !important;
+                    }
+                    .total__count {
+                        font-size: 3.6rem;
+                        line-height: 1.1;
+                        padding: 12px 0 0 0 !important;
+                    }
+                    .total_count__label {
+                        font-size: 1rem;
+                        padding: 0 !important;
+                    }
+
+                    /* Chart.js sizes the doughnut from this box, so keep it
+                       square and free of the desktop negative margins. */
+                    .outer_my_chart {
+                        position: static !important;
+                        margin: 0 !important;
+                        width: 150px !important;
+                        height: 150px !important;
+                        max-width: 150px !important;
+                        max-height: none !important;
+                    }
+                    .inner_my_chart {
+                        margin: 0 !important;
+                        width: 150px !important;
+                        height: 150px !important;
+                        max-width: 150px !important;
+                        max-height: 150px !important;
+                    }
+
+                    /* Seven counters never fit one flex row on a narrow card,
+                       so let them wrap instead of colliding. */
+                    .suite_count_section {
+                        margin: 0 !important;
+                    }
+                    .card__footer {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+                        gap: 14px 4px;
+                        margin: 0 !important;
+                    }
+                    .card__footer-section {
+                        width: auto !important;
+                        text-align: center;
+                    }
+                    .footer-section__data {
+                        font-size: 1.9rem;
+                    }
+                    .footer-section__label {
+                        font-size: 8pt;
+                    }
+
+                    /* Trends / Test Suite cards */
+                    .dashboard__headers {
+                        font-size: 1.25rem;
+                    }
+                    .dashboard__headers > div {
+                        padding-top: 14px !important;
+                        padding-left: 16px !important;
+                    }
+                    .chart-wrap {
+                        margin: 8px 14px 14px 14px;
+                        width: auto;
+                    }
+                    .chart-wrap--trends {
+                        height: 280px;
+                    }
+                    .chart-wrap--suite {
+                        height: 320px;
+                    }
+
+                    #download {
+                        display: block;
+                        text-align: right;
+                        padding: 10px 14px 0 0;
+                    }
+                    #download i {
+                        position: static !important;
+                        float: none !important;
+                        right: auto !important;
+                        padding-top: 0 !important;
+                        font-size: 1.4rem !important;
+                    }
+
+                    /* Suite Highlights */
+                    .suite-highlight-inner {
+                        padding-bottom: 14px;
+                    }
+
+                    /* ---- Archives tab ---- */
+                    /* The build list is fixed to the right edge on desktop,
+                       where it would sit on top of the build cards here. */
+                    .archive-build-row {
+                        position: static !important;
+                        right: auto !important;
+                        width: 100% !important;
+                        max-height: 220px;
+                        place-self: auto;
+                        margin: 0 0 14px 0;
+                    }
+                    /* The row's inline -7% margin and 12% date indent are
+                       tuned for the 220px desktop rail. */
+                    .archive-build-row .list-group-item {
+                        margin-bottom: 0 !important;
+                    }
+                    .archive-build-row .list-group-item > span:last-child {
+                        padding-left: 6px !important;
+                    }
+                    .archive-body {
+                        max-width: 100%;
+                        margin-bottom: 14px;
+                    }
+                    /* Total and chart stack instead of overlapping. */
+                    .archive-total {
+                        position: static !important;
+                        width: 100% !important;
+                        padding-top: 0 !important;
+                    }
+                    .archive-body > div[style*="margin-top: -5%"] {
+                        margin-top: 0 !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-around;
+                        flex-wrap: wrap;
+                        padding: 0 14px;
+                    }
+                    .archive-chart-container {
+                        width: 55% !important;
+                        min-width: 220px;
+                        height: auto !important;
+                        margin: 0 !important;
+                    }
+                    .archive-chart-container canvas {
+                        float: none !important;
+                        margin: 0 !important;
+                        padding-left: 0 !important;
+                    }
+                    .total__tests {
+                        font-size: 4rem;
+                        padding-top: 0;
+                    }
+                    .archive__label {
+                        font-size: 1rem;
+                    }
+                    .archive__bar {
+                        margin-top: 12px !important;
+                        padding-top: 0 !important;
+                    }
+                    .statistic-section-pass, .statistic-section-fail {
+                        padding-top: 18px;
+                        padding-bottom: 18px;
+                    }
+                    /* Seven columns at a hard 14.2% collide well before this. */
+                    .archive__bar .row {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 10px 0;
+                        margin: 0;
+                    }
+                    .archive__bar .row > div {
+                        max-width: none !important;
+                        flex: none !important;
+                        padding: 0;
+                    }
+                    .archive__bar .container {
+                        margin-top: 0 !important;
+                        padding: 0 10px;
+                    }
+                    .counter {
+                        margin-bottom: 0 !important;
+                    }
+                    .count-title {
+                        font-size: 28px;
+                        margin-top: 0;
+                    }
+                    .stats-text {
+                        font-size: 11px;
+                        margin-top: 4px;
+                    }
+
+                    /* ---- Suites / Test Metrics tables ---- */
+                    /* Eight columns never fit a phone: scroll the table in
+                       place rather than scrolling the whole page sideways. */
+                    .dataTables_wrapper {
+                        overflow-x: auto;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .dataTables_wrapper .tablecard {
+                        min-width: 620px;
+                    }
+                    .tablecard {
+                        font-size: 12px;
+                    }
+                }
+
+                @media screen and (max-width: 768px) {
+                    .sidenav {
+                        width: 56px;
+                    }
+                    .sidenav a {
+                        font-size: 0;
+                        padding: 12px 10px 8px 16px;
+                    }
+                    .sidenav a i {
+                        font-size: 18px;
+                    }
+                    .sidenav a.logo-link {
+                        display: none;
+                    }
+                    .main {
+                        margin-left: 56px;
+                        padding: 10px 8px 15px 8px;
+                    }
+
+                    .card__content {
+                        padding: 12px 14px;
+                    }
+                    .header__title {
+                        font-size: 1.15rem;
+                    }
+                    .total__count {
+                        font-size: 3rem;
+                    }
+                    .outer_my_chart, .inner_my_chart {
+                        width: 124px !important;
+                        height: 124px !important;
+                        max-width: 124px !important;
+                    }
+                    .inner_my_chart {
+                        max-height: 124px !important;
+                    }
+                    .footer-section__data {
+                        font-size: 1.6rem;
+                    }
+                    .chart-wrap--trends {
+                        height: 240px;
+                    }
+                    .chart-wrap--suite {
+                        height: 300px;
+                    }
+                }
+
+                /* Below this the count and the doughnut stop fitting side by
+                   side, so the summary card becomes a single centred column. */
+                @media screen and (max-width: 560px) {
+                    .card__content {
+                        grid-template-columns: minmax(0, 1fr);
+                        grid-template-areas:
+                            "meta"
+                            "head"
+                            "chart"
+                            "stats";
+                        justify-items: center;
+                    }
+                    .dashboard-card-inner {
+                        text-align: center !important;
+                    }
+                    .card__content > div:nth-child(2) {
+                        width: 100%;
+                    }
+                    .card__content > div:nth-child(2) > div {
+                        justify-content: center;
+                    }
+                    .card__content > .suite-stats-wrapper {
+                        width: 100%;
+                        margin-top: 16px !important;
+                    }
+                    .card__content > div:nth-child(3) {
+                        margin-top: 14px !important;
+                    }
+                    .card__footer {
+                        grid-template-columns: repeat(4, 1fr);
+                    }
+                    .footer-section__data {
+                        font-size: 1.45rem;
+                    }
+                    .footer-section__label {
+                        font-size: 7.5pt;
+                    }
+                    .chart-wrap {
+                        margin: 8px 8px 12px 8px;
+                    }
+                    .chart-wrap--trends {
+                        height: 220px;
+                    }
+                    .chart-wrap--suite {
+                        height: 280px;
+                    }
+
+                    .archive-chart-container {
+                        width: 100% !important;
+                        min-width: 0;
+                    }
+                    .total__tests {
+                        font-size: 3.2rem;
+                    }
+                    .archive__bar .row {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
+                    .count-title {
+                        font-size: 24px;
+                    }
+                    .archive-header, .archive-date {
+                        padding-left: 14px;
                     }
                 }
 
