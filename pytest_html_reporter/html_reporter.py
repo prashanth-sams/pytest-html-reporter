@@ -324,8 +324,8 @@ class HTMLReporter(object):
             'total_xfail'] = int(ConfigVars._sxfail_tests)
 
         if (self.rerun is not None) and (max_rerun() is not None):
-            _base_suite = self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {})[
-                'tests']
+            _base_suite = self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {}).setdefault(
+                'tests', {})
             for i in _base_suite:
                 ConfigVars._srerun_tests += int(_base_suite[int(i)]['rerun'])
 
@@ -337,15 +337,12 @@ class HTMLReporter(object):
                 'status', {})[
                 'total_rerun'] = 0
 
-        for i in self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {})['tests']:
-            if 'ERROR' in \
-                    self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {})['tests'][
-                        i]['status']:
+        suite_tests = self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {}).setdefault('tests', {})
+        for i in suite_tests:
+            test_status = suite_tests[i].get('status', '')
+            if 'ERROR' in test_status:
                 ConfigVars._suite_error += 1
-            elif 'FAIL' == \
-                    self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {})['tests'][
-                        i][
-                        'status']:
+            elif 'FAIL' == test_status:
                 ConfigVars._suite_fail += 1
 
         self.json_data['content']['suites'].setdefault(len(ConfigVars._test_suite_name) - 1, {}).setdefault('status',

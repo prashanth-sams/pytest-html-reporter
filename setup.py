@@ -24,6 +24,10 @@ setup(
     long_description=read("README.rst"),
     keywords=["pytest", "py.test", "html", "reporter", "report"],
     packages=find_packages(),
+    include_package_data=True,
+    package_data={
+        "html_page": ["html/*.html"],
+    },
     python_requires=">=3.5",
     install_requires=["pytest", "Pillow"],
     classifiers=[
