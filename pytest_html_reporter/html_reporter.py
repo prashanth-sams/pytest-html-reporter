@@ -594,7 +594,7 @@ class HTMLReporter(object):
                                               astate_color=state(data['status'].lower())[1])
                 if value == "current":
                     archive_row_text.astatus = 'build #' + str(ConfigVars._archive_count)
-                    archive_row_textacount = str(ConfigVars._archive_count)
+                    archive_row_text.acount = str(ConfigVars._archive_count)
                 else:
                     archive_row_text.astatus = 'build #' + str(len(f) - i)
                     archive_row_text.acount = str(len(f) - i)

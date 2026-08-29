@@ -507,6 +507,16 @@
                     border: 5px solid rgba(0,0,0,0);
                 }
 
+                .list-group .list-group-item.active {
+                    background-color: #f2f4f7;
+                    border-color: rgba(0,0,0,0);
+                    border-left: 5px solid #565656;
+                }
+
+                .archive-body {
+                    scroll-margin-top: 12px;
+                }
+
                 .list-group {
                     height: 100%;
                     background-color: #ffff;
@@ -1656,7 +1666,51 @@
                 // charts (e.g. the per-build archive charts) to make them visible.
                 setTimeout(resizeVisibleCharts, 0);
             }
-            
+
+            // Show the Archives tab without going through the nav link's own
+            // click(), which would follow its href and replace the build anchor
+            // in the URL with #archives. Returns true when the tab was hidden.
+            function showArchivesTab() {
+                var archives = document.getElementById('archives');
+                if (archives && archives.style.display === 'block') { return false; }
+
+                var navLinks = document.getElementsByClassName("tablink");
+                for (var k = 0; k < navLinks.length; k++) {
+                    if (navLinks[k].getAttribute('href') === '#archives') {
+                        openPage('archives', navLinks[k], 'white', '#565656', 'groove');
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function highlightArchiveRow(id) {
+                var rows = document.querySelectorAll('#list-example a.list-group-item');
+                for (var i = 0; i < rows.length; i++) {
+                    var isTarget = rows[i].getAttribute('href') === '#' + id;
+                    rows[i].classList.toggle('active', isTarget);
+                }
+            }
+
+            // Bring an archived build (e.g. list-item-10) into view.
+            function scrollToArchiveBuild(id) {
+                var target = document.getElementById(id);
+                if (!target) { return; }
+
+                var switched = showArchivesTab();
+                highlightArchiveRow(id);
+
+                // Showing a tab resizes its charts on the next tick, which
+                // shifts the layout; scroll once that has settled.
+                setTimeout(function () {
+                    try {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } catch (e) {
+                        target.scrollIntoView();
+                    }
+                }, switched ? 60 : 0);
+            }
+
             // Function to open page based on URL hash
             function openPageFromHash() {
                 var hash = window.location.hash.substring(1); // Remove the # symbol
@@ -1686,15 +1740,7 @@
                     // Open the Archives tab and scroll the selected build into
                     // view instead of falling back to the default page.
                     if (hash.indexOf('list-item-') === 0) {
-                        var navLinks = document.getElementsByClassName("tablink");
-                        for (var k = 0; k < navLinks.length; k++) {
-                            if (navLinks[k].getAttribute('href') === '#archives') {
-                                navLinks[k].click();
-                                break;
-                            }
-                        }
-                        var target = document.getElementById(hash);
-                        if (target) { target.scrollIntoView(); }
+                        scrollToArchiveBuild(hash);
                         return;
                     }
                 }
@@ -1714,6 +1760,21 @@
                 
                 // Listen for hash changes (back/forward browser buttons)
                 window.addEventListener('hashchange', openPageFromHash);
+
+                // Archive build rows: scroll to the build ourselves so the jump
+                // is smooth and repeatable (a plain anchor jump is undone by the
+                // tab/chart relayout, and re-clicking the same build fires no
+                // hashchange at all).
+                $(document).on('click', '#list-example a[href^="#list-item-"]', function(e) {
+                    var id = this.getAttribute('href').substring(1);
+                    if (!id || !document.getElementById(id)) { return; }
+
+                    e.preventDefault();
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', '#' + id);
+                    }
+                    scrollToArchiveBuild(id);
+                });
             });
         </script>
         <script>
