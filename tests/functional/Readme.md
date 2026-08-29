@@ -15,6 +15,6 @@
 
 | Type                  | Command               |
 | --------------        | ---------             |
-| generic run           | `pytest -v -s pytest/test_yield_fixture.py` |
-| Run specific test case| `pytest -v -s pytest/test_yield_fixture.py::test_fail` |
-| Run tagged tests      | `pytest -v -s pytest/test_mark.py -m 'slow'` |
+| generic run           | `pytest -v -s test_yield_fixture.py` |
+| Run specific test case| `pytest -v -s test_yield_fixture.py::test_fail` |
+| Run tagged tests      | `pytest -v -s test_mark.py -m 'slow'` |
