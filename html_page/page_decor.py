@@ -1,10 +1,5 @@
 import os
 import re
-import sys
-
-
-def rindex(lst, value):
-    return len(lst) - lst[::-1].index(value) - 1
 
 
 def html_page(cls):
@@ -35,12 +30,19 @@ def html_page(cls):
     @property
     def content(self):
         if not self.__content:
-            fname_list = os.path.abspath(__file__).split(os.path.sep)
-            fname = os.path.join(*fname_list[:rindex(fname_list, "pytest-html-reporter") + 1]) \
-                if sys.platform.startswith("win") or sys.platform == "cygwin" \
-                else os.path.join(os.path.sep, *fname_list[:rindex(fname_list, "pytest-html-reporter") + 1])
+            template_name = f"{cls.__doc__.strip()}.html"
+            package_dir = os.path.dirname(os.path.abspath(__file__))
 
-            with open(os.path.join(fname, "html", f"{cls.__doc__.strip()}.html")) as html:
+            # Templates ship inside the package (html_page/html); fall back to
+            # the repository layout where they live alongside the package.
+            candidates = [
+                os.path.join(package_dir, "html", template_name),
+                os.path.join(os.path.dirname(package_dir), "html", template_name),
+            ]
+
+            template_path = next((path for path in candidates if os.path.isfile(path)), candidates[0])
+
+            with open(template_path) as html:
                 self.__content = html.read()
 
         return self.__content

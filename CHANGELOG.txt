@@ -1,9 +1,12 @@
 Change Log
-==========
-
 0.3.0 (29/08/2026)
 -------------------
 - Fixed compatibility with pytest 9.x (AttributeError: '_sessionstarttime' not found)
+- Fixed KeyError: 'status' in append_suite_metrics_row method
+- Fixed KeyError: 'status' when accessing test results in append_suite_metrics_row
+- Fixed template lookup so HTML templates are bundled and resolved from the installed package (no longer depends on a folder named "pytest-html-reporter")
+- Ship HTML templates as package data (html_page/html)
+- Improved safety checks for test data access
 - Fixed responsive design issues
 - Fixed URL reset on page load
 - Fixed unit test errors

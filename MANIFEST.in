@@ -2,6 +2,7 @@ include LICENSE
 include README.rst
 
 global-include *.py
+recursive-include html_page/html *.html
 prune tests/
 prune test_draft/
 prune venv/
