@@ -1682,11 +1682,22 @@
         </script>
         <script>
             $(window).on('load',function(){
-                $('.loader').fadeOut();
-                // Once the loader is gone and the flex layout has settled, nudge
-                // Chart.js to recompute each canvas at the true container size and
-                // device pixel ratio so charts fill their card and stay crisp.
-                setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 250);
+                // Recompute every Chart.js canvas at the true container size and
+                // device pixel ratio once the flex layout has settled, so charts
+                // (and their on-canvas tooltip text) render crisp and un-stretched.
+                function resizeAllCharts() {
+                    if (window.Chart && Chart.instances) {
+                        Object.keys(Chart.instances).forEach(function(key){
+                            try { Chart.instances[key].resize(); } catch (e) {}
+                        });
+                    }
+                }
+                $('.loader').fadeOut(300, function(){
+                    // Run across a few frames to catch the fully-settled layout.
+                    requestAnimationFrame(resizeAllCharts);
+                    setTimeout(resizeAllCharts, 150);
+                    setTimeout(resizeAllCharts, 400);
+                });
             });
         </script>
         <script>
@@ -1912,12 +1923,12 @@
                         bodyFontColor: '#000',
                         bodyFontSize: 14,
                         displayColors: false,
-                        borderColor: '#555555',
-                        borderWidth: 3,
+                        borderColor: '#e0e0e0',
+                        borderWidth: 1,
                         multiKeyBackground: '#555555',
-                        cornerRadius: 3,
-                        caretSize: 15,
-                        caretPadding: 13,
+                        cornerRadius: 4,
+                        caretSize: 6,
+                        caretPadding: 8,
                         xPadding: 12,
                         yPadding: 12
                     },
@@ -2026,12 +2037,12 @@
                         bodyFontColor: '#000',
                         bodyFontSize: 14,
                         displayColors: false,
-                        borderColor: '#555555',
-                        borderWidth: 3,
+                        borderColor: '#e0e0e0',
+                        borderWidth: 1,
                         multiKeyBackground: '#555555',
-                        cornerRadius: 3,
-                        caretSize: 15,
-                        caretPadding: 13,
+                        cornerRadius: 4,
+                        caretSize: 6,
+                        caretPadding: 8,
                         xPadding: 12,
                         yPadding: 12
                     }
