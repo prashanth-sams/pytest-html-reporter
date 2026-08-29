@@ -48,14 +48,14 @@ def html_page(cls):
     @property
     def inline_attributes(self):
         if not self.__inline_attributes:
-            self.__inline_attributes = re.findall("%\((.+?)\)%", self.content)
+            self.__inline_attributes = re.findall(r"%\((.+?)\)%", self.content)
 
         return self.__inline_attributes
 
     @property
     def inline_code_snippets(self):
         if not self.__inline_code_snippets:
-            self.__inline_code_snippets = re.findall("\$\((.+?)\)$", self.content)
+            self.__inline_code_snippets = re.findall(r"\$\((.+?)\)$", self.content)
 
         return self.__inline_code_snippets
 

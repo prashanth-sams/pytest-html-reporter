@@ -10,7 +10,7 @@ from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
 from html_page.test_row import TestRow
-from tests.unit.helper import get_random_number, get_random_string
+from .helper import get_random_number, get_random_string
 
 
 def test_archive_body():
@@ -129,12 +129,12 @@ def test_screenshot_details():
     assert tc_row.findAll("span")[1].text.strip() == te
 
     ts_p = soup.find("p", class_="text-desc")
-    assert re.search(f"{ts}[\n\s]+{te}", ts_p.text.strip()), ts_p.text.strip()
+    assert re.search(rf"{ts}[\n\s]+{te}", ts_p.text.strip()), ts_p.text.strip()
     assert ts_p.find("strong").text.strip() == ts
 
     video_description = soup.find("div", id="Video-desc-01")
     assert video_description.find("h2").text.strip() == tc
-    assert re.search(f"{ts}[\n\s]+{te}", video_description.find("p").text.strip())
+    assert re.search(rf"{ts}[\n\s]+{te}", video_description.find("p").text.strip())
     assert video_description.find("strong").text.strip() == ts
 
 
@@ -172,7 +172,7 @@ def test_test_row():
     for node, expected in zip(cells[:-1], [sname, name, stat, dur]):
         assert node.text.strip() == expected
 
-    assert re.search(f"{msg}[\s\n]*{floating_error_text}", cells[-1].text.strip())
+    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[-1].text.strip())
 
 def test_template():
     custom_logo = get_random_string()

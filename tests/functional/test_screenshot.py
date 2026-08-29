@@ -10,7 +10,6 @@ class TestClass(unittest.TestCase):
         super().__init__(driver)
 
     def setUp(self):
-        global driver
         self.driver = webdriver.Chrome()
 
     def test_demo(self):

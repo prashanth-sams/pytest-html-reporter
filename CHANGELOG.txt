@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+0.3.0 (29/08/2026)
+-------------------
+- Fixed compatibility with pytest 9.x (AttributeError: '_sessionstarttime' not found)
+- Fixed responsive design issues
+- Fixed URL reset on page load
+- Fixed unit test errors
+
 0.2.9 (13/02/2022)
 -------------------
 - Fixed desktop css inconsistencies

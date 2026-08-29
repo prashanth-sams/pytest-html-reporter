@@ -29,6 +29,10 @@ class HTMLReporter(object):
         self.config = config
         has_rerun = config.pluginmanager.hasplugin("rerunfailures")
         self.rerun = 0 if has_rerun else None
+        self._sessionstarttime = None
+
+    def pytest_sessionstart(self, session):
+        self._sessionstarttime = time.time()
 
     def pytest_runtest_teardown(self, item, nextitem):
         ConfigVars._test_name = item.name
@@ -99,7 +103,7 @@ class HTMLReporter(object):
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
 
         yield
-        _execution_time = time.time() - terminalreporter._sessionstarttime
+        _execution_time = time.time() - self._sessionstarttime
 
         if ConfigVars._execution_time < 60:
             ConfigVars._execution_time = str(round(_execution_time, 2)) + " secs"
