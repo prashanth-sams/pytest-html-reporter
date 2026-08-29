@@ -1790,6 +1790,21 @@
             });
         </script>
         <script>
+            // Chart.js 2.8 clamps a tooltip's x into the canvas but never its y
+            // (see getBackgroundPoint), so a tall tooltip on a short chart is
+            // drawn past the top or bottom edge and gets clipped. Nudge it back
+            // inside once its final size and position are known.
+            function keepTooltipInsideCanvas(model) {
+                if (!model || !model.height) { return; }
+
+                var margin = (model.borderWidth || 0) + 1;
+                var maxY = this._chart.height - model.height - margin;
+
+                if (model.y > maxY) { model.y = maxY; }
+                if (model.y < margin) { model.y = margin; }
+            }
+        </script>
+        <script>
             var ctx = document.getElementById('myChart');
             var myChart = new Chart(ctx, {
                 type: 'doughnut',
@@ -1847,6 +1862,7 @@
                         }
                       },
                       backgroundColor: '#FFF',
+                      custom: keepTooltipInsideCanvas,
                       titleFontSize: 13,
                       titleFontColor: '#555555',
                       titleMarginBottom: 7,
@@ -2009,6 +2025,7 @@
                         mode: 'index',
                         intersect: false,
                         backgroundColor: '#FFF',
+                        custom: keepTooltipInsideCanvas,
                         titleFontSize: 15,
                         titleFontColor: '#555555',
                         titleMarginBottom: 7,
@@ -2125,6 +2142,7 @@
                         mode: 'point',
                         intersect: false,
                         backgroundColor: '#FFF',
+                        custom: keepTooltipInsideCanvas,
                         titleFontSize: 13,
                         titleFontColor: '#555555',
                         titleMarginBottom: 7,
