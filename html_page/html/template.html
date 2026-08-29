@@ -527,12 +527,24 @@
                     box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
                 }
 
+                /* Containing block for .archive-total's percentage width. */
                 .archive-body {
+                    position: relative;
                     background-color: #ffff;
                     max-width: 80%;
                     border-radius: 4px;
                     box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
                     margin-bottom: 0.8%;
+                }
+
+                /* The total sits centred in the space left of the chart,
+                   which starts at ~48% of the card. */
+                .archive-total {
+                    position: absolute;
+                    left: 0;
+                    width: 52%;
+                    padding-top: 5%;
+                    text-align: center;
                 }
 
                 .archive-header {
@@ -1613,22 +1625,6 @@
             }
         </script>
         <script>
-            function archiveTotalCase(total, i) {
-                number = [1, 2, 3, 4, 5];
-                container = ['23%', '20%', '15%', '12%', '7%'];
-                label = ['-24%', '-2%', '15%', '27%', '31%'];
-
-                zipped = container.map((x, i) => [x, label[i]]);
-                var x = parseInt(total);
-
-                acontainer = zipped[(x.toString().length)-1][0];
-                alabel = zipped[(x.toString().length)-1][1];
-
-                document.getElementById(`archive-container-${i}`).style.paddingLeft = `${acontainer}`;
-                document.getElementById(`archive-label-${i}`).style.marginLeft = `${alabel}`;
-            }
-        </script>
-        <script>
             // Resize only the Chart.js canvases that are currently visible.
             // Charts inside a hidden tab report a 0px container, so resizing
             // them there would collapse the canvas; we skip those and re-size
@@ -1906,8 +1902,6 @@
                 var xfail = archives[i].xfail;
                 var error = archives[i].error;
                 var total = archives[i].total;
-
-                archiveTotalCase(total, i)
 
                 var MeSeData = {
                     labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
