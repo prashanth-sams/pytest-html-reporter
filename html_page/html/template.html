@@ -283,10 +283,6 @@
                     }
                 }
 
-                        text-align: center;
-                    }
-                }
-
                 @media screen and (max-height: 450px) {
                     .sidenav {
                         padding-top: 15px;
@@ -436,6 +432,27 @@
 
                 .chart {
                   padding: 2.0rem 60;
+                }
+
+                /* Responsive chart containers: give Chart.js a sized, relatively
+                   positioned box so it renders the canvas at the correct
+                   resolution (prevents blurry / horizontally-stretched text).
+                   The canvas size itself is left to Chart.js — forcing it with
+                   CSS distorts the backing buffer. */
+                .chart-wrap {
+                  position: relative;
+                  width: 100%;
+                }
+                .chart-wrap--trends {
+                  height: 360px;
+                }
+                .chart-wrap--suite {
+                  height: 451px;
+                }
+                .chart-wrap > canvas {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
                 }
 
                 .card__footer {
@@ -970,6 +987,212 @@
                     }
                 }
 
+                /* ============================================================
+                   Desktop: fit the whole dashboard inside the viewport so all
+                   four cards are visible at once without scrolling
+                   (laptops ~1280px through full desktops 1920px+).
+                   ============================================================ */
+                @media screen and (min-width: 1200px) {
+                    .dashboard-viewport {
+                        display: flex;
+                        flex-direction: column;
+                        height: calc(100vh - 30px);
+                        overflow: hidden;
+                    }
+
+                    /* The two card rows share the available height */
+                    .dashboard-viewport > .row.rowcard {
+                        flex: 1 1 0;
+                        min-height: 0;
+                        margin: 0 0 10px 0 !important;
+                        padding-top: 0 !important;
+                    }
+                    .dashboard-viewport > .row.rowcard:first-of-type {
+                        flex-grow: 1.05;
+                    }
+                    .dashboard-viewport > hr {
+                        flex: 0 0 auto;
+                        margin: 2px 0 1px 0;
+                    }
+                    .dashboard-viewport > .row:not(.rowcard) {
+                        flex: 0 0 auto;
+                    }
+                    .dashboard-viewport > .row:not(.rowcard) p {
+                        margin: 0 !important;
+                        padding: 1px 0 !important;
+                    }
+
+                    /* Cards fill the height of their row */
+                    .dashboard-viewport .row.rowcard > .card {
+                        height: 100%;
+                        overflow: hidden;
+                        display: flex;
+                        flex-direction: column;
+                        margin-bottom: 0;
+                    }
+                    .dashboard-viewport .dashboard-card > .dashboard-card-inner {
+                        min-height: 0 !important;
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport .dashboard__headers {
+                        margin-bottom: 0 !important;
+                    }
+                    .dashboard-viewport .dashboard__headers > div {
+                        padding-top: 2% !important;
+                    }
+
+                    /* ---- Summary card: counts (left) + doughnut (right) + stats (bottom) ---- */
+                    .dashboard-viewport .dashboard-card .card__content {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        grid-template-rows: auto 1fr auto;
+                        grid-template-areas:
+                            "time  time"
+                            "info  chart"
+                            "stats stats";
+                        gap: 6px 12px;
+                        padding: 1rem 1.6rem 1.2rem 1.6rem;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper {
+                        grid-area: time;
+                        margin: 0 !important;
+                        text-align: right;
+                        padding-right: 4px;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(2) {
+                        grid-area: info;
+                        min-height: 0;
+                        align-self: stretch;
+                        text-align: left;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    /* Keep title/date at the top, vertically center the count block */
+                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(2) > div:nth-child(3) {
+                        margin-top: auto;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(2) > div:nth-child(4) {
+                        margin-bottom: auto;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(3) {
+                        grid-area: chart;
+                        min-height: 0;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .suite-stats-wrapper {
+                        grid-area: stats;
+                        margin: 0 !important;
+                        position: static !important;
+                        align-self: end;
+                    }
+
+                    .dashboard-viewport .dashboard-card .card__header {
+                        margin-bottom: 0;
+                    }
+                    .dashboard-viewport .dashboard-card .header__title {
+                        padding-top: 0 !important;
+                        padding-left: 2% !important;
+                        font-size: 1.5rem;
+                    }
+                    .dashboard-viewport .dashboard-card .header__date {
+                        padding-left: 2% !important;
+                        margin-bottom: 0.4rem;
+                    }
+                    .dashboard-viewport .dashboard-card .total__count {
+                        font-size: 4.6rem !important;
+                        padding-top: 1rem !important;
+                        padding-bottom: 0 !important;
+                        line-height: 1;
+                    }
+                    .dashboard-viewport .dashboard-card .total_count__label {
+                        padding-left: 2% !important;
+                        font-size: 1.15rem;
+                        margin-top: 0.15rem;
+                    }
+
+                    /* Keep the doughnut circular and sensibly sized (never oversized) */
+                    .dashboard-viewport .dashboard-card .outer_my_chart {
+                        margin: 0 auto !important;
+                        height: 100% !important;
+                        width: auto !important;
+                        aspect-ratio: 1 / 1;
+                        max-width: 100% !important;
+                        max-height: 200px !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        position: relative !important;
+                    }
+                    .dashboard-viewport .dashboard-card .inner_my_chart {
+                        margin: 0 !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        max-width: 100% !important;
+                        max-height: 100% !important;
+                    }
+
+                    .dashboard-viewport .dashboard-card .suite-stats-wrapper {
+                        margin-top: 0 !important;
+                    }
+                    .dashboard-viewport .dashboard-card .suite_count_section {
+                        margin-top: 0 !important;
+                    }
+                    .dashboard-viewport .dashboard-card .card__footer {
+                        margin-bottom: 0 !important;
+                        padding: 0 0.5rem;
+                    }
+                    .dashboard-viewport .dashboard-card .footer-section__data {
+                        font-size: 1.9rem !important;
+                    }
+                    .dashboard-viewport .dashboard-card .footer-section__label {
+                        font-size: 8.5pt;
+                    }
+
+                    /* ---- Trends card (top-right) ---- */
+                    .dashboard-viewport > .row.rowcard:first-of-type > .card:last-of-type > div {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport > .row.rowcard:first-of-type > .card:last-of-type > div > div {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport .chart-wrap--trends {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        height: auto;
+                        margin: 1% 1.2rem 1rem 0.5rem;
+                    }
+
+                    /* ---- Test Suite bar chart (bottom-left) ---- */
+                    .dashboard-viewport > .row.rowcard:nth-of-type(2) > .card {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport .chart-wrap--suite {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        height: auto;
+                        margin: 1% 1.5rem 1rem 1rem;
+                    }
+
+                    /* Consistent header spacing for the chart cards */
+                    .dashboard-viewport .row.rowcard:first-of-type > .card:last-of-type,
+                    .dashboard-viewport .row.rowcard:nth-of-type(2) > .card {
+                        padding-top: 0.4rem;
+                    }
+                }
+
             </style>
             <style>
                 .progress-bar.downloading {
@@ -1003,6 +1226,7 @@
         </div>
         <div class="main" style="height: 100%;">
             <div class="tabcontent" id="dashboard">
+              <div class="dashboard-viewport">
 
                 <div class="row rowcard">
                     <div class="col-md-6 card dashboard-card" style="max-width: 49%;">
@@ -1083,7 +1307,9 @@
                                 <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><svg height="32pt" viewBox="0 0 512 512.00007" width="25pt" xmlns="http://www.w3.org/2000/svg"><path style="fill: currentColor;" d="m509.785156 15.433594c-.773437-6.972656-6.277344-12.480469-13.253906-13.253906-118.703125-13.183594-219.890625 34.300781-302.429688 119.265624-23.621093 24.316407-44.109374 50.054688-61.597656 74.894532-29.597656-1.203125-62.414062 12.1875-85.679687 35.453125l-42.429688 42.429687c-4.800781 4.800782-5.777343 12.230469-2.382812 18.109375 3.394531 5.878907 10.3125 8.742188 16.875 6.988281 9.84375-2.644531 25.839843-5.71875 41.207031-6.433593 5.617188-.261719 10.285156-.179688 14.164062.117187-9.363281 18.007813-16.539062 33.09375-18.917968 36.871094-3.726563 5.929688-2.863282 13.644531 2.089844 18.597656l24.550781 24.550782c-35.730469 48.730468-36.320313 73.6875-36.195313 77.222656.261719 7.488281 6.101563 14.503906 15.773438 14.503906 8.375 0 32.394531-3.554688 76.121094-36.027344l25.824218 25.824219c4.988282 4.988281 12.78125 5.824219 18.71875 2.011719 4.039063-2.597656 18.238282-9.472656 35.265625-18.371094.28125 12.691406-1.441406 31.328125-5.179687 56.589844-2.125 14.328125 15.292968 22.953125 25.445312 12.804687l42.429688-42.429687c21.878906-21.878906 34.566406-54.375 33.628906-84.859375 26.167969-18.285157 53.390625-39.855469 78.808594-64.78125 84.15625-82.527344 130.179687-182.949219 117.164062-300.078125zm-28.695312 15.4375c2.394531 32.34375-.160156 63.695312-7.601563 94.035156-18.480469-5.820312-36.546875-17.253906-52.863281-33.566406-16.375-16.378906-27.832031-34.519532-33.628906-53.066406 30.328125-7.332032 61.699218-9.816407 94.09375-7.402344zm-422.953125 232.039062 9.898437-9.902344c11.972656-11.96875 27.542969-20.589843 43.027344-24.464843-8.089844 12.839843-15.300781 25.101562-21.660156 36.417969-9.824219-2.167969-20.746094-2.570313-31.265625-2.050782zm28.386719 72.230469c3.246093-6.40625 7.171874-14.4375 14.378906-28.054687l19.746094 19.75c-7.347657 7.882812-13.980469 15.371093-19.957032 22.46875zm73.355468-5.738281c10.929688-10.925782 21.410156-12.921875 34.429688-13.203125-.285156 12.6875-2.320313 23.523437-13.214844 34.417969-46.570312 46.570312-78.492188 67.367187-97.582031 76.648437 9.417969-19.457031 30.269531-51.765625 76.367187-97.863281zm16.871094 95.964844-15.46875-15.472657c7.0625-6 14.527344-12.652343 22.402344-20.027343l21.019531 21.019531c-13.820313 7.378906-19.585937 10.15625-27.953125 14.480469zm82.214844 18.570312-12.007813 12.011719c.972657-14.550781.636719-25.152344-.738281-33.332031 11.03125-6.210938 23.011719-13.253907 35.566406-21.132813-3.578125 15.859375-11.621094 31.257813-22.820312 42.453125zm-26.953125-48.167969-26.894531-26.898437c19.902343-21.898438 19.160156-43 19.160156-67.652344 0-8.285156-6.714844-15-15-15-23.03125 0-45.195313-1.234375-67.652344 19.164062l-25.683594-25.683593c70.132813-122.980469 151.199219-200.839844 242.28125-232.902344 7.210938 23.332031 21.246094 45.8125 41.191406 65.757813 19.851563 19.855468 42.226563 33.855468 65.457032 41.09375-32.25 90.582031-110.089844 171.597656-232.859375 242.121093zm0 0"/><path style="fill: currentColor;" d="m378.199219 133.765625c-29.246094-29.242187-76.832031-29.242187-106.074219 0-29.242188 29.246094-29.242188 76.832031 0 106.074219 29.242188 29.242187 76.828125 29.246094 106.074219 0 29.242187-29.242188 29.242187-76.828125 0-106.074219zm-21.214844 84.859375c-17.546875 17.546875-46.101563 17.546875-63.644531 0-17.546875-17.546875-17.546875-46.097656 0-63.644531 17.542968-17.542969 46.09375-17.546875 63.644531 0 17.546875 17.546875 17.546875 46.097656 0 63.644531zm0 0"/></svg>&nbsp;&nbsp;Trends
                                 </div>
                             </div>
-                            <canvas id="trends" width="100%" height="360px" style="margin-top: 10%; max-height: 375px; padding-bottom: 4%;"></canvas>
+                            <div class="chart-wrap chart-wrap--trends">
+                                <canvas id="trends"></canvas>
+                            </div>
                         </div>
                       </div>
                     </div>
@@ -1098,7 +1324,9 @@
                                 %(test_suite_length)%
                             </div>
                         </div>
-                        <canvas class="chart" id="groupBarChart" style="margin-top: 6%; height: 451px; width: 903px;"></canvas>
+                        <div class="chart-wrap chart-wrap--suite">
+                            <canvas class="chart" id="groupBarChart"></canvas>
+                        </div>
                     </div>
                     <div class="col-md-4 card border-left" style="max-width: 32.4%; padding-left: 3%; padding-top: 2%; margin-left: 0.75%;">
                         <div class="dashboard__headers">
@@ -1130,6 +1358,7 @@
                         </p>
                     </div>
                 </div>
+              </div>
                 <script>
                     window.onload = function() {
                         alignTotalCount();
@@ -1449,7 +1678,13 @@
             });
         </script>
         <script>
-            $(window).on('load',function(){$('.loader').fadeOut();});
+            $(window).on('load',function(){
+                $('.loader').fadeOut();
+                // Once the loader is gone and the flex layout has settled, nudge
+                // Chart.js to recompute each canvas at the true container size and
+                // device pixel ratio so charts fill their card and stay crisp.
+                setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 250);
+            });
         </script>
         <script>
             var ctx = document.getElementById('myChart');
@@ -1492,6 +1727,7 @@
                     display: false
                   },
                   responsive: true,
+                  maintainAspectRatio: false,
                   cutoutPercentage: 80,
                   tooltips: {
                       callbacks: {
@@ -1686,14 +1922,25 @@
                         display: false
                     },
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         xAxes: [{
-                            stacked: true
+                            stacked: true,
+                            maxBarThickness: 70,
+                            ticks: {
+                                fontSize: 13,
+                                fontColor: '#666'
+                            },
+                            gridLines: {
+                                display: false
+                            }
                         }],
                         yAxes: [{
                             stacked: true,
                             ticks: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                fontSize: 12,
+                                fontColor: '#999'
                             }
                         }]
                     }
@@ -1740,6 +1987,33 @@
                     },
                     responsive: true,
                     maintainAspectRatio: false,
+                    elements: {
+                        line: {
+                            borderWidth: 2
+                        },
+                        point: {
+                            radius: 3,
+                            hoverRadius: 5
+                        }
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 11,
+                                fontColor: '#999'
+                            },
+                            gridLines: {
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                                fontSize: 12,
+                                fontColor: '#999'
+                            }
+                        }]
+                    },
                     tooltips: {
                         mode: 'point',
                         intersect: false,
