@@ -310,7 +310,7 @@ def test_template():
     assert [script for script in scripts if f"var x = parseInt({total});" in script.text]
     assert [script for script in scripts if f"data: [{_pass}, {fail}, {skip}, {xpass}, {xfail}, {error}]," in script.text]
     assert [script for script in scripts if f"var passPercent = Math.round(({_pass} / {total}) * 100)" in script.text]
-    assert [script for script in scripts if f"for(var i=0; i<={archive_count}; i++)" in script.text and f"var archives = {archives};" in script.text]
+    assert [script for script in scripts if f"for(var i=0; i<{archive_count}; i++)" in script.text and f"var archives = {archives};" in script.text]
     assert [
         script for script in scripts
         if f"labels: {test_suites}," in script.text

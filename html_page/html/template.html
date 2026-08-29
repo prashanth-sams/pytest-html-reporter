@@ -1619,6 +1619,23 @@
             }
         </script>
         <script>
+            // Resize only the Chart.js canvases that are currently visible.
+            // Charts inside a hidden tab report a 0px container, so resizing
+            // them there would collapse the canvas; we skip those and re-size
+            // them when their tab becomes visible.
+            function resizeVisibleCharts() {
+                if (window.Chart && Chart.instances) {
+                    Object.keys(Chart.instances).forEach(function(key){
+                        try {
+                            var inst = Chart.instances[key];
+                            if (inst.canvas && inst.canvas.offsetParent !== null) {
+                                inst.resize();
+                            }
+                        } catch (e) {}
+                    });
+                }
+            }
+
             function openPage(pageName,elmnt,color,bgcolor,borderstyle) {
                 var i, tabcontent, tablinks;
                 tabcontent = document.getElementsByClassName("tabcontent");
@@ -1635,6 +1652,9 @@
                 elmnt.style.color = color;
                 elmnt.style.background = bgcolor;
                 elmnt.style.borderRight = borderstyle;
+                // The freshly shown tab now has real dimensions, so re-size its
+                // charts (e.g. the per-build archive charts) to make them visible.
+                setTimeout(resizeVisibleCharts, 0);
             }
             
             // Function to open page based on URL hash
@@ -1661,6 +1681,22 @@
                             }
                         }
                     }
+
+                    // In-page archive build anchor (e.g. #list-item-10).
+                    // Open the Archives tab and scroll the selected build into
+                    // view instead of falling back to the default page.
+                    if (hash.indexOf('list-item-') === 0) {
+                        var navLinks = document.getElementsByClassName("tablink");
+                        for (var k = 0; k < navLinks.length; k++) {
+                            if (navLinks[k].getAttribute('href') === '#archives') {
+                                navLinks[k].click();
+                                break;
+                            }
+                        }
+                        var target = document.getElementById(hash);
+                        if (target) { target.scrollIntoView(); }
+                        return;
+                    }
                 }
                 // If no hash or invalid hash, open default page
                 var defaultBtn = document.getElementById("defaultOpen");
@@ -1686,11 +1722,7 @@
                 // device pixel ratio once the flex layout has settled, so charts
                 // (and their on-canvas tooltip text) render crisp and un-stretched.
                 function resizeAllCharts() {
-                    if (window.Chart && Chart.instances) {
-                        Object.keys(Chart.instances).forEach(function(key){
-                            try { Chart.instances[key].resize(); } catch (e) {}
-                        });
-                    }
+                    resizeVisibleCharts();
                 }
                 $('.loader').fadeOut(300, function(){
                     // Run across a few frames to catch the fully-settled layout.
@@ -1801,8 +1833,10 @@
         </script>
 
         <script>
-            for(var i=0; i<=%(archive_count)%; i++) {
-                var MeSeContext = document.getElementById("archive-chart-"+i).getContext("2d");
+            for(var i=0; i<%(archive_count)%; i++) {
+                var archiveCanvas = document.getElementById("archive-chart-"+i);
+                if (!archiveCanvas) { continue; }
+                var MeSeContext = archiveCanvas.getContext("2d");
                 var archives = %(archives)%;
                 var pass = archives[i].pass;
                 var fail = archives[i].fail;
