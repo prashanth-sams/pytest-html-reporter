@@ -2357,20 +2357,14 @@
                 });
             });
 
-            // Auto-refresh on window resize for responsive adaptation
+            // Re-fit the charts once a resize settles. Reloading the page
+            // here would throw away the open tab, the scroll position and any
+            // table filtering, and the layout is CSS-driven anyway.
             var resizeTimer;
-            var lastWidth = window.innerWidth;
-            
+
             window.addEventListener('resize', function() {
                 clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    var currentWidth = window.innerWidth;
-                    // Only refresh if width changed significantly (crossing breakpoints)
-                    if (Math.abs(currentWidth - lastWidth) > 50) {
-                        lastWidth = currentWidth;
-                        location.reload();
-                    }
-                }, 500); // Wait 500ms after resize stops
+                resizeTimer = setTimeout(resizeVisibleCharts, 150);
             });
         </script>
 
