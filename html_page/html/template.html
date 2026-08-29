@@ -28,6 +28,7 @@
                 body {
                     font-family: -apple-system, sans-serif;
                     background-color: #eeeeee;
+                    margin: 0;
                 }
 
                 .sidenav {
@@ -993,11 +994,13 @@
                    (laptops ~1280px through full desktops 1920px+).
                    ============================================================ */
                 @media screen and (min-width: 1200px) {
+                    .main {
+                        padding-bottom: 8px;
+                    }
                     .dashboard-viewport {
                         display: flex;
                         flex-direction: column;
-                        height: calc(100vh - 30px);
-                        overflow: hidden;
+                        height: calc(100vh - 18px);
                     }
 
                     /* The two card rows share the available height */
@@ -1749,14 +1752,14 @@
                       bodyFontColor: '#000',
                       bodyFontSize: 14,
                       displayColors: false,
-                      borderColor: '#555555',
-                      borderWidth: 3,
+                      borderColor: '#e0e0e0',
+                      borderWidth: 1,
                       multiKeyBackground: '#555555',
-                      cornerRadius: 3,
-                      caretSize: 15,
-                      caretPadding: 13,
+                      cornerRadius: 4,
+                      caretSize: 6,
+                      caretPadding: 8,
                       xPadding: 12,
-                      yPadding: 12
+                      yPadding: 10
                   }
                 }
             });
