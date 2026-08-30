@@ -2011,6 +2011,29 @@
                     color: slategrey;
                 }
 
+                /* On Test Metrics the status chips double as filters, so they
+                   have to look pressable and show which one is holding. */
+                .metric-chip--filter {
+                    font: inherit;
+                    cursor: pointer;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metric-chip--filter:hover {
+                    border-color: #cfd7e3;
+                    box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
+                }
+
+                .metric-chip--filter:focus-visible {
+                    outline: 2px solid #7f8b9e;
+                    outline-offset: 2px;
+                }
+
+                .metric-chip--filter.is-active {
+                    border-color: #7f8b9e;
+                    box-shadow: inset 0 0 0 1px #7f8b9e;
+                }
+
                 /* ---- Card shell ---- */
                 .metrics-card {
                     background-color: #ffffff;
@@ -2911,21 +2934,28 @@
                 return $('<div>').html(value === null || value === undefined ? '' : String(value)).text().trim();
             }
 
-            function metricsChip(color) {
-                return '<span class="metric-chip">' +
-                           '<span class="metric-chip__dot" style="background-color:' + color + '"></span>' +
+            // Chips carrying a status are filters, so they render as buttons;
+            // the plain totals stay inert spans.
+            function metricsChip(chip) {
+                var tag = chip.status ? 'button' : 'span';
+                var attrs = chip.status
+                    ? ' type="button" class="metric-chip metric-chip--filter" data-status="' + chip.status + '"'
+                    : ' class="metric-chip"';
+                return '<' + tag + attrs + '>' +
+                           '<span class="metric-chip__dot" style="background-color:' + chip.color + '"></span>' +
                            '<span class="metric-chip__value"></span>' +
                            '<span class="metric-chip__label"></span>' +
-                       '</span>';
+                       '</' + tag + '>';
             }
 
             function renderMetricsChips(target, chips) {
                 if (!target.length) { return; }
                 target.empty();
                 $.each(chips, function(_, chip) {
-                    var node = $(metricsChip(chip.color));
+                    var node = $(metricsChip(chip));
                     node.find('.metric-chip__value').text(chip.value);
                     node.find('.metric-chip__label').text(chip.label);
+                    node.toggleClass('is-active', !!chip.status && chip.status === testStatusFilter);
                     target.append(node);
                 });
             }
@@ -2959,25 +2989,49 @@
                 renderMetricsChips($('#suiteSummary'), chips);
             }
 
+            // The status the chips are filtering the test table by ('' = none),
+            // plus the chip set captured while no status was selected: once the
+            // table shows only failures the other outcomes have no rows left to
+            // count, and they still have to be there to click back to.
+            var testStatusFilter = '';
+            var testStatusChips = [];
+
             function renderTestSummary(api) {
                 var rows = api.rows({ search: 'applied' }).count();
                 var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'test' : 'tests' }];
-                var counts = {};
 
-                api.column(2, { search: 'applied' }).data().each(function(value) {
-                    var key = metricsText(value).toLowerCase().replace(/[^a-z]/g, '');
-                    if (key) { counts[key] = (counts[key] || 0) + 1; }
-                });
+                if (!testStatusFilter) {
+                    var counts = {};
 
-                $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
-                        ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
-                    if (counts[status[0]]) {
-                        chips.push({ color: METRICS_COLORS[status[0]], value: counts[status[0]], label: status[1] });
-                    }
-                });
+                    api.column(2, { search: 'applied' }).data().each(function(value) {
+                        var key = metricsText(value).toLowerCase().replace(/[^a-z]/g, '');
+                        if (key) { counts[key] = (counts[key] || 0) + 1; }
+                    });
 
-                renderMetricsChips($('#testSummary'), chips);
+                    testStatusChips = [];
+                    $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
+                            ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
+                        if (counts[status[0]]) {
+                            testStatusChips.push({ color: METRICS_COLORS[status[0]], value: counts[status[0]],
+                                                   label: status[1], status: status[0] });
+                        }
+                    });
+                }
+
+                renderMetricsChips($('#testSummary'), chips.concat(testStatusChips));
             }
+
+            // Clicking a status chip filters the table down to that outcome;
+            // clicking the active one clears it. The term is anchored so that
+            // 'pass' does not also pull in the xPASS rows.
+            $(document).on('click', '#testSummary .metric-chip--filter', function() {
+                var status = String($(this).data('status'));
+                testStatusFilter = testStatusFilter === status ? '' : status;
+                $('#tm').DataTable()
+                        .column(2)
+                        .search(testStatusFilter ? '^' + testStatusFilter + '$' : '', true, false)
+                        .draw();
+            });
 
             // DataTables re-renders rows on every draw, so the presentation
             // touches are re-applied here rather than baked into the markup.
