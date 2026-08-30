@@ -113,7 +113,4 @@ def pytest_configure(config):
     
     archive_count = config.getoption("archive_count")
 
-    config._html = HTMLReporter(path, archive_count, config)
-    config.pluginmanager.register(config._html)
-
-
+    config.pluginmanager.register(HTMLReporter(path, archive_count, config))
