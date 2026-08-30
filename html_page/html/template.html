@@ -1007,6 +1007,9 @@
                     .dashboard-viewport {
                         display: block;
                         height: auto;
+                        /* Anchors #download, and reserves the strip it sits in. */
+                        position: relative;
+                        padding-top: 32px;
                     }
 
                     /* Bootstrap's -15px row gutters overflow a narrow viewport. */
@@ -1179,10 +1182,22 @@
                         height: 320px;
                     }
 
+                    /* The link lives inside the Trends card, which drops
+                       below the summary card here -- it would be stranded
+                       mid-page. Bootstrap makes .card a containing block, so
+                       that card goes static for the link to escape it and pin
+                       to the top of the dashboard instead. */
+                    .dashboard-viewport > .row.rowcard:first-of-type > .card:last-of-type {
+                        position: static;
+                    }
                     #download {
                         display: block;
+                        position: absolute;
+                        top: 0;
+                        right: 2px;
                         text-align: right;
-                        padding: 10px 14px 0 0;
+                        padding: 0 !important;
+                        line-height: 1;
                     }
                     #download i {
                         position: static !important;
@@ -2363,11 +2378,29 @@
             }
 
             $('#download').click(function () {
-                domtoimage.toPng(document.getElementById('dashboard'))
+                var link = document.getElementById('download');
+
+                // Below 1200px the link sits inside #dashboard, so it would
+                // otherwise appear in its own export. It is positioned, so
+                // hiding it costs no reflow.
+                link.style.visibility = 'hidden';
+
+                // #dashboard itself is transparent -- the grey comes from
+                // <body> -- and jsPDF paints transparent pixels black, so the
+                // capture needs the page colour painted in behind it.
+                domtoimage.toPng(document.getElementById('dashboard'), { bgcolor: '#eeeeee' })
                 .then(function (blob) {
-                    var pdf = new jsPDF('l', 'pt', [$('#dashboard').width()+20, $('#dashboard').height()]);
-                    pdf.addImage(blob, 'PNG', 10, 10, $('#dashboard').width(), $('#dashboard').height());
+                    var width = $('#dashboard').width();
+                    var height = $('#dashboard').height();
+                    var pdf = new jsPDF('l', 'pt', [width+20, height+20]);
+                    pdf.addImage(blob, 'PNG', 10, 10, width, height);
                     pdf.save("pytest_html_reporter.pdf");
+                })
+                .catch(function (e) {
+                    console.error('pytest-html-reporter: PDF export failed', e);
+                })
+                .then(function () {
+                    link.style.visibility = '';
                 });
             });
 
