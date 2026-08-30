@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 from html_page.archive_body import ArchiveBody
 from html_page.archive_row import ArchiveRow
+from html_page.env_row import EnvRow
 from html_page.floating_error import FloatingError
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
@@ -174,6 +175,20 @@ def test_test_row():
 
     assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[-1].text.strip())
 
+def test_env_row():
+    label = get_random_string()
+    value = get_random_string()
+
+    env_row = EnvRow(label=label, value=value, title=value)
+    soup = BeautifulSoup(str(env_row), "html.parser")
+
+    assert soup.find("span", class_="env-item__label").text.strip() == label
+
+    value_node = soup.find("span", class_="env-item__value")
+    assert value_node.text.strip() == value
+    assert value_node["title"] == value
+
+
 def test_template():
     custom_logo = get_random_string()
     execution_time = str(get_random_number())
@@ -212,6 +227,7 @@ def test_template():
     tfail = str(get_random_number())
     tskip = str(get_random_number())
     attach_screenshot_details = get_random_string()
+    environment_rows = get_random_string()
 
     template_page = HtmlTemplate(
         custom_logo=custom_logo,
@@ -250,7 +266,8 @@ def test_template():
         tpass=tpass,
         tfail=tfail,
         tskip=tskip,
-        attach_screenshot_details=attach_screenshot_details
+        attach_screenshot_details=attach_screenshot_details,
+        environment_rows=environment_rows
     )
 
     soup = BeautifulSoup(str(template_page), "html.parser")
@@ -307,6 +324,9 @@ def test_template():
 
     attach_screenshot_details_label = soup.find("div", id="main-content").find("div").find("div")
     assert attach_screenshot_details_label.text.strip() == attach_screenshot_details
+
+    environment_grid = soup.find("div", class_="env-grid")
+    assert environment_grid.text.strip() == environment_rows
 
     scripts = soup.findAll("script")
     assert [script for script in scripts if f"data: [{_pass}, {fail}, {skip}, {xpass}, {xfail}, {error}]," in script.text]

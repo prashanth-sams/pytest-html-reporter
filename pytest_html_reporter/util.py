@@ -1,10 +1,16 @@
 import os
+import platform
 import shutil
 import sys
 from collections import Counter
+from datetime import datetime
+from html import escape
 from io import BytesIO
+
+import pytest
 from PIL import Image
 
+from html_page.env_row import EnvRow
 from pytest_html_reporter.const_vars import ConfigVars
 
 
@@ -78,3 +84,51 @@ def clean_screenshots(path):
 
 def custom_title(title):
     ConfigVars._title = title[:26] + '...' if title.__len__() > 29 else title
+
+
+def _plugin_versions(config):
+    """Names and versions of the pytest plugins active for this run."""
+    plugins = []
+
+    for _, dist in config.pluginmanager.list_plugin_distinfo():
+        name = getattr(dist, "project_name", None) or getattr(dist, "name", "")
+        if not name:
+            continue
+
+        version = getattr(dist, "version", "")
+        name = name.replace("pytest-", "")
+        plugins.append(name + "-" + version if version else name)
+
+    return sorted(set(plugins))
+
+
+def _invocation_args(config):
+    """The command line pytest was started with, minus the executable."""
+    params = getattr(config, "invocation_params", None)
+    args = getattr(params, "args", None) if params is not None else None
+
+    return " ".join(args) if args else " ".join(sys.argv[1:])
+
+
+def generate_environment_info(config):
+    uname = platform.uname()
+    plugins = _plugin_versions(config)
+    root = getattr(config, "rootpath", None) or getattr(config, "rootdir", "")
+
+    entries = [
+        ("Host", uname.node),
+        ("Platform", (uname.system + " " + uname.release).strip()),
+        ("Python", platform.python_version()),
+        ("pytest", pytest.__version__),
+        ("Plugins", ", ".join(plugins)),
+        ("Arguments", _invocation_args(config)),
+        ("Root", str(root)),
+        ("Generated", datetime.now().strftime("%b %d %Y, %H:%M:%S")),
+    ]
+
+    rows = ""
+    for label, value in entries:
+        value = str(value).strip() or "-"
+        rows += str(EnvRow(label=escape(label), value=escape(value), title=escape(value)))
+
+    ConfigVars._environment_rows = rows

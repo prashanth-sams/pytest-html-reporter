@@ -69,4 +69,5 @@ class ConfigVars:
     screen_base = ''
     screen_img = None
     _attach_screenshot_details = ''
+    _environment_rows = ''
     _title = 'PYTEST REPORT'

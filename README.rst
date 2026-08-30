@@ -31,6 +31,7 @@ Features
 * Generic information
 
   - Overview
+  - Environment
   - Trends
   - Suite Highlights
   - Test suite details

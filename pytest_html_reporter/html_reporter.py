@@ -16,7 +16,12 @@ from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
 from html_page.test_row import TestRow
-from pytest_html_reporter.util import suite_highlights, generate_suite_highlights, max_rerun
+from pytest_html_reporter.util import (
+    suite_highlights,
+    generate_suite_highlights,
+    generate_environment_info,
+    max_rerun,
+)
 from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
 
@@ -130,6 +135,9 @@ class HTMLReporter(object):
 
             # generate suite highlights
             generate_suite_highlights()
+
+            # collect host, interpreter and invocation details
+            generate_environment_info(self.config)
 
             # generate html report
             live_logs_file = open(path, 'w')
@@ -505,13 +513,9 @@ class HTMLReporter(object):
             tpass=str(ConfigVars.tpass),
             tfail=str(ConfigVars.tfail),
             tskip=str(ConfigVars.tskip),
-            attach_screenshot_details=str(ConfigVars._attach_screenshot_details)
+            attach_screenshot_details=str(ConfigVars._attach_screenshot_details),
+            environment_rows=str(ConfigVars._environment_rows)
         )
-
-        # template_text = template_text.replace("__executed_by__", str(platform.uname()[1]))
-        # template_text = template_text.replace("__os_name__", str(platform.uname()[0]))
-        # template_text = template_text.replace("__python_version__", str(sys.version.split(' ')[0]))
-        # template_text = template_text.replace("__generated_date__", str(datetime.datetime.now().strftime("%b %d %Y, %H:%M")))
 
         return str(template_text)
 

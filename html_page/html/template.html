@@ -1694,6 +1694,146 @@
                     }
                 }
 
+                /* ============================================================
+                   Environment: host, interpreter and invocation details.
+                   Lives in an overlay opened from the summary card, so it adds
+                   nothing to the dashboard's fixed-height layout.
+                   ============================================================ */
+                .env-trigger {
+                    display: inline-flex;
+                    align-items: center;
+                    vertical-align: middle;
+                    margin-right: 14px;
+                    gap: 7px;
+                    padding: 4px 10px;
+                    border: 1px solid #e4e4e4;
+                    border-radius: 4px;
+                    background: #ffffff;
+                    color: #a9a9a9;
+                    font-family: sans-serif;
+                    font-size: 0.68rem;
+                    font-weight: 600;
+                    letter-spacing: 0.09em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: color 0.2s ease, border-color 0.2s ease;
+                }
+
+                .env-trigger:hover,
+                .env-trigger:focus {
+                    color: #565656;
+                    border-color: #c4c4c4;
+                    outline: none;
+                }
+
+                .env-trigger .fa {
+                    font-size: 0.85rem;
+                }
+
+                .env-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 1200;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 24px;
+                }
+
+                .env-overlay__backdrop {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(46, 61, 73, 0.42);
+                }
+
+                .env-overlay__panel {
+                    position: relative;
+                    width: 100%;
+                    max-width: 620px;
+                    max-height: 86vh;
+                    overflow-y: auto;
+                    background: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 12px 15px 40px 0 rgba(46, 61, 73, 0.35);
+                    padding: 20px 24px 24px 24px;
+                }
+
+                .env-overlay__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding-bottom: 12px;
+                    margin-bottom: 16px;
+                    border-bottom: 1px solid #ededed;
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    font-size: 0.78rem;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: darkgrey;
+                }
+
+                .env-overlay__head .fa {
+                    color: currentcolor;
+                    margin-right: 8px;
+                }
+
+                .env-overlay__close {
+                    border: none;
+                    background: none;
+                    color: #b4b4b4;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    padding: 0 4px;
+                    cursor: pointer;
+                }
+
+                .env-overlay__close:hover,
+                .env-overlay__close:focus {
+                    color: #565656;
+                    outline: none;
+                }
+
+                .env-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 14px 28px;
+                }
+
+                .env-item {
+                    display: flex;
+                    flex-direction: column;
+                    min-width: 0;
+                }
+
+                .env-item__label {
+                    font-family: sans-serif;
+                    font-size: 0.66rem;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #a9a9a9;
+                    margin-bottom: 2px;
+                }
+
+                /* Long values (plugin lists, paths, argv) wrap rather than
+                   truncate: the overlay has the room the dashboard did not. */
+                .env-item__value {
+                    font-family: Consolas, Menlo, Monaco, monospace;
+                    font-size: 0.8rem;
+                    line-height: 1.45;
+                    color: #565656;
+                    overflow-wrap: anywhere;
+                }
+
+                @media screen and (max-width: 640px) {
+                    .env-grid {
+                        grid-template-columns: minmax(0, 1fr);
+                    }
+                    .env-trigger span {
+                        display: none;
+                    }
+                }
+
             </style>
             <style>
                 /* ============================================================
@@ -2314,6 +2454,9 @@
                       <div class="dashboard-card-inner" style="width:100%;min-height:500px;text-align: center;">
                         <div class="card__content">
                           <div class="time-taken-wrapper" style="margin-bottom: -4%; margin-left: 30%;">
+                            <button type="button" class="env-trigger" aria-haspopup="dialog" aria-controls="environmentOverlay" onclick="toggleEnvironment(true)">
+                                <i class="fa fa-desktop" aria-hidden="true"></i><span>Environment</span>
+                            </button>
                             <span class="time__taken">
                                 <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
                                     Time taken %(execution_time)%
@@ -2442,7 +2585,35 @@
                     </a>
                 </footer>
               </div>
+
+                <div class="env-overlay" id="environmentOverlay" hidden>
+                    <div class="env-overlay__backdrop" onclick="toggleEnvironment(false)"></div>
+                    <div class="env-overlay__panel" role="dialog" aria-modal="true" aria-label="Environment">
+                        <div class="env-overlay__head">
+                            <span><i class="fa fa-desktop" aria-hidden="true"></i>Environment</span>
+                            <button type="button" class="env-overlay__close" aria-label="Close" onclick="toggleEnvironment(false)">&times;</button>
+                        </div>
+                        <div class="env-grid">
+                            %(environment_rows)%
+                        </div>
+                    </div>
+                </div>
+
                 <script>
+                    // Environment details open over the dashboard rather than
+                    // inside it, so the card rows keep their full height.
+                    function toggleEnvironment(open) {
+                        var overlay = document.getElementById('environmentOverlay');
+                        if (!overlay) return;
+
+                        overlay.hidden = !open;
+                        if (open) overlay.querySelector('.env-overlay__close').focus();
+                    }
+
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') toggleEnvironment(false);
+                    });
+
                     window.onload = function() {
                         failureScreenshots();
                         executeDataTable('#sm', 2);
