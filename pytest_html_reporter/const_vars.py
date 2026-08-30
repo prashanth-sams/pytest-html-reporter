@@ -28,6 +28,8 @@ class ConfigVars:
     _start_execution_time = 0
     _execution_time = _duration = 0
     _test_metrics_content = ""
+    _test_logs_content = ""
+    _logs_notice = ""
     _suite_metrics_content = ""
     _previous_suite_name = "None"
     _initial_trigger = True

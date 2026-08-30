@@ -37,6 +37,9 @@ class _FakeConfig:
     def getoption(self, name, default=None):
         return self._options.get(name, default)
 
+    def getini(self, name):
+        raise ValueError(name)
+
 
 _TOUCHED = (
     "_test_metrics_content", "_suite_metrics_content", "_test_suite_name",

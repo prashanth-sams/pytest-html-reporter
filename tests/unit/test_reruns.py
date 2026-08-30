@@ -36,6 +36,9 @@ class _FakeConfig:
     def getoption(self, name, default=None):
         return default
 
+    def getini(self, name):
+        raise ValueError(name)
+
 
 def _reporter(**kwargs):
     return HTMLReporter(".", "", _FakeConfig(**kwargs))

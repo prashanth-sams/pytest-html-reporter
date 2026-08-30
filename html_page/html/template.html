@@ -1888,6 +1888,234 @@
                     outline: none;
                 }
 
+                /* A column of dashes reads as a broken feature, so the run says
+                   what is suppressing its own output. */
+                .metrics-notice {
+                    display: inline-flex;
+                    align-items: baseline;
+                    gap: 8px;
+                    margin-top: 10px;
+                    padding: 6px 12px;
+                    border: 1px solid #f0e6c8;
+                    border-radius: 7px;
+                    background: #fdf8e9;
+                    font-family: sans-serif;
+                    font-size: 0.78rem;
+                    line-height: 1.5;
+                    color: #8a7434;
+                }
+
+                .metrics-notice .fa {
+                    color: #d3ab3c;
+                }
+
+                /* ---- Captured output: a button per row, one shared overlay ---- */
+                .metrics-card td.log-cell {
+                    text-align: center;
+                    white-space: nowrap;
+                }
+
+                .log-cell .log-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 10px;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 7px;
+                    background: #f7fafd;
+                    color: #6b7381;
+                    font-size: 12px;
+                    font-weight: 600;
+                    line-height: 1.5;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .log-cell .log-btn:hover,
+                .log-cell .log-btn:focus {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                    outline: none;
+                }
+
+                .log-cell .log-btn .fa {
+                    font-size: 11px;
+                }
+
+                .log-cell .log-none {
+                    display: none;
+                    color: #c3c9d2;
+                }
+
+                /* A test that captured nothing keeps the column readable
+                   rather than offering a button that opens an empty panel. */
+                .log-cell[data-logs="0"] .log-btn,
+                .log-cell[data-logs=""] .log-btn {
+                    display: none;
+                }
+
+                .log-cell[data-logs="0"] .log-none,
+                .log-cell[data-logs=""] .log-none {
+                    display: inline;
+                }
+
+                .log-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 1200;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 24px;
+                }
+
+                .log-overlay__backdrop {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(46, 61, 73, 0.42);
+                }
+
+                .log-overlay__panel {
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                    max-width: 940px;
+                    max-height: 86vh;
+                    background: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 12px 15px 40px 0 rgba(46, 61, 73, 0.35);
+                    padding: 20px 24px 20px 24px;
+                }
+
+                .log-overlay__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding-bottom: 12px;
+                    margin-bottom: 14px;
+                    border-bottom: 1px solid #ededed;
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    font-size: 0.78rem;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: darkgrey;
+                }
+
+                .log-overlay__title {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 8px;
+                    min-width: 0;
+                }
+
+                .log-overlay__title .fa {
+                    color: currentcolor;
+                }
+
+                .log-overlay__title #logOverlayName {
+                    color: #39404d;
+                    text-transform: none;
+                    letter-spacing: 0.01em;
+                    font-size: 0.92rem;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .log-overlay__title em {
+                    font-style: normal;
+                    text-transform: none;
+                    letter-spacing: 0.01em;
+                    font-size: 0.78rem;
+                    color: #a9b0ba;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .log-overlay__actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-shrink: 0;
+                }
+
+                .log-overlay__copy {
+                    border: 1px solid #e3e7ee;
+                    border-radius: 7px;
+                    background: #f7fafd;
+                    color: #6b7381;
+                    padding: 4px 12px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .log-overlay__copy:hover,
+                .log-overlay__copy:focus {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                    outline: none;
+                }
+
+                .log-overlay__close {
+                    border: none;
+                    background: none;
+                    color: #b4b4b4;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    padding: 0 4px;
+                    cursor: pointer;
+                }
+
+                .log-overlay__close:hover,
+                .log-overlay__close:focus {
+                    color: #565656;
+                    outline: none;
+                }
+
+                .log-overlay__body {
+                    overflow-y: auto;
+                    min-height: 0;
+                }
+
+                .log-section + .log-section {
+                    margin-top: 18px;
+                }
+
+                .log-section__head {
+                    font-family: sans-serif;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #8a929e;
+                    margin-bottom: 6px;
+                }
+
+                .log-section__body {
+                    margin: 0;
+                    padding: 12px 14px;
+                    background: #fbfcfd;
+                    border: 1px solid #eef1f5;
+                    border-radius: 6px;
+                    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+                    font-size: 12px;
+                    line-height: 1.55;
+                    color: #4a5160;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    overflow-x: auto;
+                }
+
                 .env-grid {
                     display: grid;
                     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2734,8 +2962,77 @@
                     }
 
                     document.addEventListener('keydown', function(e) {
-                        if (e.key === 'Escape') toggleEnvironment(false);
+                        if (e.key !== 'Escape') return;
+
+                        toggleEnvironment(false);
+                        toggleLogs(false);
                     });
+
+                    // A test's captured stdout, stderr and logging output is
+                    // rendered once into a hidden block per test; opening it
+                    // just moves that block into the one overlay.
+                    function toggleLogs(open) {
+                        var overlay = document.getElementById('logOverlay');
+                        if (!overlay) return;
+
+                        overlay.hidden = !open;
+                        if (open) overlay.querySelector('.log-overlay__close').focus();
+                    }
+
+                    function showLogs(id) {
+                        var source = document.getElementById('log-' + id);
+                        if (!source) return;
+
+                        document.getElementById('logOverlayName').textContent = source.getAttribute('data-test') || 'Captured output';
+                        document.getElementById('logOverlaySuite').textContent = source.getAttribute('data-suite') || '';
+                        document.getElementById('logOverlayBody').innerHTML = source.innerHTML;
+                        document.getElementById('logOverlayBody').scrollTop = 0;
+                        setCopyLabel('Copy');
+
+                        toggleLogs(true);
+                    }
+
+                    function setCopyLabel(text) {
+                        var button = document.getElementById('logOverlayCopy');
+                        if (button) button.textContent = text;
+                    }
+
+                    function copyLogs() {
+                        var body = document.getElementById('logOverlayBody');
+                        if (!body) return;
+
+                        var text = '';
+                        body.querySelectorAll('.log-section').forEach(function(section) {
+                            text += section.querySelector('.log-section__head').textContent + '\n'
+                                  + section.querySelector('.log-section__body').textContent + '\n\n';
+                        });
+
+                        // navigator.clipboard is unavailable when the report is
+                        // opened straight off disk in some browsers, so fall
+                        // back to a throwaway textarea and execCommand.
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(text).then(function() { setCopyLabel('Copied'); },
+                                                                     function() { legacyCopy(text); });
+                            return;
+                        }
+
+                        legacyCopy(text);
+                    }
+
+                    function legacyCopy(text) {
+                        var scratch = document.createElement('textarea');
+                        scratch.value = text;
+                        scratch.setAttribute('readonly', '');
+                        scratch.style.position = 'fixed';
+                        scratch.style.opacity = '0';
+                        document.body.appendChild(scratch);
+                        scratch.select();
+
+                        try { document.execCommand('copy'); setCopyLabel('Copied'); }
+                        catch (err) { setCopyLabel('Press Ctrl+C'); }
+
+                        document.body.removeChild(scratch);
+                    }
 
                     window.onload = function() {
                         failureScreenshots();
@@ -2780,6 +3077,7 @@
                     <div>
                         <div class="metrics-page__title"><i class="fa fa-server"></i>Test Metrics</div>
                         <div class="metrics-page__subtitle">Every test case with its status, duration and error</div>
+                        %(logs_notice)%
                     </div>
                     <div class="metrics-summary" id="testSummary"></div>
                 </div>
@@ -2792,6 +3090,7 @@
                                 <th>Status</th>
                                 <th>Time (s)</th>
                                 <th class="th-left">Error Message</th>
+                                <th>Logs</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2799,6 +3098,10 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Captured output lives here, not in the rows: a cell holding
+                     it would be searched, sorted and exported along with the
+                     rest of the table. -->
+                <div id="logStore" hidden>%(test_logs)%</div>
             </div>
         </div>
         <div class="tabcontent" id="archives">
@@ -2838,6 +3141,24 @@
               </div>
             </div>
         </div>
+        <div class="log-overlay" id="logOverlay" hidden>
+            <div class="log-overlay__backdrop" onclick="toggleLogs(false)"></div>
+            <div class="log-overlay__panel" role="dialog" aria-modal="true" aria-label="Captured output">
+                <div class="log-overlay__head">
+                    <span class="log-overlay__title">
+                        <i class="fa fa-align-left" aria-hidden="true"></i>
+                        <span id="logOverlayName">Captured output</span>
+                        <em id="logOverlaySuite"></em>
+                    </span>
+                    <span class="log-overlay__actions">
+                        <button type="button" class="log-overlay__copy" id="logOverlayCopy" onclick="copyLogs()">Copy</button>
+                        <button type="button" class="log-overlay__close" aria-label="Close" onclick="toggleLogs(false)">&times;</button>
+                    </span>
+                </div>
+                <div class="log-overlay__body" id="logOverlayBody"></div>
+            </div>
+        </div>
+
         <footer class="page-footer">
             <a class="page-footer__credit" href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank" rel="noopener noreferrer">pytest-html-reporter</a>
             <span class="page-footer__dot">&middot;</span>

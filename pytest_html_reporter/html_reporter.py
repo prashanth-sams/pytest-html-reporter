@@ -15,13 +15,22 @@ from html_page.floating_error import FloatingError
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
+from html_page.test_log import TestLog
+from html_page.test_log_section import TestLogSection
 from html_page.test_row import TestRow
 from pytest_html_reporter.util import (
     suite_highlights,
     generate_suite_highlights,
     generate_environment_info,
+    generate_logs_notice,
     is_xdist_worker,
     xdist_worker_id,
+    report_logs_mode,
+    report_log_limit,
+    merge_log_sections,
+    format_log_sections,
+    escape_log_text,
+    count_log_lines,
 )
 from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
@@ -35,6 +44,13 @@ class HTMLReporter(object):
         self.config = config
         self.rerun_plugin = config.pluginmanager.hasplugin("rerunfailures")
         self._sessionstarttime = None
+
+        # What pytest captured for the test currently running, keyed by the
+        # section title it gave the capture ("Captured log call", ...). Emptied
+        # at the start of every attempt so nothing leaks into the next test.
+        self._log_sections = {}
+        self.logs_mode = report_logs_mode(config)
+        self.log_limit = report_log_limit(config)
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
@@ -76,6 +92,7 @@ class HTMLReporter(object):
 
     def pytest_runtest_setup(self, item):
         ConfigVars._start_execution_time = time.time()
+        self._log_sections = {}
 
     def pytest_sessionfinish(self, session):
         # A worker cannot write the report - it only ever saw its own slice of
@@ -175,6 +192,9 @@ class HTMLReporter(object):
             # collect host, interpreter and invocation details
             generate_environment_info(self.config)
 
+            # say why the Logs column is empty, when something is suppressing it
+            generate_logs_notice(self.config)
+
             # generate html report
             live_logs_file = open(path, 'w')
             message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
@@ -187,6 +207,19 @@ class HTMLReporter(object):
         outcome = yield
         rep = outcome.get_result()
         ConfigVars._suite_name = rep.nodeid.split("::")[0]
+
+        # Setup, call and teardown each report their own captured output, so
+        # the sections are collected as the phases go by rather than read off
+        # any single report.
+        if self.logs_mode != 'none':
+            merge_log_sections(self._log_sections, rep.sections)
+
+            # A record is built from the teardown hook, which runs before
+            # pytest has finished capturing that phase. Folding the last
+            # sections in here is what puts fixture teardown output - the
+            # output of the code that cleans up after a failure - in the
+            # report at all.
+            if rep.when == 'teardown': self.refresh_record_logs(rep.nodeid)
 
         # Only the outcome of this one test is tracked here. Suite grouping and
         # every total are worked out at the end, from the merged records, so
@@ -257,12 +290,32 @@ class HTMLReporter(object):
             'index': self._collected.get(item.nodeid, len(self._collected) + len(self._records)),
             'worker': self.worker_id,
             'screenshot': None,
+            'logs': self.collect_logs(str(ConfigVars._test_status)),
         }
 
         if (record['status'] in ('FAIL', 'ERROR')) and (ConfigVars.screen_img is not None):
             record['screenshot'] = self.generate_screenshot_data()
 
         self.store_test_record(record)
+
+    def refresh_record_logs(self, nodeid):
+        """Re-read the captured output of the record already stored for a test."""
+        slot = self._record_slots.get(str(nodeid))
+        if slot is None: return
+
+        record = self._records[slot]
+        record['logs'] = self.collect_logs(record['status'])
+
+    def collect_logs(self, status):
+        """What pytest captured while this test ran, ready to be rendered.
+
+        Plain lists and strings, like the rest of a record, so an xdist worker
+        can ship them back to the controller that writes the report.
+        """
+        if self.logs_mode == 'none': return []
+        if (self.logs_mode == 'failed') and (status not in ('FAIL', 'ERROR')): return []
+
+        return format_log_sections(self._log_sections, self.log_limit)
 
     def store_test_record(self, record):
         """Keep one record per test, however many times it was attempted.
@@ -328,7 +381,8 @@ class HTMLReporter(object):
             stat=str(record['status']),
             dur=str(record['duration']),
             msg=str(record['message'][:50]),
-            runt=row_id
+            runt=row_id,
+            log_count=str(self.attach_test_logs(record, row_id))
         )
 
         if len(record['message']) < 49:
@@ -348,6 +402,34 @@ class HTMLReporter(object):
                 record['screenshot']['test'],
                 record['screenshot']['error'],
             )
+
+    def attach_test_logs(self, record, row_id):
+        """Park a test's captured output outside the table, return its size.
+
+        The text is kept in a hidden block rather than in the row itself: a
+        cell holding a few thousand lines would be swept into the table's
+        search index and into every CSV, Excel and print export. The row only
+        needs the line count, which is what the button shows and what tells the
+        page whether there is anything to open at all.
+        """
+        sections = record.get('logs') or []
+        if not sections: return 0
+
+        body = ''
+        for section in sections:
+            body += str(TestLogSection(
+                title=escape_log_text(section['title']),
+                text=escape_log_text(section['text'])
+            ))
+
+        ConfigVars._test_logs_content += str(TestLog(
+            runt=row_id,
+            sname=escape_log_text(record['suite_name']),
+            name=escape_log_text(record['test_name']),
+            sections=body
+        ))
+
+        return count_log_lines(sections)
 
     def generate_screenshot_data(self):
         """Save the attached image and describe it for the report.
@@ -530,6 +612,8 @@ class HTMLReporter(object):
             tfail=str(ConfigVars.tfail),
             tskip=str(ConfigVars.tskip),
             attach_screenshot_details=str(ConfigVars._attach_screenshot_details),
+            test_logs=str(ConfigVars._test_logs_content),
+            logs_notice=str(ConfigVars._logs_notice),
             environment_rows=str(ConfigVars._environment_rows),
             environment=str(ConfigVars._environment_label),
             environment_title=str(ConfigVars._environment),
