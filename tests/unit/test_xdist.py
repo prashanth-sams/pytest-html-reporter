@@ -14,7 +14,7 @@ import pytest
 
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.html_reporter import HTMLReporter
-from pytest_html_reporter.util import is_xdist_worker, max_rerun, xdist_worker_id
+from pytest_html_reporter.util import is_xdist_worker, xdist_worker_id
 
 
 class _FakePluginManager:
@@ -43,7 +43,7 @@ _TOUCHED = (
     "_test_pass_list", "_test_fail_list", "_test_skip_list", "_test_xpass_list",
     "_test_xfail_list", "_test_error_list", "_attach_screenshot_details",
     "_pass", "_fail", "_skip", "_error", "_xpass", "_xfail", "_total",
-    "_executed", "_pvalue",
+    "_executed",
 )
 
 
@@ -92,17 +92,6 @@ def test_a_worker_is_detected_and_named():
     config = _FakeConfig(workerinput={"workerid": "gw3"})
     assert is_xdist_worker(config) is True
     assert xdist_worker_id(config) == "gw3"
-
-
-def test_max_rerun_prefers_the_config_over_argv():
-    # A worker's argv is empty, which is why the option has to win.
-    assert max_rerun(_FakeConfig(options={"reruns": 3})) == 3
-    assert max_rerun(_FakeConfig()) is None
-
-
-def test_max_rerun_without_a_config_still_reads_argv(monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["pytest", "--reruns", "4"])
-    assert max_rerun() == 4
 
 
 # --------------------------------------------------------------------------

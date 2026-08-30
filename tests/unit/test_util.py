@@ -4,12 +4,7 @@ from pytest_html_reporter.util import (
     custom_title,
     environment_label,
     environment_name,
-    max_rerun,
 )
-
-
-def test_max_rerun_none():
-    assert max_rerun() is None
 
 
 class _FakeConfig:

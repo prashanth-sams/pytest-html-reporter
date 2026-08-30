@@ -71,28 +71,6 @@ def xdist_worker_id(config):
     return str(getattr(config, "workerinput", {}).get("workerid", ""))
 
 
-def max_rerun(config=None):
-    """Value of pytest-rerunfailures' --reruns, or None when it is not set.
-
-    xdist starts its workers with an empty argv, so scanning sys.argv there
-    finds nothing and silently turns rerun handling off. The config knows the
-    option in every process, so it wins whenever we have one to ask.
-    """
-    if config is not None:
-        reruns = config.getoption("reruns", None)
-        return None if reruns is None else int(reruns)
-
-    indices = [i for i, s in enumerate(sys.argv) if 'reruns' in s]
-
-    try:
-        if "=" in sys.argv[int(indices[0])]:
-            return int(sys.argv[int(indices[0])].split('=')[1])
-        else:
-            return int(sys.argv[int(indices[0]) + 1])
-    except IndexError:
-        return None
-
-
 def screenshot(data=None):
     from pytest_html_reporter.html_reporter import HTMLReporter
 

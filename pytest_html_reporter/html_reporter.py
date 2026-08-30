@@ -21,7 +21,6 @@ from pytest_html_reporter.util import (
     generate_suite_highlights,
     generate_environment_info,
     is_xdist_worker,
-    max_rerun,
     xdist_worker_id,
 )
 from pytest_html_reporter.time_converter import time_converter
@@ -34,15 +33,17 @@ class HTMLReporter(object):
         self.path = path
         self.archive_count = archive_count
         self.config = config
-        has_rerun = config.pluginmanager.hasplugin("rerunfailures")
-        self.rerun = 0 if has_rerun else None
-        self.max_rerun = max_rerun(config) if has_rerun else None
+        self.rerun_plugin = config.pluginmanager.hasplugin("rerunfailures")
         self._sessionstarttime = None
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
         # controller merges them all before anything is rendered.
         self._records = []
+
+        # Where each test's record sits in that list, so a retry can replace the
+        # attempt it superseded instead of being reported as another test.
+        self._record_slots = {}
         self._collected = {}
         self.worker_id = xdist_worker_id(config)
 
@@ -71,20 +72,7 @@ class HTMLReporter(object):
         _test_end_time = time.time()
         ConfigVars._duration = _test_end_time - ConfigVars._start_execution_time
 
-        if self.reruns_enabled(): self.previous_test_name(ConfigVars._test_name)
-        self._test_names(ConfigVars._test_name)
         self.append_test_record(item)
-
-    def reruns_enabled(self):
-        return (self.rerun is not None) and (self.max_rerun is not None)
-
-    def previous_test_name(self, _test_name):
-        if ConfigVars._previous_test_name == _test_name:
-            self.rerun += 1
-        else:
-            ConfigVars._scenario.append(_test_name)
-            self.rerun = 0
-            ConfigVars._previous_test_name = _test_name
 
     def pytest_runtest_setup(self, item):
         ConfigVars._start_execution_time = time.time()
@@ -99,7 +87,9 @@ class HTMLReporter(object):
     def pytest_testnodedown(self, node, error):
         """Collect one finished xdist worker's records on the controller."""
         payload = getattr(node, 'workeroutput', {}).get('pytest_html_reporter')
-        if payload: self._records.extend(payload['records'])
+        if payload:
+            for record in payload['records']:
+                self.store_test_record(record)
 
     def archive_data(self, base, filename):
         path = os.path.join(base, filename)
@@ -269,22 +259,43 @@ class HTMLReporter(object):
             'screenshot': None,
         }
 
-        if self.reruns_enabled():
-            record['rerun'] = int(self.rerun)
-
-            # A failure with retries still to come is superseded by the next
-            # attempt, so only the attempt that sticks is recorded.
-            _failed = record['status'] in ('FAIL', 'ERROR')
-            if _failed and ConfigVars._pvalue + 1 != self.max_rerun + 1:
-                ConfigVars._pvalue += 1
-                return
-
-            ConfigVars._pvalue = 0
-
         if (record['status'] in ('FAIL', 'ERROR')) and (ConfigVars.screen_img is not None):
             record['screenshot'] = self.generate_screenshot_data()
 
-        self._records.append(record)
+        self.store_test_record(record)
+
+    def store_test_record(self, record):
+        """Keep one record per test, however many times it was attempted.
+
+        pytest-rerunfailures runs the whole setup/call/teardown protocol again
+        for every retry, so a retried test arrives here once per attempt. Only
+        the attempt that stuck belongs in the report - the ones it superseded
+        are what the rerun count is there to say.
+
+        Counting attempts is the only reliable signal: --reruns, the ini key and
+        @pytest.mark.flaky(reruns=n) can each set a different budget, and
+        --only-rerun can stop the retries early, so no single number says how
+        many attempts a given test will take.
+        """
+        slot = self._record_slots.get(record['nodeid'])
+
+        if (slot is None) or (not self.rerun_plugin):
+            self._record_slots[record['nodeid']] = len(self._records)
+            self._records.append(record)
+            return
+
+        superseded = self._records[slot]
+
+        # Both records may already stand for several attempts - that is what a
+        # worker sends back - and the one being replaced is an attempt itself.
+        record['rerun'] = int(superseded['rerun']) + int(record['rerun']) + 1
+
+        # A retry that attached no screenshot of its own keeps the one from the
+        # attempt it replaces, rather than dropping it from the report.
+        if record['screenshot'] is None: record['screenshot'] = superseded['screenshot']
+
+        record['index'] = superseded['index']
+        self._records[slot] = record
 
     def build_report(self):
         """Turn every collected record into rows, totals and json data - once.
@@ -458,13 +469,6 @@ class HTMLReporter(object):
 
     def _test_suites(self, name):
         ConfigVars._test_suite_name.append(name.split('/')[-1].replace('.py', ''))
-
-    def _test_names(self, name, **kwargs):
-        if (self.rerun is None) or (max_rerun() is None): ConfigVars._scenario.append(name)
-        try:
-            if kwargs['clear'] == 'yes': ConfigVars._scenario = []
-        except Exception:
-            pass
 
     def _test_passed(self, value):
         ConfigVars._test_pass_list.append(value)

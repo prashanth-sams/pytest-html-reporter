@@ -1,4 +1,11 @@
 Change Log
+0.3.3 (30/08/2026)
+-------------------
+- Fixed reruns being counted as extra failures when the retry count comes from @pytest.mark.flaky(reruns=n) rather than --reruns (#212)
+- Reruns are now worked out by collapsing the attempts of a test into one record, so --reruns, the reruns ini key, the flaky marker, a marker that disagrees with --reruns, and --only-rerun all report the same totals pytest itself prints
+- A test that passes on a retry is reported as passed, with the attempts it took as its rerun count
+- A retry that attaches no screenshot of its own keeps the screenshot of the attempt it replaced
+
 0.3.2 (30/08/2026)
 -------------------
 - Added pytest-xdist support: a parallel run now produces one report instead of one per worker, with every test, suite and total in it, and a single build in Archives (#178, #55)

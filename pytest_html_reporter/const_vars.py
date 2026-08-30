@@ -17,7 +17,6 @@ class ConfigVars:
     _current_error = ""
     _suite_name = None
     _test_name = None
-    _scenario = []
     _test_suite_name = []
     _test_pass_list = []
     _test_fail_list = []
@@ -62,10 +61,8 @@ class ConfigVars:
     tpass = []
     tfail = []
     tskip = []
-    _previous_test_name = ''
     _suite_error = 0
     _suite_fail = 0
-    _pvalue = 0
     screen_base = ''
     screen_img = None
     _attach_screenshot_details = ''
