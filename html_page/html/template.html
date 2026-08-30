@@ -322,6 +322,7 @@
                 .time__taken {
                     color: darkgray;
                     font-size: 17px;
+                    white-space: nowrap;
                 }
 
                 .card__header {
@@ -331,6 +332,11 @@
                 }
 
                 .header__title {
+                  display: flex;
+                  align-items: center;
+                  flex-wrap: nowrap;
+                  gap: 10px;
+                  min-width: 0;
                   font-size: 1.5rem;
                   font-weight: 600;
                   font-family: sans-serif;
@@ -372,6 +378,23 @@
                   font-size: 1.3rem;
                   font-family: sans-serif;
                   color: darkgray;
+                }
+
+                /* The badge keeps its size; the title gives way first, so the
+                   two always share one line however narrow the column gets.
+                   A cut tail fades out rather than ending in an ellipsis --
+                   .is-truncated comes from the character cap, .is-clipped from
+                   the JS width check. */
+                .header__title-text {
+                  min-width: 0;
+                  overflow: hidden;
+                  white-space: nowrap;
+                }
+
+                .header__title-text.is-truncated,
+                .header__title-text.is-clipped {
+                  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.4ch), transparent 100%);
+                  mask-image: linear-gradient(to right, #000 calc(100% - 2.4ch), transparent 100%);
                 }
 
                 .header__title-icon {
@@ -1113,15 +1136,34 @@
                         gap: 6px 12px;
                         padding: 1rem 1.6rem 1.2rem 1.6rem;
                     }
+                    /* Environment pinned left, run time right. Explicit, so the
+                       pair does not depend on the clock icon's own margins. */
                     .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper {
                         grid-area: time;
                         margin: 0 !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 12px;
                         text-align: right;
                         padding-right: 4px;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .env-trigger {
+                        margin-right: 0;
+                        flex: 0 0 auto;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .time__taken {
+                        flex: 0 0 auto;
+                    }
+                    /* The clock's inline 29% left margin was doing the spacing
+                       before; the flex row owns that now. */
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper .time__taken svg {
+                        margin-left: 0 !important;
                     }
                     .dashboard-viewport .dashboard-card .card__content > .summary-info {
                         grid-area: info;
                         min-height: 0;
+                        min-width: 0;
                         align-self: stretch;
                         text-align: left;
                         display: flex;
@@ -1152,10 +1194,12 @@
                     .dashboard-viewport .dashboard-card .card__header {
                         margin-bottom: 0;
                     }
+                    /* Sized so the full 20-character cap fits beside the badge
+                       in this half-width column rather than fading early. */
                     .dashboard-viewport .dashboard-card .header__title {
                         padding-top: 0 !important;
                         padding-left: 2% !important;
-                        font-size: 1.5rem;
+                        font-size: 1.02rem;
                     }
                     .dashboard-viewport .dashboard-card .header__date {
                         padding-left: 2% !important;
@@ -1632,12 +1676,25 @@
                     .card__content {
                         grid-template-columns: minmax(0, 1fr);
                         grid-template-areas:
-                            "meta"
                             "head"
+                            "meta"
                             "count"
                             "chart"
                             "stats";
                         justify-items: center;
+                    }
+                    /* One centred row under the title: button and run time. */
+                    .card__content > .time-taken-wrapper {
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px 10px;
+                        margin-top: 6px !important;
+                        text-align: center;
+                    }
+                    .card__content > .time-taken-wrapper > .env-trigger {
+                        margin-right: 0;
                     }
                     .dashboard-card-inner {
                         text-align: center !important;
@@ -1691,6 +1748,183 @@
                     }
                     .archive-header, .archive-date {
                         padding-left: 14px;
+                    }
+                }
+
+                /* ============================================================
+                   Environment: host, interpreter and invocation details.
+                   Lives in an overlay opened from the summary card, so it adds
+                   nothing to the dashboard's fixed-height layout.
+                   ============================================================ */
+                /* Named via --environment / the environment ini key. Renders
+                   nothing at all when unset, so the title is unchanged. */
+                .env-badge {
+                    position: relative;
+                    display: inline-block;
+                    flex: 0 0 auto;
+                    overflow: hidden;
+                    padding: 3px 8px;
+                    border-radius: 3px;
+                    background: #eaecf5;
+                    color: #5c6591;
+                    font-family: sans-serif;
+                    font-size: 0.6rem;
+                    font-weight: 600;
+                    letter-spacing: 0.1em;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                }
+
+                .env-badge:empty {
+                    display: none;
+                }
+
+                /* Masking would eat the pill's fill too, so the badge fades
+                   with an overlay in its own colour instead. */
+                .env-badge.is-truncated::after,
+                .env-badge.is-clipped::after {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    bottom: 0;
+                    width: 18px;
+                    background: linear-gradient(to right, rgba(234, 236, 245, 0), #eaecf5);
+                    pointer-events: none;
+                }
+
+                .env-trigger {
+                    display: inline-flex;
+                    align-items: center;
+                    vertical-align: middle;
+                    margin-right: 14px;
+                    gap: 7px;
+                    padding: 4px 10px;
+                    border: 1px solid #e4e4e4;
+                    border-radius: 4px;
+                    background: #ffffff;
+                    color: #a9a9a9;
+                    font-family: sans-serif;
+                    font-size: 0.68rem;
+                    font-weight: 600;
+                    letter-spacing: 0.09em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: color 0.2s ease, border-color 0.2s ease;
+                }
+
+                .env-trigger:hover,
+                .env-trigger:focus {
+                    color: #565656;
+                    border-color: #c4c4c4;
+                    outline: none;
+                }
+
+                .env-trigger .fa {
+                    font-size: 0.85rem;
+                }
+
+                .env-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 1200;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 24px;
+                }
+
+                .env-overlay__backdrop {
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(46, 61, 73, 0.42);
+                }
+
+                .env-overlay__panel {
+                    position: relative;
+                    width: 100%;
+                    max-width: 620px;
+                    max-height: 86vh;
+                    overflow-y: auto;
+                    background: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 12px 15px 40px 0 rgba(46, 61, 73, 0.35);
+                    padding: 20px 24px 24px 24px;
+                }
+
+                .env-overlay__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding-bottom: 12px;
+                    margin-bottom: 16px;
+                    border-bottom: 1px solid #ededed;
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    font-size: 0.78rem;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: darkgrey;
+                }
+
+                .env-overlay__head .fa {
+                    color: currentcolor;
+                    margin-right: 8px;
+                }
+
+                .env-overlay__close {
+                    border: none;
+                    background: none;
+                    color: #b4b4b4;
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    padding: 0 4px;
+                    cursor: pointer;
+                }
+
+                .env-overlay__close:hover,
+                .env-overlay__close:focus {
+                    color: #565656;
+                    outline: none;
+                }
+
+                .env-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 14px 28px;
+                }
+
+                .env-item {
+                    display: flex;
+                    flex-direction: column;
+                    min-width: 0;
+                }
+
+                .env-item__label {
+                    font-family: sans-serif;
+                    font-size: 0.66rem;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #a9a9a9;
+                    margin-bottom: 2px;
+                }
+
+                /* Long values (plugin lists, paths, argv) wrap rather than
+                   truncate: the overlay has the room the dashboard did not. */
+                .env-item__value {
+                    font-family: Consolas, Menlo, Monaco, monospace;
+                    font-size: 0.8rem;
+                    line-height: 1.45;
+                    color: #565656;
+                    overflow-wrap: anywhere;
+                }
+
+                @media screen and (max-width: 640px) {
+                    .env-grid {
+                        grid-template-columns: minmax(0, 1fr);
+                    }
+                    .env-trigger span {
+                        display: none;
                     }
                 }
 
@@ -1751,7 +1985,7 @@
                     gap: 7px;
                     background-color: #ffffff;
                     border: 1px solid #e9edf3;
-                    border-radius: 999px;
+                    border-radius: 0.5rem;
                     padding: 6px 14px;
                     box-shadow: 0 1px 2px rgba(46, 61, 73, 0.06);
                 }
@@ -1775,6 +2009,35 @@
                     font-size: 8.5pt;
                     letter-spacing: 0.03em;
                     color: slategrey;
+                }
+
+                /* On Test Metrics the status chips double as filters, so they
+                   have to look pressable and show which one is holding. */
+                .metric-chip--filter {
+                    font: inherit;
+                    cursor: pointer;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metric-chip--filter:hover {
+                    border-color: #cfd7e3;
+                    box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
+                }
+
+                /* Clicking a chip must not leave the browser's blue focus ring
+                   behind; keyboard focus still shows, as the hover treatment. */
+                .metric-chip--filter:focus {
+                    outline: none;
+                }
+
+                .metric-chip--filter:focus-visible {
+                    outline: none;
+                    border-color: #b6bfcd;
+                    box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
+                }
+
+                .metric-chip--filter.is-active {
+                    border-color: #b6bfcd;
                 }
 
                 /* ---- Card shell ---- */
@@ -2314,6 +2577,9 @@
                       <div class="dashboard-card-inner" style="width:100%;min-height:500px;text-align: center;">
                         <div class="card__content">
                           <div class="time-taken-wrapper" style="margin-bottom: -4%; margin-left: 30%;">
+                            <button type="button" class="env-trigger" aria-haspopup="dialog" aria-controls="environmentOverlay" onclick="toggleEnvironment(true)">
+                                <i class="fa fa-desktop" aria-hidden="true"></i><span>Environment</span>
+                            </button>
                             <span class="time__taken">
                                 <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
                                     Time taken %(execution_time)%
@@ -2322,8 +2588,8 @@
                           <div class="summary-info">
                               <div class="summary-heading">
                                 <div class="card__header">
-                                  <div class="header__title">
-                                    %(title)%
+                                  <div class="header__title" title="%(title_full)%">
+                                    <span class="header__title-text js-fade-clip %(title_class)%">%(title)%</span><span class="env-badge js-fade-clip %(environment_class)%" title="%(environment_title)%">%(environment)%</span>
                                   </div>
                                 </div>
                                 <div class="card__header">
@@ -2442,7 +2708,35 @@
                     </a>
                 </footer>
               </div>
+
+                <div class="env-overlay" id="environmentOverlay" hidden>
+                    <div class="env-overlay__backdrop" onclick="toggleEnvironment(false)"></div>
+                    <div class="env-overlay__panel" role="dialog" aria-modal="true" aria-label="Environment">
+                        <div class="env-overlay__head">
+                            <span><i class="fa fa-desktop" aria-hidden="true"></i>Environment</span>
+                            <button type="button" class="env-overlay__close" aria-label="Close" onclick="toggleEnvironment(false)">&times;</button>
+                        </div>
+                        <div class="env-grid">
+                            %(environment_rows)%
+                        </div>
+                    </div>
+                </div>
+
                 <script>
+                    // Environment details open over the dashboard rather than
+                    // inside it, so the card rows keep their full height.
+                    function toggleEnvironment(open) {
+                        var overlay = document.getElementById('environmentOverlay');
+                        if (!overlay) return;
+
+                        overlay.hidden = !open;
+                        if (open) overlay.querySelector('.env-overlay__close').focus();
+                    }
+
+                    document.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') toggleEnvironment(false);
+                    });
+
                     window.onload = function() {
                         failureScreenshots();
                         executeDataTable('#sm', 2);
@@ -2646,21 +2940,28 @@
                 return $('<div>').html(value === null || value === undefined ? '' : String(value)).text().trim();
             }
 
-            function metricsChip(color) {
-                return '<span class="metric-chip">' +
-                           '<span class="metric-chip__dot" style="background-color:' + color + '"></span>' +
+            // Chips carrying a status are filters, so they render as buttons;
+            // the plain totals stay inert spans.
+            function metricsChip(chip) {
+                var tag = chip.status ? 'button' : 'span';
+                var attrs = chip.status
+                    ? ' type="button" class="metric-chip metric-chip--filter" data-status="' + chip.status + '"'
+                    : ' class="metric-chip"';
+                return '<' + tag + attrs + '>' +
+                           '<span class="metric-chip__dot" style="background-color:' + chip.color + '"></span>' +
                            '<span class="metric-chip__value"></span>' +
                            '<span class="metric-chip__label"></span>' +
-                       '</span>';
+                       '</' + tag + '>';
             }
 
             function renderMetricsChips(target, chips) {
                 if (!target.length) { return; }
                 target.empty();
                 $.each(chips, function(_, chip) {
-                    var node = $(metricsChip(chip.color));
+                    var node = $(metricsChip(chip));
                     node.find('.metric-chip__value').text(chip.value);
                     node.find('.metric-chip__label').text(chip.label);
+                    node.toggleClass('is-active', !!chip.status && chip.status === (testStatusFilter || 'all'));
                     target.append(node);
                 });
             }
@@ -2694,25 +2995,53 @@
                 renderMetricsChips($('#suiteSummary'), chips);
             }
 
+            // The status the chips are filtering the test table by ('' = none),
+            // plus the chip set captured while no status was selected. Filtering
+            // to failures leaves the other outcomes with no rows to count, and
+            // the whole set - the run total included - has to stay put: those
+            // are the numbers you filter *from*, and the total is the way back.
+            var testStatusFilter = '';
+            var testStatusChips = [];
+
             function renderTestSummary(api) {
-                var rows = api.rows({ search: 'applied' }).count();
-                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'test' : 'tests' }];
-                var counts = {};
+                if (!testStatusFilter) {
+                    var rows = api.rows({ search: 'applied' }).count();
+                    var counts = {};
 
-                api.column(2, { search: 'applied' }).data().each(function(value) {
-                    var key = metricsText(value).toLowerCase().replace(/[^a-z]/g, '');
-                    if (key) { counts[key] = (counts[key] || 0) + 1; }
-                });
+                    api.column(2, { search: 'applied' }).data().each(function(value) {
+                        var key = metricsText(value).toLowerCase().replace(/[^a-z]/g, '');
+                        if (key) { counts[key] = (counts[key] || 0) + 1; }
+                    });
 
-                $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
-                        ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
-                    if (counts[status[0]]) {
-                        chips.push({ color: METRICS_COLORS[status[0]], value: counts[status[0]], label: status[1] });
-                    }
-                });
+                    testStatusChips = [{ color: '#565656', value: rows,
+                                         label: rows === 1 ? 'test' : 'tests', status: 'all' }];
+                    $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
+                            ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
+                        if (counts[status[0]]) {
+                            testStatusChips.push({ color: METRICS_COLORS[status[0]], value: counts[status[0]],
+                                                   label: status[1], status: status[0] });
+                        }
+                    });
+                }
 
-                renderMetricsChips($('#testSummary'), chips);
+                renderMetricsChips($('#testSummary'), testStatusChips);
             }
+
+            // Clicking a status chip filters the table down to that outcome;
+            // clicking the active one - or the run total, which is always the
+            // unfiltered position - clears it. The term is anchored so that
+            // 'pass' does not also pull in the xPASS rows.
+            $(document).on('click', '#testSummary .metric-chip--filter', function() {
+                var status = String($(this).data('status'));
+                testStatusFilter = (status === 'all' || status === testStatusFilter) ? '' : status;
+                $('#tm').DataTable()
+                        .column(2)
+                        .search(testStatusFilter ? '^' + testStatusFilter + '$' : '', true, false)
+                        .draw();
+                // The draw rebuilds the chips, so hand focus back to the one
+                // that was clicked instead of dropping it on the document.
+                $('#testSummary .metric-chip--filter[data-status="' + status + '"]').focus();
+            });
 
             // DataTables re-renders rows on every draw, so the presentation
             // touches are re-applied here rather than baked into the markup.
@@ -2859,6 +3188,16 @@
             // Charts inside a hidden tab report a 0px container, so resizing
             // them there would collapse the canvas; we skip those and re-size
             // them when their tab becomes visible.
+            // Text the layout has cut off gets the same fade as text the
+            // character cap cut. Re-checked whenever the charts are re-fitted,
+            // which is every resize.
+            function updateFadeClips() {
+                var nodes = document.querySelectorAll('.js-fade-clip');
+                for (var i = 0; i < nodes.length; i++) {
+                    nodes[i].classList.toggle('is-clipped', nodes[i].scrollWidth > nodes[i].clientWidth + 1);
+                }
+            }
+
             function resizeVisibleCharts() {
                 if (window.Chart && Chart.instances) {
                     Object.keys(Chart.instances).forEach(function(key){
@@ -3013,6 +3352,7 @@
                 // (and their on-canvas tooltip text) render crisp and un-stretched.
                 function resizeAllCharts() {
                     resizeVisibleCharts();
+                    updateFadeClips();
                 }
                 // The off-screen copy captured for the PDF export gets no
                 // animation frames, so it drops the overlay outright: a jQuery

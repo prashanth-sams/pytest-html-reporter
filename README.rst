@@ -31,12 +31,14 @@ Features
 * Generic information
 
   - Overview
+  - Environment
   - Trends
   - Suite Highlights
   - Test suite details
 * Archives / History
 * Screenshots on failure
 * Test Rerun support
+* Parallel run support (``pytest-xdist``)
 
 Installation
 ------------
@@ -64,7 +66,8 @@ Add ``--html-report`` tag followed by path location and filename to customize th
     $ pytest tests/ --html-report=./report
     $ pytest tests/ --html-report=./report/report.html
 
-Add ``--title`` tag followed by the report title::
+Add ``--title`` tag followed by the report title; it is capped at 20 characters and the cut tail fades out, with the
+full title kept as the heading's tooltip::
 
     $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 
@@ -75,12 +78,34 @@ Add ``--archive-count`` tag followed by an integer to limit showing the number o
 
 ..
 
+        Environment and build details
+
+Add ``--environment`` tag followed by the environment under test; it shows as a badge beside the report title. The
+badge is capped at 10 characters and the cut tail fades out, with the full name kept in the ``Environment`` panel and
+in the badge's tooltip::
+
+    $ pytest tests/ --environment=staging
+
+Add ``--build-info`` tag followed by ``key=value`` to add any other detail to the ``Environment`` panel; repeat it as
+often as you like::
+
+    $ pytest tests/ --environment=prod --build-info branch=main --build-info sha=$GITHUB_SHA
+
+..
+
         pytest.ini
 
 Alternate option is to add this snippet in the ``pytest.ini`` file::
 
     [pytest]
     addopts = -vs -rf --html-report=./report --title='PYTEST REPORT'
+    environment = staging
+    build_info =
+        branch=main
+        team=payments
+
+**Note:** ``--environment`` overrides the ``environment`` ini value; ``--build-info`` entries are added to the ones
+set in the ini file rather than replacing them
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
@@ -99,6 +124,23 @@ Import ``attach`` from the library and call it with the selenium command as give
 
 
 .. image:: https://i.imgur.com/1HSYkdC.gif
+
+
+parallel runs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Runs distributed with ``pytest-xdist`` are gathered into a single report. Every worker sends its results back to the
+controller, which merges them and writes one report - one build in ``Archives``, one set of totals, one row per test -
+whichever way the tests were distributed::
+
+    $ pytest tests/ -n 2 --html-report=./report
+    $ pytest tests/ -n auto --dist loadfile --html-report=./report
+
+Tests are listed in collection order rather than the order the workers happened to finish them in, so a parallel report
+reads the same as a serial one. Nothing needs to be configured, and running without ``-n`` is unaffected.
+
+**Note:** results are handed over when a worker finishes, so tests from a worker that crashes outright (rather than
+failing) are not in the report - pytest reports the crash itself
 
 
 Is there a demo available for this gem?

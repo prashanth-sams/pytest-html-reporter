@@ -29,6 +29,35 @@ def pytest_addoption(parser):
         help="set maximum build count to display in the archives section",
     )
 
+    group.addoption(
+        "--environment",
+        action="store",
+        dest="environment",
+        default=None,
+        help="name the environment under test, e.g. staging or prod",
+    )
+
+    group.addoption(
+        "--build-info",
+        action="append",
+        dest="build_info",
+        default=[],
+        metavar="KEY=VALUE",
+        help="extra key=value detail to show in the report; repeat for more",
+    )
+
+    parser.addini(
+        "environment",
+        help="name the environment under test, e.g. staging or prod",
+        default="",
+    )
+
+    parser.addini(
+        "build_info",
+        type="linelist",
+        help="extra key=value details to show in the report, one per line",
+    )
+
 
 def pytest_configure(config):
     path = config.getoption("path")
