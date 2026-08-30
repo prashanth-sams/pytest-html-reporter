@@ -1,6 +1,11 @@
 Change Log
 0.3.2 (30/08/2026)
 -------------------
+- Added pytest-xdist support: a parallel run now produces one report instead of one per worker, with every test, suite and total in it, and a single build in Archives (#178, #55)
+- Tests in a parallel report are listed in collection order, so it reads the same as a serial run whatever --dist mode is used
+- Fixed --reruns being silently ignored under xdist (workers are started with an empty argv, so the value is now read from the pytest config)
+- Fixed screenshots: attach() raised AttributeError instead of saving the image, and each screenshot is now written once, under a name that cannot collide between workers
+- Fixed run times over a minute being reported as seconds
 - Report titles are now capped at 20 characters with the cut tail faded out, and the full title kept as the heading's tooltip
 - Added an Environment overlay to the dashboard: host, platform, python and pytest versions, active plugins, invocation arguments, rootdir and generation time
 - Added --environment / the environment ini key to name the environment under test; it shows as a badge beside the report title, capped at 10 characters with the cut tail faded out and the full name in the Environment panel

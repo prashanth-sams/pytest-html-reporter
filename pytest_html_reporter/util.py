@@ -57,7 +57,31 @@ def generate_suite_highlights():
     if max(res.values()) > 1: ConfigVars.similar_max_failure_suite_count = max(res.values())
 
 
-def max_rerun():
+def is_xdist_worker(config):
+    """True when this process is one of pytest-xdist's workers (gw0, gw1, ...).
+
+    xdist hands every worker a ``workerinput`` dict; the controller never has
+    one, and neither does a plain serial run.
+    """
+    return hasattr(config, "workerinput")
+
+
+def xdist_worker_id(config):
+    """The worker's id, or '' on the controller and on serial runs."""
+    return str(getattr(config, "workerinput", {}).get("workerid", ""))
+
+
+def max_rerun(config=None):
+    """Value of pytest-rerunfailures' --reruns, or None when it is not set.
+
+    xdist starts its workers with an empty argv, so scanning sys.argv there
+    finds nothing and silently turns rerun handling off. The config knows the
+    option in every process, so it wins whenever we have one to ask.
+    """
+    if config is not None:
+        reruns = config.getoption("reruns", None)
+        return None if reruns is None else int(reruns)
+
     indices = [i for i, s in enumerate(sys.argv) if 'reruns' in s]
 
     try:
