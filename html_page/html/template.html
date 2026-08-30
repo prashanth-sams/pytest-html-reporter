@@ -2955,7 +2955,7 @@
                     var node = $(metricsChip(chip));
                     node.find('.metric-chip__value').text(chip.value);
                     node.find('.metric-chip__label').text(chip.label);
-                    node.toggleClass('is-active', !!chip.status && chip.status === testStatusFilter);
+                    node.toggleClass('is-active', !!chip.status && chip.status === (testStatusFilter || 'all'));
                     target.append(node);
                 });
             }
@@ -2990,17 +2990,16 @@
             }
 
             // The status the chips are filtering the test table by ('' = none),
-            // plus the chip set captured while no status was selected: once the
-            // table shows only failures the other outcomes have no rows left to
-            // count, and they still have to be there to click back to.
+            // plus the chip set captured while no status was selected. Filtering
+            // to failures leaves the other outcomes with no rows to count, and
+            // the whole set - the run total included - has to stay put: those
+            // are the numbers you filter *from*, and the total is the way back.
             var testStatusFilter = '';
             var testStatusChips = [];
 
             function renderTestSummary(api) {
-                var rows = api.rows({ search: 'applied' }).count();
-                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'test' : 'tests' }];
-
                 if (!testStatusFilter) {
+                    var rows = api.rows({ search: 'applied' }).count();
                     var counts = {};
 
                     api.column(2, { search: 'applied' }).data().each(function(value) {
@@ -3008,7 +3007,8 @@
                         if (key) { counts[key] = (counts[key] || 0) + 1; }
                     });
 
-                    testStatusChips = [];
+                    testStatusChips = [{ color: '#565656', value: rows,
+                                         label: rows === 1 ? 'test' : 'tests', status: 'all' }];
                     $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
                             ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
                         if (counts[status[0]]) {
@@ -3018,15 +3018,16 @@
                     });
                 }
 
-                renderMetricsChips($('#testSummary'), chips.concat(testStatusChips));
+                renderMetricsChips($('#testSummary'), testStatusChips);
             }
 
             // Clicking a status chip filters the table down to that outcome;
-            // clicking the active one clears it. The term is anchored so that
+            // clicking the active one - or the run total, which is always the
+            // unfiltered position - clears it. The term is anchored so that
             // 'pass' does not also pull in the xPASS rows.
             $(document).on('click', '#testSummary .metric-chip--filter', function() {
                 var status = String($(this).data('status'));
-                testStatusFilter = testStatusFilter === status ? '' : status;
+                testStatusFilter = (status === 'all' || status === testStatusFilter) ? '' : status;
                 $('#tm').DataTable()
                         .column(2)
                         .search(testStatusFilter ? '^' + testStatusFilter + '$' : '', true, false)
