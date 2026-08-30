@@ -1985,6 +1985,16 @@
                 function resizeAllCharts() {
                     resizeVisibleCharts();
                 }
+                // The off-screen copy captured for the PDF export gets no
+                // animation frames, so it drops the overlay outright: a jQuery
+                // fade would never reach its callback there. Its charts are
+                // already drawn, having been built with animation disabled.
+                if (window.__pytestHtmlReporterCapture) {
+                    $('.loader').hide();
+                    resizeAllCharts();
+                    return;
+                }
+
                 $('.loader').fadeOut(300, function(){
                     // Run across a few frames to catch the fully-settled layout.
                     requestAnimationFrame(resizeAllCharts);
@@ -2377,6 +2387,151 @@
                 });
             }
 
+            // The exported PDF always shows the desktop dashboard. The
+            // layout is driven by media queries, which key off the viewport
+            // and not the element, so the only way to capture the desktop
+            // arrangement from a narrow window is to re-render the report in
+            // an off-screen iframe that has a desktop-sized viewport.
+            var PDF_VIEWPORT = { width: 1600, height: 900 };
+
+            // Chart.js animates its first draw, so a capture taken while that
+            // is still running records half-grown bars and a part-swept
+            // doughnut. Telling every chart to finish now is what makes the
+            // capture deterministic -- in the copy, whose animation frames may
+            // never come, and equally on a click made moments after load.
+            function settleCharts() {
+                if (!window.Chart || !Chart.instances) { return; }
+
+                Object.keys(Chart.instances).forEach(function (key) {
+                    try {
+                        var inst = Chart.instances[key];
+                        if (inst.canvas && inst.canvas.offsetParent !== null) {
+                            inst.stop();
+                            inst.update({ duration: 0, lazy: false });
+                        }
+                    } catch (e) {}
+                });
+            }
+
+            function capturePng(node, done, fail) {
+                settleCharts();
+                var rect = node.getBoundingClientRect();
+
+                // #dashboard is transparent -- the grey comes from <body> --
+                // and jsPDF paints transparent pixels black, so the capture
+                // needs the page colour painted in behind it.
+                domtoimage.toPng(node, { bgcolor: '#eeeeee' })
+                    .then(function (png) { done(png, rect.width, rect.height); })
+                    .catch(fail);
+            }
+
+            // The desktop-sized copy of this report used for the PDF export
+            // captures its own dashboard on request and posts the image back.
+            // Opened from file://, every document gets a unique origin, so the
+            // parent cannot reach into the frame and do this itself --
+            // postMessage is the one channel that crosses that boundary.
+            window.addEventListener('message', function (event) {
+                if (window.parent === window) { return; }
+                if (!event.data || event.data.pytestHtmlReporterCapture !== true) { return; }
+
+                var reply = function (message) {
+                    (event.source || window.parent).postMessage(message, '*');
+                };
+                var button = document.getElementById('download');
+                if (button) { button.style.visibility = 'hidden'; }
+
+                capturePng(document.getElementById('dashboard'), function (png, width, height) {
+                    reply({ pytestHtmlReporterPng: png, width: width, height: height });
+                }, function (e) {
+                    reply({ pytestHtmlReporterError: String(e) });
+                });
+            });
+
+            function captureDashboard(done, fail) {
+                if (window.innerWidth >= 1200) {
+                    capturePng(document.getElementById('dashboard'), done, fail);
+                    return;
+                }
+
+                // Chrome throttles rendering of frames that are off screen,
+                // and the capture needs the copy to actually paint. So the
+                // frame keeps its full desktop layout size on screen and is
+                // scaled down to a near-invisible speck: a transform does not
+                // change the viewport the copy lays out against.
+                var frame = document.createElement('iframe');
+                frame.setAttribute('scrolling', 'no');
+                frame.style.cssText = 'position:fixed;top:0;left:0;z-index:-1;border:0;' +
+                    'width:' + PDF_VIEWPORT.width + 'px;height:' + PDF_VIEWPORT.height + 'px;' +
+                    'transform:scale(0.02);transform-origin:0 0;opacity:0.01;pointer-events:none;';
+
+                var settled = false;
+                var finish = function (callback, arg1, arg2, arg3) {
+                    if (settled) { return; }
+                    settled = true;
+                    window.removeEventListener('message', onMessage);
+                    clearTimeout(giveUp);
+                    frame.remove();
+                    callback(arg1, arg2, arg3);
+                };
+
+                var requested = false;
+                var requestCapture = function () {
+                    if (settled || requested || !frame.contentWindow) { return; }
+                    requested = true;
+                    frame.contentWindow.postMessage({ pytestHtmlReporterCapture: true }, '*');
+                };
+
+                var onMessage = function (event) {
+                    if (event.source !== frame.contentWindow || !event.data) { return; }
+                    if (event.data.pytestHtmlReporterReady) {
+                        // Timers barely run in the copy, so the wait for its
+                        // remaining load handlers is kept on this side.
+                        setTimeout(requestCapture, 300);
+                    } else if (event.data.pytestHtmlReporterPng) {
+                        finish(done, event.data.pytestHtmlReporterPng,
+                               event.data.width, event.data.height);
+                    } else if (event.data.pytestHtmlReporterError) {
+                        finish(fail, event.data.pytestHtmlReporterError);
+                    }
+                };
+
+                // Fall back to the dashboard as it stands rather than leaving
+                // the click with nothing to show for it.
+                var giveUp = setTimeout(function () {
+                    finish(function () {
+                        capturePng(document.getElementById('dashboard'), done, fail);
+                    });
+                }, 20000);
+
+                window.addEventListener('message', onMessage);
+
+                // The copy signals as soon as it loads; this only covers the
+                // case where that signal never arrives, e.g. a script the copy
+                // needs failed to load.
+                frame.addEventListener('load', function () {
+                    setTimeout(requestCapture, 6000);
+                });
+
+                document.body.appendChild(frame);
+
+                // Everything the copy needs to differ on is injected here, at
+                // the end of its <head>: Chart.js is already loaded by that
+                // point, and the chart set-up further down the body has not run
+                // yet. Charts draw synchronously because a frame this small
+                // gets few animation frames, and the ready signal rides a
+                // native load listener so it cannot be lost to a library's
+                // animation queue.
+                frame.srcdoc = ('<!doctype html>' + document.documentElement.outerHTML).replace(
+                    '</head>',
+                    '<script>window.__pytestHtmlReporterCapture=true;' +
+                    'if(window.Chart){Chart.defaults.global.animation.duration=0;}' +
+                    // Timers are throttled in a frame this small, so the copy
+                    // signals the moment it loads and adds no delay of its own.
+                    'window.addEventListener("load",function(){' +
+                    'parent.postMessage({pytestHtmlReporterReady:true},"*");});' +
+                    '<\/script></head>');
+            }
+
             $('#download').click(function () {
                 var link = document.getElementById('download');
 
@@ -2384,23 +2539,16 @@
                 // otherwise appear in its own export. It is positioned, so
                 // hiding it costs no reflow.
                 link.style.visibility = 'hidden';
+                var restore = function () { link.style.visibility = ''; };
 
-                // #dashboard itself is transparent -- the grey comes from
-                // <body> -- and jsPDF paints transparent pixels black, so the
-                // capture needs the page colour painted in behind it.
-                domtoimage.toPng(document.getElementById('dashboard'), { bgcolor: '#eeeeee' })
-                .then(function (blob) {
-                    var width = $('#dashboard').width();
-                    var height = $('#dashboard').height();
+                captureDashboard(function (png, width, height) {
                     var pdf = new jsPDF('l', 'pt', [width+20, height+20]);
-                    pdf.addImage(blob, 'PNG', 10, 10, width, height);
+                    pdf.addImage(png, 'PNG', 10, 10, width, height);
                     pdf.save("pytest_html_reporter.pdf");
-                })
-                .catch(function (e) {
+                    restore();
+                }, function (e) {
                     console.error('pytest-html-reporter: PDF export failed', e);
-                })
-                .then(function () {
-                    link.style.visibility = '';
+                    restore();
                 });
             });
 
