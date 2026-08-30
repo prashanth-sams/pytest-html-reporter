@@ -534,6 +534,80 @@
                      height: 50px;
                      margin-top: -50px;
                 }
+
+                /* ---- Screenshots tab with nothing attached ---- */
+                .screenshot-empty {
+                    display: none;
+                    width: 100%;
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    padding: 58px 24px 62px 24px;
+                    text-align: center;
+                }
+
+                .bg-highlight.is-empty .screenshot-empty {
+                    display: block;
+                }
+
+                /* The hover caption strip only has a job once there are
+                   thumbnails to hover over. */
+                .bg-highlight.is-empty .below-desc {
+                    display: none;
+                }
+
+                .screenshot-empty__icon {
+                    width: 74px;
+                    height: 74px;
+                    margin: 0 auto 22px auto;
+                    border-radius: 50%;
+                    background-color: #f4f7fa;
+                    border: 1px solid #e8edf3;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .screenshot-empty__icon i {
+                    font-size: 28px;
+                    color: #c3c9d2;
+                }
+
+                .screenshot-empty__title {
+                    font-family: sans-serif;
+                    font-size: 1.25rem;
+                    font-weight: 550;
+                    color: #6c7480;
+                }
+
+                .screenshot-empty__text {
+                    font-family: sans-serif;
+                    font-size: 0.9rem;
+                    color: #a9b0ba;
+                    margin: 9px auto 0 auto;
+                    max-width: 430px;
+                    line-height: 1.55;
+                }
+
+                .screenshot-empty__snippet {
+                    display: inline-block;
+                    margin-top: 20px;
+                    padding: 9px 14px;
+                    background-color: #fafbfc;
+                    border: 1px solid #eef1f5;
+                    border-radius: 5px;
+                    font-family: Menlo, Consolas, monospace;
+                    font-size: 11.5px;
+                    color: #7c8593;
+                    white-space: nowrap;
+                    overflow-x: auto;
+                    max-width: 100%;
+                }
+
+                .screenshot-empty__snippet b {
+                    font-weight: 600;
+                    color: #3571a3;
+                }
                 .modal p {
                     word-wrap: break-word;
                 }
@@ -2250,6 +2324,18 @@
                         %(attach_screenshot_details)%
                         <div class="below-desc"></div>
                       </div>
+                      <div class="screenshot-empty">
+                        <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
+                        <div class="screenshot-empty__title">No screenshots in this run</div>
+                        <div class="screenshot-empty__text">
+                          Nothing was captured while the tests ran. Attach one from a test and it
+                          shows up here, next to the suite and the error it belongs to.
+                        </div>
+                        <div class="screenshot-empty__snippet">
+                          from pytest_html_reporter import <b>attach</b><br />
+                          <b>attach</b>(data=self.driver.get_screenshot_as_png())
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -3107,6 +3193,13 @@
         </script>
         <script>
             function failureScreenshots() {
+                // The grid is baked in at report-generation time, so a run that
+                // attached nothing leaves the tab as a blank slab. Flag the empty
+                // case here and let the stylesheet swap in the placeholder.
+                $('#screenshots .bg-highlight').each(function () {
+                    $(this).toggleClass('is-empty', $(this).find('.img-hover').length === 0);
+                });
+
                 $('.video').hover(function (e) {
                   var hoverText = $(this).siblings('.text-desc').html();
 

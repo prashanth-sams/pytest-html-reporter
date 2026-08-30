@@ -20,7 +20,7 @@ pytest-html-reporter
 
 ..
 
-        Generates a static html report based on ``pytest`` framework
+        Generates a light-weight static html report based on ``pytest`` framework
 
 
 .. image:: https://i.imgur.com/4TYia5j.png
