@@ -2024,9 +2024,16 @@
                     box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
                 }
 
+                /* Clicking a chip must not leave the browser's blue focus ring
+                   behind; keyboard focus still shows, as the hover treatment. */
+                .metric-chip--filter:focus {
+                    outline: none;
+                }
+
                 .metric-chip--filter:focus-visible {
-                    outline: 2px solid #7f8b9e;
-                    outline-offset: 2px;
+                    outline: none;
+                    border-color: #b6bfcd;
+                    box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
                 }
 
                 .metric-chip--filter.is-active {
@@ -3031,6 +3038,9 @@
                         .column(2)
                         .search(testStatusFilter ? '^' + testStatusFilter + '$' : '', true, false)
                         .draw();
+                // The draw rebuilds the chips, so hand focus back to the one
+                // that was clicked instead of dropping it on the document.
+                $('#testSummary .metric-chip--filter[data-status="' + status + '"]').focus();
             });
 
             // DataTables re-renders rows on every draw, so the presentation
