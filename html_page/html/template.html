@@ -1113,11 +1113,30 @@
                         gap: 6px 12px;
                         padding: 1rem 1.6rem 1.2rem 1.6rem;
                     }
+                    /* Environment pinned left, run time right. Explicit, so the
+                       pair does not depend on the clock icon's own margins. */
                     .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper {
                         grid-area: time;
                         margin: 0 !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        gap: 12px;
                         text-align: right;
                         padding-right: 4px;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .env-trigger {
+                        margin-right: 0;
+                        flex: 0 0 auto;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .time__taken {
+                        flex: 0 0 auto;
+                        white-space: nowrap;
+                    }
+                    /* The clock's inline 29% left margin was doing the spacing
+                       before; the flex row owns that now. */
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .time__taken svg {
+                        margin-left: 0 !important;
                     }
                     .dashboard-viewport .dashboard-card .card__content > .summary-info {
                         grid-area: info;
