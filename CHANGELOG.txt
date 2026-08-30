@@ -1,4 +1,18 @@
 Change Log
+0.3.3 (30/08/2026)
+-------------------
+- Added captured logs per test: stdout, stderr and logging output from setup, call and teardown are kept against the test that produced them and opened from a new Logs column in Test Metrics
+- Captured output is held outside the table, so it is not swept into the metrics search box or the CSV, Excel and print exports
+- A retried test shows the output of the attempt that was reported, not the attempts it superseded, and captured output survives an xdist run intact
+- The report now says why the Logs column is empty when a run uses -s / --capture=no (pytest captures no stdout or stderr at all then, only logging output), and the Environment panel states what the run kept and from which log level
+- The bundled pytest.ini now uses --capture=tee-sys instead of -s, so the demo run still streams output live and its captured output reaches the report
+- Added --report-logs / the report_logs ini key (all, failed or none) to narrow whose output is kept
+- Added --report-log-limit / the report_log_limit ini key to cap the characters kept per test (default 10000, 0 keeps everything); a trimmed test keeps the end of its output, cut to a whole line
+- Fixed reruns being counted as extra failures when the retry count comes from @pytest.mark.flaky(reruns=n) rather than --reruns (#212)
+- Reruns are now worked out by collapsing the attempts of a test into one record, so --reruns, the reruns ini key, the flaky marker, a marker that disagrees with --reruns, and --only-rerun all report the same totals pytest itself prints
+- A test that passes on a retry is reported as passed, with the attempts it took as its rerun count
+- A retry that attaches no screenshot of its own keeps the screenshot of the attempt it replaced
+
 0.3.2 (30/08/2026)
 -------------------
 - Added pytest-xdist support: a parallel run now produces one report instead of one per worker, with every test, suite and total in it, and a single build in Archives (#178, #55)

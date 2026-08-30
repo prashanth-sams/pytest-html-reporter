@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 import shutil
@@ -11,6 +12,7 @@ import pytest
 from PIL import Image
 
 from html_page.env_row import EnvRow
+from html_page.logs_notice import LogsNotice
 from pytest_html_reporter.const_vars import ConfigVars
 
 
@@ -69,28 +71,6 @@ def is_xdist_worker(config):
 def xdist_worker_id(config):
     """The worker's id, or '' on the controller and on serial runs."""
     return str(getattr(config, "workerinput", {}).get("workerid", ""))
-
-
-def max_rerun(config=None):
-    """Value of pytest-rerunfailures' --reruns, or None when it is not set.
-
-    xdist starts its workers with an empty argv, so scanning sys.argv there
-    finds nothing and silently turns rerun handling off. The config knows the
-    option in every process, so it wins whenever we have one to ask.
-    """
-    if config is not None:
-        reruns = config.getoption("reruns", None)
-        return None if reruns is None else int(reruns)
-
-    indices = [i for i, s in enumerate(sys.argv) if 'reruns' in s]
-
-    try:
-        if "=" in sys.argv[int(indices[0])]:
-            return int(sys.argv[int(indices[0])].split('=')[1])
-        else:
-            return int(sys.argv[int(indices[0]) + 1])
-    except IndexError:
-        return None
 
 
 def screenshot(data=None):
@@ -155,7 +135,7 @@ def _ini(config, name):
     """An ini value, tolerating pytest builds where the key is unregistered."""
     try:
         return config.getini(name)
-    except (ValueError, KeyError):
+    except (AttributeError, ValueError, KeyError):
         return None
 
 
@@ -201,6 +181,7 @@ def generate_environment_info(config):
     entries += build_info(config)
 
     entries += [
+        ("Captured output", capture_summary(config, report_logs_mode(config))),
         ("Host", uname.node),
         ("Platform", (uname.system + " " + uname.release).strip()),
         ("Python", platform.python_version()),
@@ -217,3 +198,191 @@ def generate_environment_info(config):
         rows += str(EnvRow(label=escape(label), value=escape(value), title=escape(value)))
 
     ConfigVars._environment_rows = rows
+
+
+LOG_PHASE_ORDER = ("setup", "call", "teardown")
+LOG_KIND_ORDER = ("log", "stdout", "stderr")
+LOG_MODES = ("all", "failed", "none")
+LOG_LIMIT_DEFAULT = 10000
+
+
+def report_logs_mode(config):
+    """Which tests keep their captured output: 'all', 'failed' or 'none'."""
+    mode = str(config.getoption("report_logs", None) or _ini(config, "report_logs") or "all").strip().lower()
+
+    return mode if mode in LOG_MODES else "all"
+
+
+def report_log_limit(config):
+    """Characters of captured output kept per test; 0 means no limit."""
+    value = config.getoption("report_log_limit", None)
+    if value in (None, ""):
+        value = _ini(config, "report_log_limit")
+
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        return LOG_LIMIT_DEFAULT
+
+    return max(limit, 0)
+
+
+def _log_section_rank(title):
+    """Sort key that replays a test's output in the order it was produced.
+
+    pytest names a section "Captured <kind> <phase>", so the phase orders the
+    sections and the kind settles the ties within one phase.
+    """
+    parts = title.split()
+    kind = parts[1] if len(parts) == 3 else ""
+    phase = parts[-1] if parts else ""
+
+    def rank(value, order):
+        return order.index(value) if value in order else len(order)
+
+    return rank(phase, LOG_PHASE_ORDER), rank(kind, LOG_KIND_ORDER), title
+
+
+def merge_log_sections(buffer, sections):
+    """Keep the latest capture of each of one test's sections.
+
+    ``report.sections`` is cumulative - it carries every section pytest has
+    recorded for the item so far - so a test retried by pytest-rerunfailures
+    hands back the earlier attempts' output alongside the current one. Keying
+    by section title and letting the last write win leaves the attempt that is
+    actually being reported.
+    """
+    for title, content in sections:
+        if content:
+            buffer[str(title)] = str(content)
+
+
+def trim_log_sections(sections, limit):
+    """Cut a test's captured output down to `limit` characters in total.
+
+    The tail is what survives: logs read chronologically, so the lines next to
+    the failure matter more than the ones that opened the run. Without a cap a
+    single chatty test can outweigh the rest of the report put together.
+    """
+    if limit <= 0:
+        return sections
+
+    total = sum(len(section["text"]) for section in sections)
+    if total <= limit:
+        return sections
+
+    kept = []
+    budget = limit
+    for section in reversed(sections):
+        text = section["text"]
+
+        if len(text) <= budget:
+            kept.append({"title": section["title"], "text": text})
+            budget -= len(text)
+            continue
+
+        # The limit falls inside this section, so nothing before it survives.
+        # Its tail is cut back to a line boundary: half a log line reads as
+        # corruption rather than as a trim.
+        text = text[-budget:] if budget > 0 else ""
+        break_at = text.find("\n")
+        if break_at != -1: text = text[break_at + 1:]
+
+        if text: kept.append({"title": section["title"], "text": text})
+        break
+
+    kept.reverse()
+
+    dropped = total - sum(len(section["text"]) for section in kept)
+    if dropped:
+        kept.insert(0, {
+            "title": "Trimmed",
+            "text": "%d earlier characters dropped - raise --report-log-limit to keep them." % dropped,
+        })
+
+    return kept
+
+
+def format_log_sections(buffer, limit):
+    """One test's captured output as ordered, trimmed [{'title', 'text'}]."""
+    sections = [
+        {"title": title, "text": buffer[title]}
+        for title in sorted(buffer, key=_log_section_rank)
+    ]
+
+    return trim_log_sections(sections, limit)
+
+
+def escape_log_text(value):
+    """HTML-escape captured output for the report page.
+
+    ``%(`` is broken up as well: the page is assembled by substituting
+    ``%(name)%`` placeholders, so a log line that happens to look like one
+    would otherwise be filled in instead of shown. The entity renders as the
+    character it replaces, so nothing changes on screen.
+    """
+    return escape(str(value)).replace("%(", "%&#40;")
+
+
+def _capture_is_off(config):
+    """True when pytest is running with -s / --capture=no.
+
+    Nothing the reporter can do brings stdout and stderr back: pytest never
+    takes them in the first place, they go straight to the terminal.
+    """
+    return str(config.getoption("capture", None) or "") == "no"
+
+
+def _log_level_name(config):
+    """The level logging output has to reach to be captured at all.
+
+    Unset, pytest's report handler takes everything the root logger emits -
+    which is WARNING and above until something raises it.
+    """
+    level = config.getoption("log_level", None) or _ini(config, "log_level")
+    if level:
+        return str(level).upper()
+
+    return logging.getLevelName(logging.getLogger().getEffectiveLevel())
+
+
+def capture_summary(config, mode):
+    """What this run keeps of each test's output - for the Environment panel."""
+    if mode == "none":
+        return "disabled (--report-logs=none)"
+
+    scope = "all tests" if mode == "all" else "failed tests only"
+
+    if _capture_is_off(config):
+        streams = "logging only (stdout and stderr are off under -s)"
+    else:
+        streams = "stdout, stderr and logging"
+
+    return "%s: %s, logging from %s" % (scope, streams, _log_level_name(config))
+
+
+def capture_notice(config, mode):
+    """Why the Logs column may be empty, or '' when there is nothing to say.
+
+    A column of dashes reads as a broken feature. Almost always the cause is
+    -s / --capture=no, and the only useful thing the report can do is say so
+    where the empty column is being looked at.
+    """
+    if mode == "none" or not _capture_is_off(config):
+        return ""
+
+    return ("stdout and stderr are not captured while pytest runs with -s / --capture=no, "
+            "so only logging output reaches this column")
+
+
+def generate_logs_notice(config):
+    ConfigVars._logs_notice = ""
+
+    text = capture_notice(config, report_logs_mode(config))
+    if text:
+        ConfigVars._logs_notice = str(LogsNotice(text=escape(text)))
+
+
+def count_log_lines(sections):
+    """Lines of captured output, for the count shown on the row's button."""
+    return sum(len(section["text"].splitlines()) for section in sections)

@@ -10,6 +10,8 @@ from html_page.floating_error import FloatingError
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
+from html_page.test_log import TestLog
+from html_page.test_log_section import TestLogSection
 from html_page.test_row import TestRow
 from .helper import get_random_number, get_random_string
 
@@ -164,16 +166,54 @@ def test_test_row():
     dur = str(get_random_number())
     msg = get_random_string()
     floating_error_text = get_random_string()
+    log_count = str(get_random_number())
+    runt = get_random_string()
 
-    test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, msg=msg, floating_error_text=floating_error_text)
+    test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, msg=msg,
+                       floating_error_text=floating_error_text, log_count=log_count, runt=runt)
     soup = BeautifulSoup(str(test_row), "html.parser")
 
     cells = soup.findAll("td")
 
-    for node, expected in zip(cells[:-1], [sname, name, stat, dur]):
+    for node, expected in zip(cells, [sname, name, stat, dur]):
         assert node.text.strip() == expected
 
-    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[-1].text.strip())
+    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[4].text.strip())
+
+    log_cell = cells[5]
+    assert log_cell["data-logs"] == log_count
+    assert log_cell.find("button")["onclick"] == "showLogs('%s')" % runt
+    assert log_count in log_cell.find("button").text
+
+
+def test_test_row_without_logs_says_so():
+    """The button is left in the row and hidden by `data-logs`, so a test that
+    captured nothing shows a dash instead of opening an empty panel."""
+    test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", msg="",
+                       floating_error_text="", log_count="0", runt="0-0")
+    soup = BeautifulSoup(str(test_row), "html.parser")
+
+    log_cell = soup.findAll("td")[5]
+    assert log_cell["data-logs"] == "0"
+    assert log_cell.find("span", class_="log-none") is not None
+
+
+def test_test_log_holds_every_section():
+    sections = "".join(str(TestLogSection(title="Captured log call", text="line %d" % i))
+                       for i in range(3))
+    test_log = TestLog(runt="1-2", sname="tests/test_a.py", name="test_thing", sections=sections)
+    soup = BeautifulSoup(str(test_log), "html.parser")
+
+    payload = soup.find("div", class_="log-payload")
+    assert payload["id"] == "log-1-2"
+    assert payload["data-suite"] == "tests/test_a.py"
+    assert payload["data-test"] == "test_thing"
+    assert payload.has_attr("hidden")
+
+    bodies = payload.findAll("pre", class_="log-section__body")
+    assert [node.text for node in bodies] == ["line 0", "line 1", "line 2"]
+    assert bodies[0].find_parent("div", class_="log-section") \
+                    .find("div", class_="log-section__head").text == "Captured log call"
 
 def test_env_row():
     label = get_random_string()

@@ -7,4 +7,10 @@
         %(msg)%
         %(floating_error_text)%
     </td>
+    <td class="log-cell" data-logs="%(log_count)%">
+        <button type="button" class="log-btn" onclick="showLogs('%(runt)%')" title="View captured output">
+            <i class="fa fa-align-left" aria-hidden="true"></i>%(log_count)%
+        </button>
+        <span class="log-none">&mdash;</span>
+    </td>
 </tr>

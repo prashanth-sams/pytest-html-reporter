@@ -46,6 +46,26 @@ def pytest_addoption(parser):
         help="extra key=value detail to show in the report; repeat for more",
     )
 
+    group.addoption(
+        "--report-logs",
+        action="store",
+        dest="report_logs",
+        default=None,
+        choices=("all", "failed", "none"),
+        help="whose captured stdout, stderr and logging output to keep in the report: "
+             "all (default), failed or none",
+    )
+
+    group.addoption(
+        "--report-log-limit",
+        action="store",
+        dest="report_log_limit",
+        default=None,
+        type=int,
+        help="maximum characters of captured output kept per test; 0 keeps everything "
+             "(default: 10000)",
+    )
+
     parser.addini(
         "environment",
         help="name the environment under test, e.g. staging or prod",
@@ -56,6 +76,18 @@ def pytest_addoption(parser):
         "build_info",
         type="linelist",
         help="extra key=value details to show in the report, one per line",
+    )
+
+    parser.addini(
+        "report_logs",
+        help="whose captured output to keep in the report: all, failed or none",
+        default="",
+    )
+
+    parser.addini(
+        "report_log_limit",
+        help="maximum characters of captured output kept per test; 0 keeps everything",
+        default="",
     )
 
 

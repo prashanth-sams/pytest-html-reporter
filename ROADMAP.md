@@ -64,13 +64,20 @@ existing search box.
 *Why:* parametrized cases currently show only as opaque `test_x[a-b-c]`.
 *Effort:* ~25 lines.
 
-### 7. Captured stdout / stderr / logs on failure
+### 7. Captured stdout / stderr / logs — SHIPPED
 `rep.capstdout`, `rep.capstderr`, and `rep.caplog` are already on the report object handled in
 `pytest_runtest_makereport` (`html_reporter.py:141`) — currently only `longreprtext` lines
 starting with `E ` are kept. Show the rest in a collapsible section under the error.
 
 *Why:* this is the biggest single gap versus `pytest-html`.
 *Effort:* ~40 lines, mostly template.
+*Shipped as:* a `Logs` column on Test Metrics opening a shared overlay, with the section helpers in
+`util.py`, the `TestLog` / `TestLogSection` components, and `--report-logs` / `--report-log-limit`.
+It covers every test rather than only failures, and every phase rather than only `call`: a record is
+built from the teardown hook, before pytest has finished capturing that phase, so the teardown
+sections are folded into the stored record afterwards. The text is parked outside the table — a cell
+holding it would be pulled into the DataTables search index and into every CSV / Excel / print
+export. A per-test character cap keeps one chatty test from outweighing the rest of the file.
 
 ### 8. Flaky test detection from archives
 `load_archive` already reads every archived `output.json`. Flag any test whose status flipped
@@ -116,3 +123,5 @@ rendered in the header.
 **#1, #2, #4, #7.** Together they are roughly one afternoon, need no schema change to
 `output.json`, and address the two most common complaints about HTML reporters: "I can't see the
 logs" and "I can't filter to just the failures."
+
+#1, #2 and #7 have shipped; #4 is what is left of that set.
