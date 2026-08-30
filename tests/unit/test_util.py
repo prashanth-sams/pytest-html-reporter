@@ -76,15 +76,15 @@ def test_environment_label_cuts_longer_names_at_ten():
     assert environment_label("pre-production") == ("pre-produc", True)
 
 
-def test_custom_title_keeps_names_up_to_eighteen():
-    custom_title("REGRESSION SUITE")
-    assert ConfigVars._title == "REGRESSION SUITE"
+def test_custom_title_keeps_names_up_to_twenty():
+    custom_title("FULL REGRESSION RUN")
+    assert ConfigVars._title == "FULL REGRESSION RUN"
     assert ConfigVars._title_class == ""
 
 
-def test_custom_title_cuts_longer_names_at_eighteen():
-    custom_title("NIGHTLY REGRESSION RUN")
-    assert ConfigVars._title == "NIGHTLY REGRESSION"
-    assert len(ConfigVars._title) == 18
-    assert ConfigVars._title_full == "NIGHTLY REGRESSION RUN"
+def test_custom_title_cuts_longer_names_at_twenty():
+    custom_title("NIGHTLY REGRESSION SUITE")
+    assert ConfigVars._title == "NIGHTLY REGRESSION S"
+    assert len(ConfigVars._title) == 20
+    assert ConfigVars._title_full == "NIGHTLY REGRESSION SUITE"
     assert ConfigVars._title_class == "is-truncated"

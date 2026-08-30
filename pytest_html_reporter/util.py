@@ -82,7 +82,7 @@ def clean_screenshots(path):
         shutil.rmtree(screenshot_dir)
 
 
-TITLE_MAX = 18
+TITLE_MAX = 20
 ENVIRONMENT_LABEL_MAX = 10
 
 
