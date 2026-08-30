@@ -1040,21 +1040,33 @@
                         text-align: left !important;
                     }
 
-                    /* Summary card: title/count on the left, doughnut on the
-                       right, the seven counters across the bottom. */
+                    /* Summary card: the title sits opposite the run time, the
+                       count opposite the doughnut, the seven counters across
+                       the bottom. .summary-info dissolves into the grid so its
+                       two halves can land in different rows. */
                     .card__content {
                         display: grid;
-                        grid-template-columns: minmax(0, 1fr) auto;
+                        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
                         grid-template-areas:
-                            "meta  meta"
-                            "head  chart"
+                            "head  meta"
+                            "count chart"
                             "stats stats";
                         align-items: center;
+                        column-gap: 16px;
                         padding: 16px 18px;
                     }
+                    .card__content > .summary-info {
+                        display: contents;
+                    }
 
+                    .card__content .summary-heading {
+                        grid-area: head;
+                        align-self: start;
+                        min-width: 0;
+                    }
                     .card__content > .time-taken-wrapper {
                         grid-area: meta;
+                        align-self: start;
                         margin: 0 !important;
                         text-align: right;
                     }
@@ -1067,18 +1079,18 @@
                         font-size: 13px;
                     }
 
-                    .card__content > .summary-info {
-                        grid-area: head;
-                        min-width: 0;
-                    }
-                    /* Count block reads as a continuation of the title here,
-                       so it lines up with it rather than centring. */
-                    .total-count-block {
-                        align-items: flex-start;
+                    /* Equal halves, each centring its own content, so the
+                       count and the doughnut balance instead of sitting
+                       against opposite edges of a wide card. */
+                    .card__content .total-count-block {
+                        grid-area: count;
+                        align-items: center;
+                        justify-self: center;
                         padding: 12px 0 0 0 !important;
                     }
                     .card__content > .summary-chart {
                         grid-area: chart;
+                        justify-self: center;
                         margin: 0 !important;
                     }
                     .card__content > .suite-stats-wrapper {
@@ -1346,6 +1358,7 @@
                         grid-template-areas:
                             "meta"
                             "head"
+                            "count"
                             "chart"
                             "stats";
                         justify-items: center;
@@ -1353,11 +1366,13 @@
                     .dashboard-card-inner {
                         text-align: center !important;
                     }
-                    .card__content > .summary-info {
+                    .card__content .summary-heading {
                         width: 100%;
                     }
-                    .total-count-block {
-                        align-items: center;
+                    /* .card__header is a flex row, so centring the column has
+                       to be asked of it directly. */
+                    .card__content .card__header {
+                        justify-content: center;
                     }
                     .card__content > .suite-stats-wrapper {
                         width: 100%;
@@ -1449,13 +1464,15 @@
                             </span>
                           </div>
                           <div class="summary-info">
-                              <div class="card__header">
-                                <div class="header__title">
-                                  %(title)%
+                              <div class="summary-heading">
+                                <div class="card__header">
+                                  <div class="header__title">
+                                    %(title)%
+                                  </div>
                                 </div>
-                              </div>
-                              <div class="card__header">
-                                <span class="header__date">%(date)%</span>
+                                <div class="card__header">
+                                  <span class="header__date">%(date)%</span>
+                                </div>
                               </div>
                               <div class="total-count-block">
                                 <span class="total__count">%(total)%</span>
