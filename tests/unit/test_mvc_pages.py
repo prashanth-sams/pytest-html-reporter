@@ -229,6 +229,7 @@ def test_template():
     attach_screenshot_details = get_random_string()
     environment_rows = get_random_string()
     environment = get_random_string()
+    title_full = get_random_string()
 
     template_page = HtmlTemplate(
         custom_logo=custom_logo,
@@ -269,7 +270,8 @@ def test_template():
         tskip=tskip,
         attach_screenshot_details=attach_screenshot_details,
         environment_rows=environment_rows,
-        environment=environment
+        environment=environment,
+        title_full=title_full
     )
 
     soup = BeautifulSoup(str(template_page), "html.parser")
@@ -292,14 +294,13 @@ def test_template():
     assert time_taken_label.text.strip() == f"Time taken {execution_time}"
 
     header_title = soup.find("div", class_="header__title")
-    assert header_title.text.strip() == title
+    assert header_title.find("span", class_="header__title-text").text.strip() == title
+    assert header_title["title"] == title_full
+    assert header_title.find("span", class_="env-badge").text.strip() == environment
 
     header_date = soup.find("span", class_="header__date")
     assert header_date.text.strip() == date
 
-    run_meta = soup.find("span", class_="run-meta")
-    assert run_meta.find("span", class_="time__taken").text.strip() == f"Time taken {execution_time}"
-    assert run_meta.find("span", class_="env-badge").text.strip() == environment
 
     count_block = soup.find("div", class_="total-count-block")
     total_count = count_block.find("span", class_="total__count")

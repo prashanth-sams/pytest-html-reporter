@@ -1,5 +1,7 @@
+from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.util import (
     build_info,
+    custom_title,
     environment_label,
     environment_name,
     max_rerun,
@@ -73,3 +75,15 @@ def test_environment_label_trims_longer_names_to_ten():
     label = environment_label("pre-production")
     assert label == "pre-produ\u2026"
     assert len(label) == 10
+
+
+def test_custom_title_keeps_names_up_to_eighteen():
+    custom_title("REGRESSION SUITE")
+    assert ConfigVars._title == "REGRESSION SUITE"
+
+
+def test_custom_title_trims_longer_names_to_eighteen():
+    custom_title("NIGHTLY REGRESSION RUN")
+    assert ConfigVars._title == "NIGHTLY REGRESSIO\u2026"
+    assert len(ConfigVars._title) == 18
+    assert ConfigVars._title_full == "NIGHTLY REGRESSION RUN"

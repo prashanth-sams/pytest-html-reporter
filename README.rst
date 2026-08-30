@@ -65,7 +65,8 @@ Add ``--html-report`` tag followed by path location and filename to customize th
     $ pytest tests/ --html-report=./report
     $ pytest tests/ --html-report=./report/report.html
 
-Add ``--title`` tag followed by the report title::
+Add ``--title`` tag followed by the report title; it is trimmed to 18 characters, with the full title kept as the
+heading's tooltip::
 
     $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 

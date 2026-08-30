@@ -322,6 +322,7 @@
                 .time__taken {
                     color: darkgray;
                     font-size: 17px;
+                    white-space: nowrap;
                 }
 
                 .card__header {
@@ -331,6 +332,11 @@
                 }
 
                 .header__title {
+                  display: flex;
+                  align-items: center;
+                  flex-wrap: nowrap;
+                  gap: 10px;
+                  min-width: 0;
                   font-size: 1.5rem;
                   font-weight: 600;
                   font-family: sans-serif;
@@ -372,6 +378,15 @@
                   font-size: 1.3rem;
                   font-family: sans-serif;
                   color: darkgray;
+                }
+
+                /* The badge keeps its size; the title gives way first, so the
+                   two always share one line however narrow the column gets. */
+                .header__title-text {
+                  min-width: 0;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
                 }
 
                 .header__title-icon {
@@ -1129,11 +1144,8 @@
                         margin-right: 0;
                         flex: 0 0 auto;
                     }
-                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .run-meta {
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .time__taken {
                         flex: 0 0 auto;
-                    }
-                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper .time__taken {
-                        white-space: nowrap;
                     }
                     /* The clock's inline 29% left margin was doing the spacing
                        before; the flex row owns that now. */
@@ -1143,6 +1155,7 @@
                     .dashboard-viewport .dashboard-card .card__content > .summary-info {
                         grid-area: info;
                         min-height: 0;
+                        min-width: 0;
                         align-self: stretch;
                         text-align: left;
                         display: flex;
@@ -1660,9 +1673,7 @@
                             "stats";
                         justify-items: center;
                     }
-                    /* One centred row under the title: button, run time, badge.
-                       Selectors stay specific because the base .run-meta rule
-                       is declared later in the sheet. */
+                    /* One centred row under the title: button and run time. */
                     .card__content > .time-taken-wrapper {
                         display: flex;
                         flex-wrap: wrap;
@@ -1674,11 +1685,6 @@
                     }
                     .card__content > .time-taken-wrapper > .env-trigger {
                         margin-right: 0;
-                    }
-                    .card__content > .time-taken-wrapper > .run-meta {
-                        flex-direction: row;
-                        align-items: center;
-                        gap: 8px;
                     }
                     .dashboard-card-inner {
                         text-align: center !important;
@@ -1742,18 +1748,9 @@
                    ============================================================ */
                 /* Named via --environment / the environment ini key. Renders
                    nothing at all when unset, so the title is unchanged. */
-                /* Run time with the environment badge beneath it, both hard
-                   against the right edge of the card. */
-                .run-meta {
-                    display: inline-flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                    gap: 6px;
-                    vertical-align: middle;
-                }
-
                 .env-badge {
                     display: inline-block;
+                    flex: 0 0 auto;
                     padding: 3px 9px;
                     border-radius: 3px;
                     background: #eaecf5;
@@ -2528,19 +2525,16 @@
                             <button type="button" class="env-trigger" aria-haspopup="dialog" aria-controls="environmentOverlay" onclick="toggleEnvironment(true)">
                                 <i class="fa fa-desktop" aria-hidden="true"></i><span>Environment</span>
                             </button>
-                            <span class="run-meta">
                             <span class="time__taken">
                                 <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
                                     Time taken %(execution_time)%
-                            </span>
-                            <span class="env-badge" title="%(environment_title)%">%(environment)%</span>
                             </span>
                           </div>
                           <div class="summary-info">
                               <div class="summary-heading">
                                 <div class="card__header">
-                                  <div class="header__title">
-                                    %(title)%
+                                  <div class="header__title" title="%(title_full)%">
+                                    <span class="header__title-text">%(title)%</span><span class="env-badge" title="%(environment_title)%">%(environment)%</span>
                                   </div>
                                 </div>
                                 <div class="card__header">

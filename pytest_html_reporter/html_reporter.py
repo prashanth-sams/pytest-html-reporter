@@ -479,6 +479,7 @@ class HTMLReporter(object):
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
             title=ConfigVars._title,
+            title_full=str(ConfigVars._title_full),
             total=str(
                 ConfigVars._aspass + ConfigVars._asfail + ConfigVars._asskip + ConfigVars._aserror + ConfigVars._asxpass + ConfigVars._asxfail),
             executed=str(ConfigVars._executed),

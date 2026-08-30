@@ -73,3 +73,4 @@ class ConfigVars:
     _environment = ''
     _environment_label = ''
     _title = 'PYTEST REPORT'
+    _title_full = 'PYTEST REPORT'

@@ -82,8 +82,20 @@ def clean_screenshots(path):
         shutil.rmtree(screenshot_dir)
 
 
+TITLE_MAX = 18
+ENVIRONMENT_LABEL_MAX = 10
+
+
+def _truncate(value, limit):
+    """Cut to `limit` characters, counting the ellipsis against the limit."""
+    value = str(value)
+
+    return value if len(value) <= limit else value[:limit - 1] + "\u2026"
+
+
 def custom_title(title):
-    ConfigVars._title = title[:26] + '...' if title.__len__() > 29 else title
+    ConfigVars._title_full = str(title)
+    ConfigVars._title = _truncate(title, TITLE_MAX)
 
 
 def _plugin_versions(config):
@@ -123,16 +135,9 @@ def environment_name(config):
     return str(config.getoption("environment", None) or _ini(config, "environment") or "").strip()
 
 
-ENVIRONMENT_LABEL_MAX = 10
-
-
 def environment_label(name):
     """Badge text. Longer names are cut to fit, ellipsis included in the count."""
-    name = str(name)
-    if len(name) <= ENVIRONMENT_LABEL_MAX:
-        return name
-
-    return name[:ENVIRONMENT_LABEL_MAX - 1] + "\u2026"
+    return _truncate(name, ENVIRONMENT_LABEL_MAX)
 
 
 def build_info(config):
