@@ -123,6 +123,18 @@ def environment_name(config):
     return str(config.getoption("environment", None) or _ini(config, "environment") or "").strip()
 
 
+ENVIRONMENT_LABEL_MAX = 10
+
+
+def environment_label(name):
+    """Badge text. Longer names are cut to fit, ellipsis included in the count."""
+    name = str(name)
+    if len(name) <= ENVIRONMENT_LABEL_MAX:
+        return name
+
+    return name[:ENVIRONMENT_LABEL_MAX - 1] + "\u2026"
+
+
 def build_info(config):
     """(label, value) pairs from --build-info and the build_info ini key."""
     entries = list(config.getoption("build_info", None) or [])
@@ -146,6 +158,7 @@ def generate_environment_info(config):
     root = getattr(config, "rootpath", None) or getattr(config, "rootdir", "")
 
     ConfigVars._environment = environment_name(config)
+    ConfigVars._environment_label = environment_label(ConfigVars._environment)
 
     entries = []
     if ConfigVars._environment:

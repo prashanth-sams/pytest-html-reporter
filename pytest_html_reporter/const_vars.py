@@ -71,4 +71,5 @@ class ConfigVars:
     _attach_screenshot_details = ''
     _environment_rows = ''
     _environment = ''
+    _environment_label = ''
     _title = 'PYTEST REPORT'

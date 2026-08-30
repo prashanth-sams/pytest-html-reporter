@@ -78,7 +78,8 @@ Add ``--archive-count`` tag followed by an integer to limit showing the number o
 
         Environment and build details
 
-Add ``--environment`` tag followed by the environment under test; it shows as a badge beside the report title::
+Add ``--environment`` tag followed by the environment under test; it shows as a badge on the dashboard. The badge is
+trimmed to 10 characters, with the full name kept in the ``Environment`` panel and in the badge's tooltip::
 
     $ pytest tests/ --environment=staging
 
