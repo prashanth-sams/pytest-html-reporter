@@ -1304,15 +1304,6 @@
                     }
 
                     /* ---- Suites / Test Metrics tables ---- */
-                    /* Eight columns never fit a phone: scroll the table in
-                       place rather than scrolling the whole page sideways. */
-                    .dataTables_wrapper {
-                        overflow-x: auto;
-                        -webkit-overflow-scrolling: touch;
-                    }
-                    .dataTables_wrapper .tablecard {
-                        min-width: 620px;
-                    }
                     .tablecard {
                         font-size: 12px;
                     }
@@ -1433,6 +1424,582 @@
                     }
                 }
 
+            </style>
+            <style>
+                /* ============================================================
+                   Suites / Test Metrics
+                   The tables live on the same card surface as the dashboard
+                   and borrow its palette, so moving between tabs feels like
+                   one product rather than a report bolted onto a dashboard.
+                   ============================================================ */
+                .metrics-page {
+                    padding: 0.4rem 0.3rem 1.4rem 0.3rem;
+                }
+
+                .metrics-page__head {
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    margin: 0 0.2rem 1rem 0.2rem;
+                }
+
+                .metrics-page__title {
+                    font-size: 1.9rem;
+                    font-weight: 550;
+                    font-family: sans-serif;
+                    color: darkgrey;
+                    line-height: 1.2;
+                }
+
+                .metrics-page__title i {
+                    font-size: 1.45rem;
+                    color: #a9a9a9;
+                    margin-right: 10px;
+                }
+
+                .metrics-page__subtitle {
+                    font-size: 0.9rem;
+                    font-family: sans-serif;
+                    color: darkgray;
+                    margin-top: 4px;
+                }
+
+                /* Totals for what the table is currently showing; they follow
+                   the search box so the numbers never disagree with the rows. */
+                .metrics-summary {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    align-items: center;
+                }
+
+                .metric-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    background-color: #ffffff;
+                    border: 1px solid #e9edf3;
+                    border-radius: 999px;
+                    padding: 6px 14px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.06);
+                }
+
+                .metric-chip__dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    flex: 0 0 auto;
+                }
+
+                .metric-chip__value {
+                    font-family: sans-serif;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                }
+
+                .metric-chip__label {
+                    text-transform: uppercase;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
+                    color: slategrey;
+                }
+
+                /* ---- Card shell ---- */
+                .metrics-card {
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    overflow: hidden;
+                }
+
+                /* ---- Toolbar: length + export buttons left, search right ---- */
+                .metrics-card .metrics-toolbar {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding: 14px 18px;
+                    background-color: #fcfcfd;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                .metrics-card .metrics-toolbar .dataTables_length,
+                .metrics-card .metrics-toolbar .dataTables_filter {
+                    float: none;
+                    margin: 0;
+                    padding: 0;
+                    text-align: left;
+                }
+
+                .metrics-card .dataTables_length label {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin: 0;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: slategrey;
+                }
+
+                .metrics-card .dataTables_length select {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 6px;
+                    background-color: #ffffff;
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' fill='none' stroke='%2398a0ad' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 8px center;
+                    background-size: 11px 11px;
+                    padding: 6px 26px 6px 10px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #4a5160;
+                    cursor: pointer;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metrics-card .dataTables_length select:hover {
+                    border-color: #cfd6e0;
+                }
+
+                .metrics-card .dataTables_length select:focus {
+                    outline: none;
+                    border-color: #8fb8dd;
+                    box-shadow: 0 0 0 3px rgba(53, 113, 163, 0.12);
+                }
+
+                /* Export/print/column buttons read as one segmented control. */
+                .metrics-card .metrics-buttons {
+                    display: inline-flex;
+                }
+
+                .metrics-card .dt-buttons {
+                    float: none;
+                    display: inline-flex;
+                    gap: 2px;
+                    margin: 0;
+                    padding: 3px;
+                    background-color: #f1f3f7;
+                    border-radius: 8px;
+                }
+
+                .metrics-card .dt-buttons .dt-button {
+                    margin: 0 !important;
+                    padding: 5px 11px !important;
+                    min-width: 34px;
+                    border: none !important;
+                    border-radius: 6px !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    color: #8a929e !important;
+                    font-size: 13px;
+                    line-height: 1.45;
+                    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metrics-card .dt-buttons .dt-button:hover:not(.disabled),
+                .metrics-card .dt-buttons .dt-button.active {
+                    background-color: #ffffff !important;
+                    color: #3571a3 !important;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.14) !important;
+                }
+
+                .metrics-card .dt-buttons .dt-button:focus {
+                    outline: none;
+                }
+
+                div.dt-button-collection {
+                    padding: 6px !important;
+                    border: 1px solid #eceff3 !important;
+                    border-radius: 8px !important;
+                    background-color: #ffffff !important;
+                    box-shadow: 0 10px 28px rgba(46, 61, 73, 0.18) !important;
+                }
+
+                div.dt-button-collection .dt-button {
+                    border: none !important;
+                    border-radius: 6px !important;
+                    background: #ffffff !important;
+                    color: #4a5160 !important;
+                    font-size: 12.5px !important;
+                }
+
+                div.dt-button-collection .dt-button:hover {
+                    background: #f4f7fb !important;
+                }
+
+                div.dt-button-collection .dt-button.active {
+                    background: #eef4fa !important;
+                    color: #3571a3 !important;
+                }
+
+                .metrics-card .metrics-toolbar .dataTables_filter {
+                    margin-left: auto;
+                }
+
+                .metrics-card .dataTables_filter label {
+                    margin: 0;
+                }
+
+                .metrics-card .dataTables_filter input {
+                    margin: 0;
+                    width: 250px;
+                    max-width: 100%;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 8px;
+                    padding: 7px 12px 7px 32px;
+                    font-size: 13px;
+                    color: #4a5160;
+                    background-color: #ffffff;
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%23a9b0ba' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='4.25'/%3E%3Cpath d='M10.3 10.3L13.5 13.5'/%3E%3C/g%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: 10px center;
+                    background-size: 14px 14px;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metrics-card .dataTables_filter input::placeholder {
+                    color: #a9b0ba;
+                }
+
+                .metrics-card .dataTables_filter input:focus {
+                    outline: none;
+                    border-color: #8fb8dd;
+                    box-shadow: 0 0 0 3px rgba(53, 113, 163, 0.12);
+                }
+
+                /* ---- The table itself ---- */
+                /* Eight columns never fit a narrow window: scroll the table
+                   inside its card instead of the whole page sideways. */
+                .metrics-card .metrics-scroll {
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                .metrics-card table.tablecard {
+                    width: 100% !important;
+                    margin: 0 !important;
+                    border: none;
+                    font-size: 13.5px;
+                }
+
+                .metrics-card table.tablecard thead th {
+                    position: relative;
+                    padding: 13px 16px !important;
+                    background-color: #fbfcfd;
+                    border-top: none !important;
+                    border-bottom: 1px solid #eceff3 !important;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #8a929e;
+                    white-space: nowrap;
+                    transition: color 0.15s ease, background-color 0.15s ease;
+                }
+
+                .metrics-card table.tablecard thead th.th-left {
+                    text-align: left;
+                }
+
+                .metrics-card table.tablecard thead th:hover {
+                    color: #5c6472;
+                    background-color: #f6f8fb;
+                }
+
+                /* Replace DataTables' bitmap sort arrows with crisp chevrons
+                   that pick up the accent colour when a column is active. */
+                .metrics-card table.dataTable thead th.sorting,
+                .metrics-card table.dataTable thead th.sorting_asc,
+                .metrics-card table.dataTable thead th.sorting_desc {
+                    background-image: none !important;
+                    padding-right: 28px !important;
+                    cursor: pointer;
+                }
+
+                .metrics-card table.dataTable thead th.sorting::after,
+                .metrics-card table.dataTable thead th.sorting_asc::after,
+                .metrics-card table.dataTable thead th.sorting_desc::after {
+                    content: "";
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    margin-top: -7px;
+                    width: 10px;
+                    height: 14px;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    background-size: 10px 14px;
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 1.5L8 5.5H2z' fill='%23ccd2da'/%3E%3Cpath d='M5 12.5L2 8.5h6z' fill='%23ccd2da'/%3E%3C/svg%3E");
+                }
+
+                .metrics-card table.dataTable thead th.sorting_asc::after {
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 1.5L8 5.5H2z' fill='%233571a3'/%3E%3Cpath d='M5 12.5L2 8.5h6z' fill='%23dfe4ea'/%3E%3C/svg%3E");
+                }
+
+                .metrics-card table.dataTable thead th.sorting_desc::after {
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 1.5L8 5.5H2z' fill='%23dfe4ea'/%3E%3Cpath d='M5 12.5L2 8.5h6z' fill='%233571a3'/%3E%3C/svg%3E");
+                }
+
+                .metrics-card table.tablecard tbody tr {
+                    background-color: #ffffff;
+                    transition: background-color 0.15s ease;
+                }
+
+                .metrics-card table.tablecard tbody tr:hover {
+                    background-color: #f7fafd;
+                }
+
+                .metrics-card table.tablecard tbody td {
+                    padding: 12px 16px !important;
+                    border-top: 1px solid #f2f4f7 !important;
+                    color: #4a5160;
+                    vertical-align: middle;
+                }
+
+                .metrics-card table.tablecard tbody tr:first-child td {
+                    border-top: none !important;
+                }
+
+                .metrics-card table.tablecard tbody td.dataTables_empty {
+                    padding: 42px 16px !important;
+                    color: #a9b0ba;
+                    font-size: 13px;
+                }
+
+                /* ---- Suite path: file name leads, directories recede ---- */
+                .metrics-card td.suite-cell {
+                    text-align: left;
+                    max-width: 460px;
+                    white-space: normal;
+                    word-break: break-word;
+                    color: #39404d;
+                }
+
+                .metrics-card td.suite-cell::before {
+                    content: "\f15b";
+                    font-family: FontAwesome;
+                    font-size: 12px;
+                    color: #c3c9d2;
+                    margin-right: 9px;
+                }
+
+                .metrics-card td.suite-cell .suite-dir {
+                    color: #98a0ad;
+                }
+
+                .metrics-card td.suite-cell .suite-file {
+                    font-weight: 600;
+                    color: #39404d;
+                }
+
+                /* ---- Counts as pills in the dashboard's status colours ---- */
+                .metrics-card td.metric-num .metric-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 32px;
+                    padding: 3px 9px;
+                    border-radius: 7px;
+                    font-size: 12.5px;
+                    font-weight: 700;
+                    background-color: #f4f6f9;
+                    color: #98a0ad;
+                }
+
+                .metrics-card td.metric-pass .metric-pill {
+                    background-color: rgba(152, 204, 100, 0.18);
+                    color: #5c8f2e;
+                }
+
+                .metrics-card td.metric-fail .metric-pill {
+                    background-color: rgba(252, 103, 102, 0.15);
+                    color: #d5403c;
+                }
+
+                .metrics-card td.metric-skip .metric-pill {
+                    background-color: rgba(255, 208, 80, 0.24);
+                    color: #a07405;
+                }
+
+                .metrics-card td.metric-xpass .metric-pill {
+                    background-color: rgba(170, 170, 170, 0.20);
+                    color: #6f747c;
+                }
+
+                .metrics-card td.metric-xfail .metric-pill {
+                    background-color: rgba(211, 95, 191, 0.15);
+                    color: #a53c94;
+                }
+
+                .metrics-card td.metric-error .metric-pill {
+                    background-color: rgba(177, 54, 53, 0.14);
+                    color: #9d3231;
+                }
+
+                .metrics-card td.metric-rerun .metric-pill {
+                    background-color: rgba(230, 168, 0, 0.18);
+                    color: #936c00;
+                }
+
+                /* A zero is not news: keep it quiet so real counts carry the row. */
+                .metrics-card td.metric-num .metric-pill.is-zero {
+                    background-color: transparent !important;
+                    color: #ccd2da !important;
+                    font-weight: 600;
+                }
+
+                /* ---- Test Metrics status pill ---- */
+                .metrics-card td .status-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 11px;
+                    border-radius: 999px;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    background-color: rgba(170, 170, 170, 0.16);
+                    color: #6f747c;
+                }
+
+                .metrics-card td .status-pill::before {
+                    content: "";
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    background-color: currentColor;
+                }
+
+                .metrics-card td .status-pill--pass {
+                    background-color: rgba(152, 204, 100, 0.18);
+                    color: #5c8f2e;
+                }
+
+                .metrics-card td .status-pill--fail {
+                    background-color: rgba(252, 103, 102, 0.15);
+                    color: #d5403c;
+                }
+
+                .metrics-card td .status-pill--skip {
+                    background-color: rgba(255, 208, 80, 0.24);
+                    color: #a07405;
+                }
+
+                .metrics-card td .status-pill--xfail {
+                    background-color: rgba(211, 95, 191, 0.15);
+                    color: #a53c94;
+                }
+
+                .metrics-card td .status-pill--error {
+                    background-color: rgba(177, 54, 53, 0.14);
+                    color: #9d3231;
+                }
+
+                /* ---- Footer: count on the left, pagination on the right ---- */
+                .metrics-card .metrics-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding: 12px 18px;
+                    background-color: #fcfcfd;
+                    border-top: 1px solid #eef1f5;
+                }
+
+                .metrics-card .dataTables_info {
+                    float: none;
+                    margin: 0;
+                    padding: 0;
+                    font-size: 12px;
+                    color: #8a929e;
+                }
+
+                .metrics-card .dataTables_paginate {
+                    float: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button {
+                    margin: 0 !important;
+                    padding: 5px 11px !important;
+                    min-width: 32px;
+                    border: 1px solid transparent !important;
+                    border-radius: 6px !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    color: #7b8390 !important;
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button:hover {
+                    background: #f1f4f9 !important;
+                    border-color: #e3e7ee !important;
+                    color: #3f4550 !important;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button.current,
+                .metrics-card .dataTables_paginate .paginate_button.current:hover {
+                    background: #565656 !important;
+                    border-color: #565656 !important;
+                    color: #ffffff !important;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button.disabled,
+                .metrics-card .dataTables_paginate .paginate_button.disabled:hover {
+                    background: transparent !important;
+                    border-color: transparent !important;
+                    color: #ccd2da !important;
+                    cursor: default;
+                }
+
+                @media screen and (max-width: 768px) {
+                    .metrics-page__title {
+                        font-size: 1.5rem;
+                    }
+                    .metrics-card .metrics-toolbar {
+                        padding: 12px 14px;
+                    }
+                    .metrics-card .metrics-toolbar .dataTables_filter {
+                        margin-left: 0;
+                        width: 100%;
+                    }
+                    .metrics-card .dataTables_filter input {
+                        width: 100%;
+                    }
+                    .metrics-card .metrics-scroll table.tablecard {
+                        min-width: 640px;
+                    }
+                    .metrics-card .metrics-footer {
+                        padding: 12px 14px;
+                    }
+                }
+
+                @media screen and (max-width: 560px) {
+                    .metrics-page__head {
+                        align-items: flex-start;
+                    }
+                    .metrics-card table.tablecard tbody td,
+                    .metrics-card table.tablecard thead th {
+                        padding: 10px 12px !important;
+                    }
+                }
             </style>
             <style>
                 .progress-bar.downloading {
@@ -1608,44 +2175,60 @@
                 </script>
             </div>
             <div class="tabcontent" id="suiteMetrics">
-                <table class="table row-border tablecard" id="sm">
-                    <thead>
-                        <tr>
-                            <th>Suite</th>
-                            <th>Pass</th>
-                            <th>Fail</th>
-                            <th>Skip</th>
-                            <th>xPass</th>
-                            <th>xFail</th>
-                            <th>Error</th>
-                            <th>Rerun</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        %(suite_metrics_row)%
-                    </tbody>
-                </table>
-                <div class="row">
-                    <div class="col-md-12" style="height:25px;width:auto;"></div>
+                <div class="metrics-page">
+                    <div class="metrics-page__head">
+                        <div>
+                            <div class="metrics-page__title"><i class="fa fa-briefcase"></i>Suites</div>
+                            <div class="metrics-page__subtitle">Outcome breakdown for every test suite in this run</div>
+                        </div>
+                        <div class="metrics-summary" id="suiteSummary"></div>
+                    </div>
+                    <div class="metrics-card">
+                        <table class="table row-border tablecard" id="sm">
+                            <thead>
+                                <tr>
+                                    <th class="th-left">Suite</th>
+                                    <th>Pass</th>
+                                    <th>Fail</th>
+                                    <th>Skip</th>
+                                    <th>xPass</th>
+                                    <th>xFail</th>
+                                    <th>Error</th>
+                                    <th>Rerun</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                %(suite_metrics_row)%
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         <div class="tabcontent" id="testMetrics">
-            <table class="table row-border tablecard" id="tm">
-                <thead>
-                    <tr>
-                        <th>Suite</th>
-                        <th>Test Case</th>
-                        <th>Status</th>
-                        <th>Time (s)</th>
-                        <th>Error Message</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    %(test_metrics_row)%
-                </tbody>
-            </table>
-            <div class="row">
-                <div class="col-md-12" style="height:25px;width:auto;"></div>
+            <div class="metrics-page">
+                <div class="metrics-page__head">
+                    <div>
+                        <div class="metrics-page__title"><i class="fa fa-server"></i>Test Metrics</div>
+                        <div class="metrics-page__subtitle">Every test case with its status, duration and error</div>
+                    </div>
+                    <div class="metrics-summary" id="testSummary"></div>
+                </div>
+                <div class="metrics-card">
+                    <table class="table row-border tablecard" id="tm">
+                        <thead>
+                            <tr>
+                                <th class="th-left">Suite</th>
+                                <th class="th-left">Test Case</th>
+                                <th>Status</th>
+                                <th>Time (s)</th>
+                                <th class="th-left">Error Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            %(test_metrics_row)%
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div class="tabcontent" id="archives">
@@ -1748,25 +2331,171 @@
             }
         </script>
         <script>
+            // The dashboard's status palette, reused by the table pills and
+            // the summary chips so a colour means the same thing everywhere.
+            var METRICS_COLORS = {
+                pass:  '#98cc64',
+                fail:  '#fc6766',
+                skip:  '#ffd050',
+                xpass: '#aaaaaa',
+                xfail: '#d35fbf',
+                error: '#b13635',
+                rerun: '#e6a800'
+            };
+
+            // Cell values arrive as HTML (the counts are wrapped in pills), so
+            // read them as text before treating them as numbers.
+            function metricsText(value) {
+                return $('<div>').html(value === null || value === undefined ? '' : String(value)).text().trim();
+            }
+
+            function metricsChip(color) {
+                return '<span class="metric-chip">' +
+                           '<span class="metric-chip__dot" style="background-color:' + color + '"></span>' +
+                           '<span class="metric-chip__value"></span>' +
+                           '<span class="metric-chip__label"></span>' +
+                       '</span>';
+            }
+
+            function renderMetricsChips(target, chips) {
+                if (!target.length) { return; }
+                target.empty();
+                $.each(chips, function(_, chip) {
+                    var node = $(metricsChip(chip.color));
+                    node.find('.metric-chip__value').text(chip.value);
+                    node.find('.metric-chip__label').text(chip.label);
+                    target.append(node);
+                });
+            }
+
+            // Totals for the rows the search box is currently showing.
+            function renderSuiteSummary(api) {
+                var rows = api.rows({ search: 'applied' }).count();
+                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'suite' : 'suites' }];
+                var columns = [
+                    [1, 'passed', 'pass'],
+                    [2, 'failed', 'fail'],
+                    [3, 'skipped', 'skip'],
+                    [4, 'xpassed', 'xpass'],
+                    [5, 'xfailed', 'xfail'],
+                    [6, 'error', 'error'],
+                    [7, 'rerun', 'rerun']
+                ];
+
+                $.each(columns, function(_, column) {
+                    var total = 0;
+                    api.column(column[0], { search: 'applied' }).data().each(function(value) {
+                        var parsed = parseInt(metricsText(value), 10);
+                        if (!isNaN(parsed)) { total += parsed; }
+                    });
+                    // Only surface outcomes this run actually produced.
+                    if (total > 0) {
+                        chips.push({ color: METRICS_COLORS[column[2]], value: total, label: column[1] });
+                    }
+                });
+
+                renderMetricsChips($('#suiteSummary'), chips);
+            }
+
+            function renderTestSummary(api) {
+                var rows = api.rows({ search: 'applied' }).count();
+                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'test' : 'tests' }];
+                var counts = {};
+
+                api.column(2, { search: 'applied' }).data().each(function(value) {
+                    var key = metricsText(value).toLowerCase().replace(/[^a-z]/g, '');
+                    if (key) { counts[key] = (counts[key] || 0) + 1; }
+                });
+
+                $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
+                        ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
+                    if (counts[status[0]]) {
+                        chips.push({ color: METRICS_COLORS[status[0]], value: counts[status[0]], label: status[1] });
+                    }
+                });
+
+                renderMetricsChips($('#testSummary'), chips);
+            }
+
+            // DataTables re-renders rows on every draw, so the presentation
+            // touches are re-applied here rather than baked into the markup.
+            function decorateMetricsTable(tabname) {
+                var table = $(tabname);
+
+                table.find('td.metric-num .metric-pill').each(function() {
+                    $(this).toggleClass('is-zero', $(this).text().trim() === '0');
+                });
+
+                // Split the suite path so the file name leads and the
+                // directories stay in the background.
+                table.find('td.suite-cell').each(function() {
+                    var cell = $(this);
+                    if (cell.find('.suite-file').length) { return; }
+
+                    var path = cell.text().trim();
+                    if (!path) { return; }
+
+                    var cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+                    cell.html('<span class="suite-dir"></span><span class="suite-file"></span>');
+                    cell.find('.suite-dir').text(cut === -1 ? '' : path.slice(0, cut + 1));
+                    cell.find('.suite-file').text(cut === -1 ? path : path.slice(cut + 1));
+                });
+
+                if (tabname === '#tm') {
+                    table.find('tbody tr').each(function() {
+                        var cell = $(this).children('td').eq(2);
+                        if (!cell.length || cell.find('.status-pill').length) { return; }
+
+                        var status = cell.text().trim();
+                        if (!status) { return; }
+
+                        var key = status.toLowerCase().replace(/[^a-z]/g, '');
+                        cell.html('<span class="status-pill status-pill--' + key + '"></span>')
+                            .find('.status-pill').text(status);
+                    });
+                }
+            }
+
             function executeDataTable(tabname, sortCol) {
-                var fileTitle;
+                var fileTitle, searchPlaceholder;
                 switch (tabname) {
                     case "#sm":
                         fileTitle = "SuiteMetrics";
+                        searchPlaceholder = "Search suites";
                         break;
                     case "#tm":
                         fileTitle = "TestMetrics";
+                        searchPlaceholder = "Search tests";
                         break;
                     default:
                         fileTitle = "metrics";
+                        searchPlaceholder = "Search";
                 }
                 $(tabname).DataTable({
                     retrieve: true,
                     "order": [
                         [Number(sortCol), "desc"]
                     ],
-                    dom: 'l<".margin" B>frtip',
+                    dom: '<"metrics-toolbar"l<"metrics-buttons"B>f>r<"metrics-scroll"t><"metrics-footer"ip>',
                     "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    language: {
+                        lengthMenu: 'Show _MENU_',
+                        search: '',
+                        searchPlaceholder: searchPlaceholder,
+                        info: 'Showing _START_ to _END_ of _TOTAL_',
+                        infoEmpty: 'Nothing to show',
+                        infoFiltered: ' (filtered from _MAX_)',
+                        zeroRecords: 'No matching records found',
+                        paginate: {
+                            previous: 'Previous',
+                            next: 'Next'
+                        }
+                    },
+                    drawCallback: function() {
+                        decorateMetricsTable(tabname);
+                        if (tabname === '#sm') { renderSuiteSummary(this.api()); }
+                        if (tabname === '#tm') { renderTestSummary(this.api()); }
+                    },
                     buttons: [
                     {
                         extend:    'copyHtml5',
