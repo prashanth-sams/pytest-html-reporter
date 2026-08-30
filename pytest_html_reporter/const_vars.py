@@ -72,5 +72,7 @@ class ConfigVars:
     _environment_rows = ''
     _environment = ''
     _environment_label = ''
+    _environment_class = ''
     _title = 'PYTEST REPORT'
     _title_full = 'PYTEST REPORT'
+    _title_class = ''

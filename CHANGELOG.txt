@@ -1,9 +1,9 @@
 Change Log
 0.3.2 (30/08/2026)
 -------------------
-- Report titles are now trimmed to 18 characters, with the full title kept as the heading's tooltip
+- Report titles are now capped at 18 characters with the cut tail faded out, and the full title kept as the heading's tooltip
 - Added an Environment overlay to the dashboard: host, platform, python and pytest versions, active plugins, invocation arguments, rootdir and generation time
-- Added --environment / the environment ini key to name the environment under test; it shows as a badge on the dashboard, trimmed to 10 characters with the full name in the Environment panel
+- Added --environment / the environment ini key to name the environment under test; it shows as a badge beside the report title, capped at 10 characters with the cut tail faded out and the full name in the Environment panel
 - Added --build-info KEY=VALUE / the build_info ini key for arbitrary run details (branch, commit, CI job) in the Environment panel
 
 0.3.1 (30/08/2026)

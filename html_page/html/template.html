@@ -381,12 +381,20 @@
                 }
 
                 /* The badge keeps its size; the title gives way first, so the
-                   two always share one line however narrow the column gets. */
+                   two always share one line however narrow the column gets.
+                   A cut tail fades out rather than ending in an ellipsis --
+                   .is-truncated comes from the character cap, .is-clipped from
+                   the JS width check. */
                 .header__title-text {
                   min-width: 0;
                   overflow: hidden;
-                  text-overflow: ellipsis;
                   white-space: nowrap;
+                }
+
+                .header__title-text.is-truncated,
+                .header__title-text.is-clipped {
+                  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.4ch), transparent 100%);
+                  mask-image: linear-gradient(to right, #000 calc(100% - 2.4ch), transparent 100%);
                 }
 
                 .header__title-icon {
@@ -1186,10 +1194,12 @@
                     .dashboard-viewport .dashboard-card .card__header {
                         margin-bottom: 0;
                     }
+                    /* Sized so the full 18-character cap fits beside the badge
+                       in this half-width column rather than fading at ~13. */
                     .dashboard-viewport .dashboard-card .header__title {
                         padding-top: 0 !important;
                         padding-left: 2% !important;
-                        font-size: 1.5rem;
+                        font-size: 1.1rem;
                     }
                     .dashboard-viewport .dashboard-card .header__date {
                         padding-left: 2% !important;
@@ -1749,14 +1759,16 @@
                 /* Named via --environment / the environment ini key. Renders
                    nothing at all when unset, so the title is unchanged. */
                 .env-badge {
+                    position: relative;
                     display: inline-block;
                     flex: 0 0 auto;
-                    padding: 3px 9px;
+                    overflow: hidden;
+                    padding: 3px 8px;
                     border-radius: 3px;
                     background: #eaecf5;
                     color: #5c6591;
                     font-family: sans-serif;
-                    font-size: 0.62rem;
+                    font-size: 0.6rem;
                     font-weight: 600;
                     letter-spacing: 0.1em;
                     text-transform: uppercase;
@@ -1765,6 +1777,20 @@
 
                 .env-badge:empty {
                     display: none;
+                }
+
+                /* Masking would eat the pill's fill too, so the badge fades
+                   with an overlay in its own colour instead. */
+                .env-badge.is-truncated::after,
+                .env-badge.is-clipped::after {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    bottom: 0;
+                    width: 18px;
+                    background: linear-gradient(to right, rgba(234, 236, 245, 0), #eaecf5);
+                    pointer-events: none;
                 }
 
                 .env-trigger {
@@ -2534,7 +2560,7 @@
                               <div class="summary-heading">
                                 <div class="card__header">
                                   <div class="header__title" title="%(title_full)%">
-                                    <span class="header__title-text">%(title)%</span><span class="env-badge" title="%(environment_title)%">%(environment)%</span>
+                                    <span class="header__title-text js-fade-clip %(title_class)%">%(title)%</span><span class="env-badge js-fade-clip %(environment_class)%" title="%(environment_title)%">%(environment)%</span>
                                   </div>
                                 </div>
                                 <div class="card__header">
@@ -3098,6 +3124,16 @@
             // Charts inside a hidden tab report a 0px container, so resizing
             // them there would collapse the canvas; we skip those and re-size
             // them when their tab becomes visible.
+            // Text the layout has cut off gets the same fade as text the
+            // character cap cut. Re-checked whenever the charts are re-fitted,
+            // which is every resize.
+            function updateFadeClips() {
+                var nodes = document.querySelectorAll('.js-fade-clip');
+                for (var i = 0; i < nodes.length; i++) {
+                    nodes[i].classList.toggle('is-clipped', nodes[i].scrollWidth > nodes[i].clientWidth + 1);
+                }
+            }
+
             function resizeVisibleCharts() {
                 if (window.Chart && Chart.instances) {
                     Object.keys(Chart.instances).forEach(function(key){
@@ -3252,6 +3288,7 @@
                 // (and their on-canvas tooltip text) render crisp and un-stretched.
                 function resizeAllCharts() {
                     resizeVisibleCharts();
+                    updateFadeClips();
                 }
                 // The off-screen copy captured for the PDF export gets no
                 // animation frames, so it drops the overlay outright: a jQuery

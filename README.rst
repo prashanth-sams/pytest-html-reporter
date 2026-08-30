@@ -65,8 +65,8 @@ Add ``--html-report`` tag followed by path location and filename to customize th
     $ pytest tests/ --html-report=./report
     $ pytest tests/ --html-report=./report/report.html
 
-Add ``--title`` tag followed by the report title; it is trimmed to 18 characters, with the full title kept as the
-heading's tooltip::
+Add ``--title`` tag followed by the report title; it is capped at 18 characters and the cut tail fades out, with the
+full title kept as the heading's tooltip::
 
     $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 
@@ -79,8 +79,9 @@ Add ``--archive-count`` tag followed by an integer to limit showing the number o
 
         Environment and build details
 
-Add ``--environment`` tag followed by the environment under test; it shows as a badge on the dashboard. The badge is
-trimmed to 10 characters, with the full name kept in the ``Environment`` panel and in the badge's tooltip::
+Add ``--environment`` tag followed by the environment under test; it shows as a badge beside the report title. The
+badge is capped at 10 characters and the cut tail fades out, with the full name kept in the ``Environment`` panel and
+in the badge's tooltip::
 
     $ pytest tests/ --environment=staging
 

@@ -64,26 +64,27 @@ def test_build_info_keeps_equals_in_the_value():
 
 
 def test_environment_label_keeps_short_names():
-    assert environment_label("staging") == "staging"
+    assert environment_label("staging") == ("staging", False)
 
 
 def test_environment_label_keeps_names_of_exactly_ten():
-    assert environment_label("production") == "production"
+    assert environment_label("production") == ("production", False)
 
 
-def test_environment_label_trims_longer_names_to_ten():
-    label = environment_label("pre-production")
-    assert label == "pre-produ\u2026"
-    assert len(label) == 10
+def test_environment_label_cuts_longer_names_at_ten():
+    # No ellipsis: the was_cut flag drives the fade in the UI instead.
+    assert environment_label("pre-production") == ("pre-produc", True)
 
 
 def test_custom_title_keeps_names_up_to_eighteen():
     custom_title("REGRESSION SUITE")
     assert ConfigVars._title == "REGRESSION SUITE"
+    assert ConfigVars._title_class == ""
 
 
-def test_custom_title_trims_longer_names_to_eighteen():
+def test_custom_title_cuts_longer_names_at_eighteen():
     custom_title("NIGHTLY REGRESSION RUN")
-    assert ConfigVars._title == "NIGHTLY REGRESSIO\u2026"
+    assert ConfigVars._title == "NIGHTLY REGRESSION"
     assert len(ConfigVars._title) == 18
     assert ConfigVars._title_full == "NIGHTLY REGRESSION RUN"
+    assert ConfigVars._title_class == "is-truncated"

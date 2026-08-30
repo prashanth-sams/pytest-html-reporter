@@ -86,16 +86,21 @@ TITLE_MAX = 18
 ENVIRONMENT_LABEL_MAX = 10
 
 
-def _truncate(value, limit):
-    """Cut to `limit` characters, counting the ellipsis against the limit."""
+def _fit(value, limit):
+    """(text, was_cut) for a value hard-cut at `limit` characters.
+
+    No ellipsis: the UI fades the tail instead, and `was_cut` is what tells it
+    to.
+    """
     value = str(value)
 
-    return value if len(value) <= limit else value[:limit - 1] + "\u2026"
+    return value[:limit], len(value) > limit
 
 
 def custom_title(title):
     ConfigVars._title_full = str(title)
-    ConfigVars._title = _truncate(title, TITLE_MAX)
+    ConfigVars._title, was_cut = _fit(title, TITLE_MAX)
+    ConfigVars._title_class = "is-truncated" if was_cut else ""
 
 
 def _plugin_versions(config):
@@ -136,8 +141,8 @@ def environment_name(config):
 
 
 def environment_label(name):
-    """Badge text. Longer names are cut to fit, ellipsis included in the count."""
-    return _truncate(name, ENVIRONMENT_LABEL_MAX)
+    """(badge text, was_cut) for an environment name."""
+    return _fit(name, ENVIRONMENT_LABEL_MAX)
 
 
 def build_info(config):
@@ -163,7 +168,8 @@ def generate_environment_info(config):
     root = getattr(config, "rootpath", None) or getattr(config, "rootdir", "")
 
     ConfigVars._environment = environment_name(config)
-    ConfigVars._environment_label = environment_label(ConfigVars._environment)
+    ConfigVars._environment_label, was_cut = environment_label(ConfigVars._environment)
+    ConfigVars._environment_class = "is-truncated" if was_cut else ""
 
     entries = []
     if ConfigVars._environment:

@@ -480,6 +480,7 @@ class HTMLReporter(object):
             execution_time=str(ConfigVars._execution_time),
             title=ConfigVars._title,
             title_full=str(ConfigVars._title_full),
+            title_class=str(ConfigVars._title_class),
             total=str(
                 ConfigVars._aspass + ConfigVars._asfail + ConfigVars._asskip + ConfigVars._aserror + ConfigVars._asxpass + ConfigVars._asxfail),
             executed=str(ConfigVars._executed),
@@ -517,7 +518,8 @@ class HTMLReporter(object):
             attach_screenshot_details=str(ConfigVars._attach_screenshot_details),
             environment_rows=str(ConfigVars._environment_rows),
             environment=str(ConfigVars._environment_label),
-            environment_title=str(ConfigVars._environment)
+            environment_title=str(ConfigVars._environment),
+            environment_class=str(ConfigVars._environment_class)
         )
 
         return str(template_text)
