@@ -273,6 +273,24 @@ Import ``attach`` from the library and call it with the selenium command as give
     ...
     attach(data=self.driver.get_screenshot_as_png())
 
+**Note:** call ``attach`` while the test is still running - from the test body, from a ``unittest`` ``tearDown``, or
+from a ``pytest_runtest_makereport`` hook for the call phase. A pytest fixture's teardown runs after the reporter has
+already recorded the test, so a screenshot attached there never reaches the report::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        report = outcome.get_result()
+
+        if report.when == "call" and report.failed:
+            driver = item.funcargs.get("driver")
+            if driver is not None:
+                attach(data=driver.get_screenshot_as_png())
+
 .. image:: https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white
    :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b
 
