@@ -1,3 +1,6 @@
 # Merge checklist
-- [ ] TravisCI tests passed
+- [ ] Changelog
 - [ ] Documentation
+- [ ] Unit Tests
+- [ ] Validated
+- [ ] Version number incremented
