@@ -1,4 +1,10 @@
 Change Log
+0.3.4 (30/08/2026)
+-------------------
+- Added the html_report ini key, so the report location can be set in pytest.ini without going through addopts (#228)
+- The report path now expands strftime placeholders, e.g. --html-report=./reports/%Y%m%d/report_%H%M.html, giving each run a folder or filename of its own without a conftest hook (#228)
+- Placeholders are expanded once while the run is configured, so an xdist run and a run that crosses a minute boundary still write a single report; a % that is not a placeholder is left alone, and %% writes a literal one
+
 0.3.3 (30/08/2026)
 -------------------
 - Added captured logs per test: stdout, stderr and logging output from setup, call and teardown are kept against the test that produced them and opened from a new Logs column in Test Metrics

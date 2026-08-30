@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.util import (
     build_info,
@@ -12,6 +14,7 @@ from pytest_html_reporter.util import (
     merge_log_sections,
     report_log_limit,
     report_logs_mode,
+    report_path,
     trim_log_sections,
 )
 
@@ -271,3 +274,40 @@ def test_capture_summary_falls_back_to_the_root_logger_level():
     summary = capture_summary(_FakeConfig(options={"capture": "fd"}), "all")
 
     assert summary.endswith("logging from WARNING")
+
+
+def test_report_path_defaults_to_cwd():
+    assert report_path(_FakeConfig()) == "."
+
+
+def test_report_path_from_ini():
+    config = _FakeConfig(ini={"html_report": "./reports/report.html"})
+    assert report_path(config) == "./reports/report.html"
+
+
+def test_report_path_cli_beats_ini():
+    config = _FakeConfig(
+        options={"path": "./cli/report.html"},
+        ini={"html_report": "./ini/report.html"},
+    )
+    assert report_path(config) == "./cli/report.html"
+
+
+def test_report_path_expands_time_placeholders():
+    now = datetime.now()
+    config = _FakeConfig(options={"path": "./reports/%Y%m%d/report_%H%M.html"})
+
+    expected = "./reports/{}/report_{}.html".format(
+        now.strftime("%Y%m%d"), now.strftime("%H%M")
+    )
+    assert report_path(config) == expected
+
+
+def test_report_path_leaves_a_plain_path_alone():
+    config = _FakeConfig(options={"path": "./report/100% coverage.html"})
+    assert report_path(config) == "./report/100% coverage.html"
+
+
+def test_report_path_keeps_an_escaped_percent():
+    config = _FakeConfig(options={"path": "./report/%%Y.html"})
+    assert report_path(config) == "./report/%Y.html"

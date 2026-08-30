@@ -67,6 +67,15 @@ Add ``--html-report`` tag followed by path location and filename to customize th
     $ pytest tests/ --html-report=./report
     $ pytest tests/ --html-report=./report/report.html
 
+The path is run through ``strftime``, so date and time placeholders (``%Y``, ``%m``, ``%d``, ``%H``, ``%M``, ...) give
+each run a folder or a filename of its own::
+
+    $ pytest tests/ --html-report=./reports/%Y%m%d/report_%H%M.html
+
+They are expanded once, when the run starts, so a parallel run and a run that crosses a minute boundary still write a
+single report. Write ``%%`` for a literal percent sign in front of a letter; a ``%`` that is not a placeholder, as in
+``100% pass``, is left as it is.
+
 Add ``--title`` tag followed by the report title; it is capped at 20 characters and the cut tail fades out, with the
 full title kept as the heading's tooltip::
 
@@ -233,7 +242,8 @@ The ``Environment`` panel states what the run kept and from which log level - e.
 Alternate option is to add this snippet in the ``pytest.ini`` file::
 
     [pytest]
-    addopts = -v -rf --capture=tee-sys --html-report=./report --title='PYTEST REPORT'
+    addopts = -v -rf --capture=tee-sys --title='PYTEST REPORT'
+    html_report = ./reports/%Y%m%d/report_%H%M.html
     environment = staging
     build_info =
         branch=main
@@ -244,8 +254,12 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 ``report_logs`` takes the same values as ``--report-logs`` (``all`` / ``failed`` / ``none``) and ``report_log_limit``
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit).
 
-**Note:** ``--environment`` overrides the ``environment`` ini value; ``--build-info`` entries are added to the ones
-set in the ini file rather than replacing them; ``--report-logs`` and ``--report-log-limit`` override their ini values
+``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
+location without going through ``addopts``.
+
+**Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
+ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
+``--report-logs`` and ``--report-log-limit`` override their ini values
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
