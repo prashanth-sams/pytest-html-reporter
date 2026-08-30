@@ -278,8 +278,10 @@ def test_template():
     header_date = soup.find("span", class_="header__date")
     assert header_date.text.strip() == date
 
-    total_count = soup.find("span", class_="total__count")
+    count_block = soup.find("div", class_="total-count-block")
+    total_count = count_block.find("span", class_="total__count")
     assert total_count.text.strip() == total
+    assert count_block.find("span", class_="total_count__label").text.strip() == "TEST CASES"
 
     test_metrics = soup.findAll("div", class_="footer-section__data")
     for metric, val in zip(test_metrics, (_pass, fail, skip, xpass, xfail, error, rerun)):
@@ -307,7 +309,6 @@ def test_template():
     assert attach_screenshot_details_label.text.strip() == attach_screenshot_details
 
     scripts = soup.findAll("script")
-    assert [script for script in scripts if f"var x = parseInt({total});" in script.text]
     assert [script for script in scripts if f"data: [{_pass}, {fail}, {skip}, {xpass}, {xfail}, {error}]," in script.text]
     assert [script for script in scripts if f"var passPercent = Math.round(({_pass} / {total}) * 100)" in script.text]
     assert [script for script in scripts if f"for(var i=0; i<{archive_count}; i++)" in script.text and f"var archives = {archives};" in script.text]

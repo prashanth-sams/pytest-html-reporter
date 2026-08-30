@@ -165,21 +165,32 @@
                   color: darkgray;
                 }
 
+                /* Title/date plus the total-count block; the doughnut sits
+                   in the column beside it. */
+                .summary-info {
+                  min-width: 0;
+                }
+
+                /* The count and its label travel together as one block, so the
+                   two always stay aligned wherever the block is placed. */
+                .total-count-block {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  padding-top: 8%;
+                }
+
                 .total__count {
                   font-size: 5.3rem;
                   font-family: sans-serif;
                   color: black;
-                  padding-top: 8%;
-                  text-align: left;
-                  padding-left: 5%;
+                  line-height: 1;
                 }
 
                 .total_count__label {
                   font-size: 1.3rem;
                   font-family: sans-serif;
-                  padding-left: 5%;
                   color: darkgray;
-                  text-align: left;
                 }
 
                 .header__title-icon {
@@ -689,9 +700,6 @@
                     .footer-section__label {
                         font-size: 7pt;
                     }
-                    .total__count {
-                        padding-top: 13%;
-                    }
                 }
 
                 @media screen and (max-width: 1031px) {
@@ -860,7 +868,7 @@
                         text-align: right;
                         padding-right: 4px;
                     }
-                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(2) {
+                    .dashboard-viewport .dashboard-card .card__content > .summary-info {
                         grid-area: info;
                         min-height: 0;
                         align-self: stretch;
@@ -868,14 +876,14 @@
                         display: flex;
                         flex-direction: column;
                     }
-                    /* Keep title/date at the top, vertically center the count block */
-                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(2) > div:nth-child(3) {
-                        margin-top: auto;
+                    /* Title/date stay at the top; the count block sits centred
+                       in the rest of the column, opposite the doughnut. */
+                    .dashboard-viewport .dashboard-card .total-count-block {
+                        align-self: center;
+                        margin: auto 0;
+                        padding: 0 1rem !important;
                     }
-                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(2) > div:nth-child(4) {
-                        margin-bottom: auto;
-                    }
-                    .dashboard-viewport .dashboard-card .card__content > div:nth-child(3) {
+                    .dashboard-viewport .dashboard-card .card__content > .summary-chart {
                         grid-area: chart;
                         min-height: 0;
                         position: relative;
@@ -904,12 +912,11 @@
                     }
                     .dashboard-viewport .dashboard-card .total__count {
                         font-size: 4.6rem !important;
-                        padding-top: 1rem !important;
-                        padding-bottom: 0 !important;
+                        padding: 0 !important;
                         line-height: 1;
                     }
                     .dashboard-viewport .dashboard-card .total_count__label {
-                        padding-left: 2% !important;
+                        padding: 0 !important;
                         font-size: 1.15rem;
                         margin-top: 0.15rem;
                     }
@@ -1060,14 +1067,17 @@
                         font-size: 13px;
                     }
 
-                    .card__content > div:nth-child(2) {
+                    .card__content > .summary-info {
                         grid-area: head;
                         min-width: 0;
                     }
-                    .card__content > div:nth-child(2) > div {
-                        justify-content: flex-start;
+                    /* Count block reads as a continuation of the title here,
+                       so it lines up with it rather than centring. */
+                    .total-count-block {
+                        align-items: flex-start;
+                        padding: 12px 0 0 0 !important;
                     }
-                    .card__content > div:nth-child(3) {
+                    .card__content > .summary-chart {
                         grid-area: chart;
                         margin: 0 !important;
                     }
@@ -1091,7 +1101,7 @@
                     .total__count {
                         font-size: 3.6rem;
                         line-height: 1.1;
-                        padding: 12px 0 0 0 !important;
+                        padding: 0 !important;
                     }
                     .total_count__label {
                         font-size: 1rem;
@@ -1343,17 +1353,17 @@
                     .dashboard-card-inner {
                         text-align: center !important;
                     }
-                    .card__content > div:nth-child(2) {
+                    .card__content > .summary-info {
                         width: 100%;
                     }
-                    .card__content > div:nth-child(2) > div {
-                        justify-content: center;
+                    .total-count-block {
+                        align-items: center;
                     }
                     .card__content > .suite-stats-wrapper {
                         width: 100%;
                         margin-top: 16px !important;
                     }
-                    .card__content > div:nth-child(3) {
+                    .card__content > .summary-chart {
                         margin-top: 14px !important;
                     }
                     .card__footer {
@@ -1438,7 +1448,7 @@
                                     Time taken %(execution_time)%
                             </span>
                           </div>
-                          <div>
+                          <div class="summary-info">
                               <div class="card__header">
                                 <div class="header__title">
                                   %(title)%
@@ -1447,14 +1457,12 @@
                               <div class="card__header">
                                 <span class="header__date">%(date)%</span>
                               </div>
-                              <div style="display: flex;">
+                              <div class="total-count-block">
                                 <span class="total__count">%(total)%</span>
-                              </div>
-                              <div style="display: flex;">
                                 <span class="total_count__label">TEST CASES</span>
                               </div>
                           </div>
-                          <div>
+                          <div class="summary-chart">
                               <div class="outer_my_chart">
                                 <canvas id="myChart" class="inner_my_chart" style="height: 38%;"></canvas>
                               </div>
@@ -1561,7 +1569,6 @@
               </div>
                 <script>
                     window.onload = function() {
-                        alignTotalCount();
                         failureScreenshots();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
@@ -1788,16 +1795,6 @@
                 }
             );
         }
-        </script>
-        <script>
-            function alignTotalCount() {
-                arr1 = [1, 2, 3, 4, 5];
-                arr2 = ['8%', '6%', '5%', '4%', '3%'];
-                zipped = arr1.map((x, i) => [x, arr2[i]]);
-                var x = parseInt(%(total)%);
-                size = zipped[(x.toString().length)-1][1];
-                document.getElementsByClassName("total__count")[0].style.paddingLeft = `${size}`;
-            }
         </script>
         <script>
             // Resize only the Chart.js canvases that are currently visible.
