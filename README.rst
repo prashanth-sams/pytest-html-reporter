@@ -10,10 +10,6 @@ pytest-html-reporter
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
-.. image:: https://travis-ci.com/prashanth-sams/pytest-html-reporter.svg?branch=master
-    :target: https://travis-ci.com/prashanth-sams/pytest-html-reporter
-    :alt: Build Status
-
 .. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=master
     :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=master
 
@@ -24,7 +20,7 @@ pytest-html-reporter
 
 ..
 
-        Generates a static html report based on ``pytest`` framework
+        Generates a light-weight static html report based on ``pytest`` framework
 
 
 .. image:: https://i.imgur.com/4TYia5j.png

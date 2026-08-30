@@ -28,6 +28,7 @@
                 body {
                     font-family: -apple-system, sans-serif;
                     background-color: #eeeeee;
+                    margin: 0;
                 }
 
                 .sidenav {
@@ -39,6 +40,12 @@
                     left: 0;
                     background-color: #211f1f;
                     overflow-x: hidden;
+                    /* Column layout so the sponsor block can be pushed to the
+                       foot of the rail with margin-top:auto, whatever the
+                       viewport height, without absolute positioning that would
+                       overlap the nav links on a short screen. */
+                    display: flex;
+                    flex-direction: column;
                 }
 
                 .sidenav a {
@@ -47,6 +54,7 @@
                     font-size: 16px;
                     color: #a2a2a2;
                     display: block;
+                    flex: 0 0 auto;
                 }
 
                 .main {
@@ -54,238 +62,6 @@
                     margin-left: 180px;
                 }
 
-                @media screen and (max-width: 768px) {
-                    .sidenav {
-                        width: 60px;
-                    }
-                    .sidenav a {
-                        font-size: 0;
-                        padding: 12px 10px 8px 18px;
-                    }
-                    .sidenav a i {
-                        font-size: 18px;
-                    }
-                    .main {
-                        margin-left: 60px;
-                        padding: 10px 10px 15px 10px;
-                    }
-                    .logo-link {
-                        display: none;
-                    }
-                    .row.rowcard {
-                        flex-direction: column;
-                        margin: 0;
-                    }
-                    .col-md-6.card, .col-md-8.card, .col-md-4.card, .dashboard-card {
-                        max-width: 100% !important;
-                        margin-left: 0 !important;
-                        margin-bottom: 15px;
-                        width: 100%;
-                    }
-                    .card__footer {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 10px 5px;
-                        padding: 10px 5px;
-                    }
-                    .card__footer-section {
-                        width: 100%;
-                        min-width: unset;
-                        padding: 8px 2px;
-                    }
-                    .footer-section__data {
-                        font-size: 1.6rem;
-                    }
-                    .footer-section__label {
-                        font-size: 9pt;
-                        text-transform: uppercase;
-                    }
-                    .total__count {
-                        font-size: 3.5rem;
-                        display: block;
-                        text-align: center;
-                        width: 100%;
-                        margin: 10px 0;
-                    }
-                    .total_count__label {
-                        display: block;
-                        text-align: center;
-                        width: 100%;
-                        padding-left: 0 !important;
-                        font-size: 1rem;
-                        margin-bottom: 15px;
-                    }
-                    .header__title {
-                        font-size: 1.1rem;
-                        padding-left: 0 !important;
-                        padding-top: 0 !important;
-                        text-align: center;
-                        width: 100%;
-                        font-weight: 600;
-                    }
-                    .header__date {
-                        font-size: 0.55rem;
-                        padding-left: 10px !important;
-                        text-align: left;
-                        width: auto;
-                        position: absolute !important;
-                        top: 10px !important;
-                        left: 0 !important;
-                        margin-top: 0 !important;
-                        margin-bottom: 0 !important;
-                        color: #999;
-                    }
-                    .card__header {
-                        justify-content: center;
-                        margin-bottom: 20px;
-                        position: relative;
-                        min-height: 30px;
-                    }
-                    .card__header:nth-child(2) {
-                        position: absolute !important;
-                        top: 10px !important;
-                        left: 0 !important;
-                        margin: 0 !important;
-                        width: auto !important;
-                    }
-                    .time__taken {
-                        font-size: 11px;
-                        padding: 0;
-                    }
-                    .time-taken-wrapper {
-                        margin-left: 0 !important;
-                        margin-bottom: 0 !important;
-                        text-align: right;
-                        position: absolute !important;
-                        top: 10px;
-                        right: 10px;
-                    }
-                    .time-taken-wrapper svg {
-                        width: 14px !important;
-                        height: 14px !important;
-                        margin: 0 4px 0 0 !important;
-                    }
-                    /* Mobile layout: first div holds date/time absolutely positioned */
-                    .card__content > div:first-child {
-                        position: relative !important;
-                        margin-bottom: 0 !important;
-                        height: 40px;
-                    }
-                    /* Mobile layout: count left, label below, chart right */
-                    .card__content > div:nth-child(2) {
-                        display: grid !important;
-                        grid-template-columns: 1fr 140px;
-                        grid-template-rows: auto auto;
-                        gap: 15px 20px;
-                        align-items: start;
-                        margin-top: 20px !important;
-                        position: relative;
-                    }
-                    /* Count and label section */
-                    .card__content > div:nth-child(2) > div:first-child {
-                        grid-column: 1;
-                        grid-row: 1 / span 2;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: flex-start;
-                    }
-                    /* Chart section */
-                    .card__content > div:nth-child(3) {
-                        grid-column: 2 !important;
-                        grid-row: 1 / span 2 !important;
-                        margin: 0 !important;
-                        align-self: center;
-                        position: static !important;
-                    }
-                    .outer_my_chart {
-                        position: static !important;
-                        margin: 0 auto !important;
-                        width: 130px !important;
-                        height: 130px !important;
-                        float: none !important;
-                        left: auto !important;
-                        right: auto !important;
-                        top: auto !important;
-                    }
-                    .inner_my_chart {
-                        max-width: 130px !important;
-                        max-height: 130px !important;
-                    }
-                    .total__count {
-                        font-size: 3.2rem;
-                        display: block;
-                        text-align: left;
-                        width: 100%;
-                        margin: 0;
-                        padding-left: 10px;
-                        line-height: 0.9;
-                        font-weight: bold;
-                    }
-                    .total_count__label {
-                        display: block;
-                        text-align: left;
-                        width: 100%;
-                        padding-left: 10px !important;
-                        font-size: 0.7rem;
-                        margin-top: 5px;
-                        margin-bottom: 0;
-                        color: #888;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }
-                    .suite_count_section {
-                        margin-top: 12px;
-                    }
-                    .dashboard__headers {
-                        font-size: 1.1rem;
-                        padding-left: 10px !important;
-                    }
-                    .dashboard-card-inner {
-                        min-height: auto !important;
-                        height: auto !important;
-                        padding: 10px 5px;
-                    }
-                    .suite-stats-wrapper {
-                        margin-top: 15px !important;
-                        position: static !important;
-                    }
-                    .card__content {
-                        padding: 0.5rem 0.3rem;
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    .card__content > div {
-                        position: static !important;
-                        margin-left: 0 !important;
-                    }
-                    .card__content > div[style*="margin-left: 30%"] {
-                        margin-left: 0 !important;
-                    }
-                    #download {
-                        position: relative !important;
-                        display: block;
-                        text-align: right;
-                        margin-bottom: 10px;
-                        padding-right: 10px;
-                    }
-                    #download i {
-                        position: static !important;
-                        float: none !important;
-                    }
-                    .chart {
-                        max-width: 100%;
-                        height: auto !important;
-                    }
-                    canvas#trends, canvas#groupBarChart {
-                        max-width: 100% !important;
-                        height: auto !important;
-                    }
-                }
-
-                        text-align: center;
-                    }
-                }
 
                 @media screen and (max-height: 450px) {
                     .sidenav {
@@ -312,6 +88,180 @@
 
                 .logo-link {
                     min-height: 0;
+                }
+
+                /* ---- Sponsor: pickoh.com ----
+                   The wordmark is set as live text with the pin glyph standing
+                   in for the O, so it stays crisp at any zoom and needs no
+                   bundled image. */
+                .brandmark {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: "Avenir Next", "Futura", "Century Gothic", "Trebuchet MS", "Segoe UI", -apple-system, sans-serif;
+                    font-weight: 800;
+                    letter-spacing: 0.01em;
+                    line-height: 1;
+                    white-space: nowrap;
+                }
+
+                .brandmark__pin {
+                    height: 1.5em;
+                    width: 1.23em;
+                    flex: none;
+                    position: relative;
+                    top: 0.13em;
+                    margin: 0 0.01em;
+                }
+
+                .sidenav a.sponsor {
+                    margin-top: auto;
+                    padding: 14px 12px 16px 14px;
+                    border-top: 1px solid #322f2f;
+                    line-height: 1;
+                }
+
+                .sponsor__label {
+                    display: block;
+                    margin-bottom: 8px;
+                    font-size: 9px;
+                    font-weight: 600;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6f6d6d;
+                    transition: color 0.2s ease;
+                }
+
+                .sponsor .brandmark {
+                    font-size: 17px;
+                    color: #dcdcdc;
+                    transition: color 0.2s ease;
+                }
+
+                .sponsor .brandmark__pin {
+                    fill: #dcdcdc;
+                    transition: fill 0.2s ease;
+                }
+
+                .sponsor:hover .sponsor__label {
+                    color: #8f8c8c;
+                }
+
+                .sponsor:hover .brandmark {
+                    color: #ffffff;
+                }
+
+                .sponsor:hover .brandmark__pin {
+                    fill: #ffffff;
+                }
+
+                .page-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                    margin: 30px 0 4px 0;
+                    padding-top: 16px;
+                    border-top: 1px solid #dedede;
+                    color: #8a8a8a;
+                }
+
+                .page-footer__label {
+                    margin-right: 10px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                }
+
+                .page-footer__credit {
+                    font-size: 10px;
+                    color: #8a8a8a;
+                    text-decoration: none;
+                }
+
+                .page-footer__credit:hover,
+                .page-footer__credit:focus {
+                    color: #555555;
+                    text-decoration: none;
+                }
+
+                .page-footer__dot {
+                    margin: 0 10px;
+                    color: #c6c6c6;
+                }
+
+                /* The dashboard is laid out to fit one screen at desktop widths,
+                   so its own footer sits in the strip the credit line already
+                   held: no border, no added height. The page-level footer stands
+                   down there (see body[data-tab="dashboard"] below) so the two
+                   never stack. */
+                .page-footer--inline {
+                    margin: 0;
+                    padding-top: 0;
+                    border-top: 0;
+                }
+
+                .page-footer--inline .page-footer__label,
+                .page-footer--inline .page-footer__credit {
+                    font-size: 9px;
+                }
+
+                .page-footer--inline .page-footer__label {
+                    margin-right: 8px;
+                }
+
+                .page-footer--inline .page-footer__dot {
+                    margin: 0 8px;
+                }
+
+                .page-footer--inline .brandmark {
+                    font-size: 10px;
+                }
+
+                body[data-tab="dashboard"] > .main > .page-footer {
+                    display: none;
+                }
+
+                .sponsor-link {
+                    display: inline-flex;
+                    align-items: center;
+                    text-decoration: none;
+                }
+
+                .sponsor-link:hover,
+                .sponsor-link:focus {
+                    text-decoration: none;
+                }
+
+                .page-footer .brandmark {
+                    font-size: 12px;
+                    color: #211f1f;
+                    transition: color 0.2s ease;
+                }
+
+                .page-footer .brandmark__pin {
+                    fill: #333333;
+                    transition: fill 0.2s ease;
+                }
+
+                .page-footer__ext {
+                    margin-left: 8px;
+                    font-size: 10px;
+                    color: #b4b4b4;
+                    transition: color 0.2s ease;
+                }
+
+                .sponsor-link:hover .brandmark {
+                    color: #000000;
+                }
+
+                .sponsor-link:hover .brandmark__pin {
+                    fill: #000000;
+                }
+
+                .sponsor-link:hover .page-footer__ext {
+                    color: #6f6d6d;
                 }
 
                 .rowcard {
@@ -396,21 +346,32 @@
                   color: darkgray;
                 }
 
+                /* Title/date plus the total-count block; the doughnut sits
+                   in the column beside it. */
+                .summary-info {
+                  min-width: 0;
+                }
+
+                /* The count and its label travel together as one block, so the
+                   two always stay aligned wherever the block is placed. */
+                .total-count-block {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  padding-top: 8%;
+                }
+
                 .total__count {
                   font-size: 5.3rem;
                   font-family: sans-serif;
                   color: black;
-                  padding-top: 8%;
-                  text-align: left;
-                  padding-left: 5%;
+                  line-height: 1;
                 }
 
                 .total_count__label {
                   font-size: 1.3rem;
                   font-family: sans-serif;
-                  padding-left: 5%;
                   color: darkgray;
-                  text-align: left;
                 }
 
                 .header__title-icon {
@@ -436,6 +397,27 @@
 
                 .chart {
                   padding: 2.0rem 60;
+                }
+
+                /* Responsive chart containers: give Chart.js a sized, relatively
+                   positioned box so it renders the canvas at the correct
+                   resolution (prevents blurry / horizontally-stretched text).
+                   The canvas size itself is left to Chart.js — forcing it with
+                   CSS distorts the backing buffer. */
+                .chart-wrap {
+                  position: relative;
+                  width: 100%;
+                }
+                .chart-wrap--trends {
+                  height: 360px;
+                }
+                .chart-wrap--suite {
+                  height: 451px;
+                }
+                .chart-wrap > canvas {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
                 }
 
                 .card__footer {
@@ -489,6 +471,16 @@
                     border: 5px solid rgba(0,0,0,0);
                 }
 
+                .list-group .list-group-item.active {
+                    background-color: #f2f4f7;
+                    border-color: rgba(0,0,0,0);
+                    border-left: 5px solid #565656;
+                }
+
+                .archive-body {
+                    scroll-margin-top: 12px;
+                }
+
                 .list-group {
                     height: 100%;
                     background-color: #ffff;
@@ -499,12 +491,24 @@
                     box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
                 }
 
+                /* Containing block for .archive-total's percentage width. */
                 .archive-body {
+                    position: relative;
                     background-color: #ffff;
                     max-width: 80%;
                     border-radius: 4px;
                     box-shadow: 1px 1px 4px rgba(0,0,0,0.4);
                     margin-bottom: 0.8%;
+                }
+
+                /* The total sits centred in the space left of the chart,
+                   which starts at ~48% of the card. */
+                .archive-total {
+                    position: absolute;
+                    left: 0;
+                    width: 52%;
+                    padding-top: 5%;
+                    text-align: center;
                 }
 
                 .archive-header {
@@ -711,6 +715,80 @@
                      height: 50px;
                      margin-top: -50px;
                 }
+
+                /* ---- Screenshots tab with nothing attached ---- */
+                .screenshot-empty {
+                    display: none;
+                    width: 100%;
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    padding: 58px 24px 62px 24px;
+                    text-align: center;
+                }
+
+                .bg-highlight.is-empty .screenshot-empty {
+                    display: block;
+                }
+
+                /* The hover caption strip only has a job once there are
+                   thumbnails to hover over. */
+                .bg-highlight.is-empty .below-desc {
+                    display: none;
+                }
+
+                .screenshot-empty__icon {
+                    width: 74px;
+                    height: 74px;
+                    margin: 0 auto 22px auto;
+                    border-radius: 50%;
+                    background-color: #f4f7fa;
+                    border: 1px solid #e8edf3;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .screenshot-empty__icon i {
+                    font-size: 28px;
+                    color: #c3c9d2;
+                }
+
+                .screenshot-empty__title {
+                    font-family: sans-serif;
+                    font-size: 1.25rem;
+                    font-weight: 550;
+                    color: #6c7480;
+                }
+
+                .screenshot-empty__text {
+                    font-family: sans-serif;
+                    font-size: 0.9rem;
+                    color: #a9b0ba;
+                    margin: 9px auto 0 auto;
+                    max-width: 430px;
+                    line-height: 1.55;
+                }
+
+                .screenshot-empty__snippet {
+                    display: inline-block;
+                    margin-top: 20px;
+                    padding: 9px 14px;
+                    background-color: #fafbfc;
+                    border: 1px solid #eef1f5;
+                    border-radius: 5px;
+                    font-family: Menlo, Consolas, monospace;
+                    font-size: 11.5px;
+                    color: #7c8593;
+                    white-space: nowrap;
+                    overflow-x: auto;
+                    max-width: 100%;
+                }
+
+                .screenshot-empty__snippet b {
+                    font-weight: 600;
+                    color: #3571a3;
+                }
                 .modal p {
                     word-wrap: break-word;
                 }
@@ -877,9 +955,6 @@
                     .footer-section__label {
                         font-size: 7pt;
                     }
-                    .total__count {
-                        padding-top: 13%;
-                    }
                 }
 
                 @media screen and (max-width: 1031px) {
@@ -970,6 +1045,1231 @@
                     }
                 }
 
+                /* ============================================================
+                   Desktop: fit the whole dashboard inside the viewport so all
+                   four cards are visible at once without scrolling
+                   (laptops ~1280px through full desktops 1920px+).
+                   ============================================================ */
+                @media screen and (min-width: 1200px) {
+                    .main {
+                        padding-bottom: 8px;
+                    }
+                    .dashboard-viewport {
+                        display: flex;
+                        flex-direction: column;
+                        height: calc(100vh - 18px);
+                    }
+
+                    /* The two card rows share the available height */
+                    .dashboard-viewport > .row.rowcard {
+                        flex: 1 1 0;
+                        min-height: 0;
+                        margin: 0 0 10px 0 !important;
+                        padding-top: 0 !important;
+                    }
+                    .dashboard-viewport > .row.rowcard:first-of-type {
+                        flex-grow: 1.05;
+                    }
+                    .dashboard-viewport > hr {
+                        flex: 0 0 auto;
+                        margin: 2px 0 1px 0;
+                    }
+                    .dashboard-viewport > .page-footer {
+                        flex: 0 0 auto;
+                    }
+
+                    /* Cards fill the height of their row */
+                    .dashboard-viewport .row.rowcard > .card {
+                        height: 100%;
+                        overflow: hidden;
+                        display: flex;
+                        flex-direction: column;
+                        margin-bottom: 0;
+                    }
+                    .dashboard-viewport .dashboard-card > .dashboard-card-inner {
+                        min-height: 0 !important;
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport .dashboard__headers {
+                        margin-bottom: 0 !important;
+                    }
+                    .dashboard-viewport .dashboard__headers > div {
+                        padding-top: 2% !important;
+                    }
+
+                    /* ---- Summary card: counts (left) + doughnut (right) + stats (bottom) ---- */
+                    .dashboard-viewport .dashboard-card .card__content {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        grid-template-rows: auto 1fr auto;
+                        grid-template-areas:
+                            "time  time"
+                            "info  chart"
+                            "stats stats";
+                        gap: 6px 12px;
+                        padding: 1rem 1.6rem 1.2rem 1.6rem;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper {
+                        grid-area: time;
+                        margin: 0 !important;
+                        text-align: right;
+                        padding-right: 4px;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .summary-info {
+                        grid-area: info;
+                        min-height: 0;
+                        align-self: stretch;
+                        text-align: left;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    /* Title/date stay at the top; the count block sits centred
+                       in the rest of the column, opposite the doughnut. */
+                    .dashboard-viewport .dashboard-card .total-count-block {
+                        align-self: center;
+                        margin: auto 0;
+                        padding: 0 1rem !important;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .summary-chart {
+                        grid-area: chart;
+                        min-height: 0;
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .dashboard-viewport .dashboard-card .card__content > .suite-stats-wrapper {
+                        grid-area: stats;
+                        margin: 0 !important;
+                        position: static !important;
+                        align-self: end;
+                    }
+
+                    .dashboard-viewport .dashboard-card .card__header {
+                        margin-bottom: 0;
+                    }
+                    .dashboard-viewport .dashboard-card .header__title {
+                        padding-top: 0 !important;
+                        padding-left: 2% !important;
+                        font-size: 1.5rem;
+                    }
+                    .dashboard-viewport .dashboard-card .header__date {
+                        padding-left: 2% !important;
+                        margin-bottom: 0.4rem;
+                    }
+                    .dashboard-viewport .dashboard-card .total__count {
+                        font-size: 4.6rem !important;
+                        padding: 0 !important;
+                        line-height: 1;
+                    }
+                    .dashboard-viewport .dashboard-card .total_count__label {
+                        padding: 0 !important;
+                        font-size: 1.15rem;
+                        margin-top: 0.15rem;
+                    }
+
+                    /* Keep the doughnut circular and sensibly sized (never oversized) */
+                    .dashboard-viewport .dashboard-card .outer_my_chart {
+                        margin: 0 auto !important;
+                        height: 100% !important;
+                        width: auto !important;
+                        aspect-ratio: 1 / 1;
+                        max-width: 100% !important;
+                        max-height: 200px !important;
+                        top: 0 !important;
+                        left: 0 !important;
+                        position: relative !important;
+                    }
+                    .dashboard-viewport .dashboard-card .inner_my_chart {
+                        margin: 0 !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        max-width: 100% !important;
+                        max-height: 100% !important;
+                    }
+
+                    .dashboard-viewport .dashboard-card .suite-stats-wrapper {
+                        margin-top: 0 !important;
+                    }
+                    .dashboard-viewport .dashboard-card .suite_count_section {
+                        margin-top: 0 !important;
+                    }
+                    .dashboard-viewport .dashboard-card .card__footer {
+                        margin-bottom: 0 !important;
+                        padding: 0 0.5rem;
+                    }
+                    .dashboard-viewport .dashboard-card .footer-section__data {
+                        font-size: 1.9rem !important;
+                    }
+                    .dashboard-viewport .dashboard-card .footer-section__label {
+                        font-size: 8.5pt;
+                    }
+
+                    /* ---- Trends card (top-right) ---- */
+                    .dashboard-viewport > .row.rowcard:first-of-type > .card:last-of-type > div {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport > .row.rowcard:first-of-type > .card:last-of-type > div > div {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport .chart-wrap--trends {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        height: auto;
+                        margin: 1% 1.2rem 1rem 0.5rem;
+                    }
+
+                    /* ---- Test Suite bar chart (bottom-left) ---- */
+                    .dashboard-viewport > .row.rowcard:nth-of-type(2) > .card {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .dashboard-viewport .chart-wrap--suite {
+                        flex: 1 1 auto;
+                        min-height: 0;
+                        height: auto;
+                        margin: 1% 1.5rem 1rem 1rem;
+                    }
+
+                    /* Consistent header spacing for the chart cards */
+                    .dashboard-viewport .row.rowcard:first-of-type > .card:last-of-type,
+                    .dashboard-viewport .row.rowcard:nth-of-type(2) > .card {
+                        padding-top: 0.4rem;
+                    }
+                }
+
+                /* =========================================================
+                   Compact layout — everything below the 1200px desktop grid.
+                   Kept last in the sheet so it wins over the older width
+                   breakpoints above, whose negative margins assume a wide,
+                   two-column dashboard.
+                   ========================================================= */
+                @media screen and (max-width: 1199px) {
+                    .dashboard-viewport {
+                        display: block;
+                        height: auto;
+                        /* Anchors #download, and reserves the strip it sits in. */
+                        position: relative;
+                        padding-top: 32px;
+                    }
+
+                    /* Bootstrap's -15px row gutters overflow a narrow viewport. */
+                    .main .row {
+                        margin-left: 0 !important;
+                        margin-right: 0 !important;
+                    }
+                    /* .col-md-12 carries no flex-basis below Bootstrap's md
+                       breakpoint, so the footer row collapses to its text. */
+                    .main .row > .col-md-12 {
+                        width: 100% !important;
+                    }
+
+                    .row.rowcard {
+                        display: flex;
+                        flex-direction: column;
+                        margin: 0 !important;
+                        padding-top: 0 !important;
+                    }
+
+                    .col-md-4.card, .col-md-6.card, .col-md-8.card, .dashboard-card {
+                        max-width: 100% !important;
+                        width: 100%;
+                        margin: 0 0 14px 0 !important;
+                    }
+
+                    .dashboard-card-inner {
+                        width: 100% !important;
+                        min-height: 0 !important;
+                        height: auto !important;
+                        text-align: left !important;
+                    }
+
+                    /* Summary card: the title sits opposite the run time, the
+                       count opposite the doughnut, the seven counters across
+                       the bottom. .summary-info dissolves into the grid so its
+                       two halves can land in different rows. */
+                    .card__content {
+                        display: grid;
+                        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                        grid-template-areas:
+                            "head  meta"
+                            "count chart"
+                            "stats stats";
+                        align-items: center;
+                        column-gap: 16px;
+                        padding: 16px 18px;
+                    }
+                    .card__content > .summary-info {
+                        display: contents;
+                    }
+
+                    .card__content .summary-heading {
+                        grid-area: head;
+                        align-self: start;
+                        min-width: 0;
+                    }
+                    .card__content > .time-taken-wrapper {
+                        grid-area: meta;
+                        align-self: start;
+                        margin: 0 !important;
+                        text-align: right;
+                    }
+                    .card__content > .time-taken-wrapper svg {
+                        width: 15px !important;
+                        height: 15px !important;
+                        margin: 0 5px 0 0 !important;
+                    }
+                    .time__taken {
+                        font-size: 13px;
+                    }
+
+                    /* Equal halves, each centring its own content, so the
+                       count and the doughnut balance instead of sitting
+                       against opposite edges of a wide card. */
+                    .card__content .total-count-block {
+                        grid-area: count;
+                        align-items: center;
+                        justify-self: center;
+                        padding: 12px 0 0 0 !important;
+                    }
+                    .card__content > .summary-chart {
+                        grid-area: chart;
+                        justify-self: center;
+                        margin: 0 !important;
+                    }
+                    .card__content > .suite-stats-wrapper {
+                        grid-area: stats;
+                        position: static !important;
+                        margin: 20px 0 0 0 !important;
+                    }
+
+                    .card__header {
+                        margin: 0;
+                    }
+                    .header__title {
+                        font-size: 1.35rem;
+                        padding: 0 !important;
+                    }
+                    .header__date {
+                        font-size: 0.85rem;
+                        padding: 0 !important;
+                    }
+                    .total__count {
+                        font-size: 3.6rem;
+                        line-height: 1.1;
+                        padding: 0 !important;
+                    }
+                    .total_count__label {
+                        font-size: 1rem;
+                        padding: 0 !important;
+                    }
+
+                    /* Chart.js sizes the doughnut from this box, so keep it
+                       square and free of the desktop negative margins. */
+                    .outer_my_chart {
+                        position: static !important;
+                        margin: 0 !important;
+                        width: 150px !important;
+                        height: 150px !important;
+                        max-width: 150px !important;
+                        max-height: none !important;
+                    }
+                    .inner_my_chart {
+                        margin: 0 !important;
+                        width: 150px !important;
+                        height: 150px !important;
+                        max-width: 150px !important;
+                        max-height: 150px !important;
+                    }
+
+                    /* Seven counters never fit one flex row on a narrow card,
+                       so let them wrap instead of colliding. */
+                    .suite_count_section {
+                        margin: 0 !important;
+                    }
+                    .card__footer {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+                        gap: 14px 4px;
+                        margin: 0 !important;
+                    }
+                    .card__footer-section {
+                        width: auto !important;
+                        text-align: center;
+                    }
+                    .footer-section__data {
+                        font-size: 1.9rem;
+                    }
+                    .footer-section__label {
+                        font-size: 8pt;
+                    }
+
+                    /* Trends / Test Suite cards */
+                    .dashboard__headers {
+                        font-size: 1.25rem;
+                    }
+                    .dashboard__headers > div {
+                        padding-top: 14px !important;
+                        padding-left: 16px !important;
+                    }
+                    .chart-wrap {
+                        margin: 8px 14px 14px 14px;
+                        width: auto;
+                    }
+                    .chart-wrap--trends {
+                        height: 280px;
+                    }
+                    .chart-wrap--suite {
+                        height: 320px;
+                    }
+
+                    /* The link lives inside the Trends card, which drops
+                       below the summary card here -- it would be stranded
+                       mid-page. Bootstrap makes .card a containing block, so
+                       that card goes static for the link to escape it and pin
+                       to the top of the dashboard instead. */
+                    .dashboard-viewport > .row.rowcard:first-of-type > .card:last-of-type {
+                        position: static;
+                    }
+                    #download {
+                        display: block;
+                        position: absolute;
+                        top: 0;
+                        right: 2px;
+                        text-align: right;
+                        padding: 0 !important;
+                        line-height: 1;
+                    }
+                    #download i {
+                        position: static !important;
+                        float: none !important;
+                        right: auto !important;
+                        padding-top: 0 !important;
+                        font-size: 1.4rem !important;
+                    }
+
+                    /* Suite Highlights */
+                    .suite-highlight-inner {
+                        padding-bottom: 14px;
+                    }
+
+                    /* ---- Archives tab ---- */
+                    /* The build list is fixed to the right edge on desktop,
+                       where it would sit on top of the build cards here. */
+                    .archive-build-row {
+                        position: static !important;
+                        right: auto !important;
+                        width: 100% !important;
+                        max-height: 220px;
+                        place-self: auto;
+                        margin: 0 0 14px 0;
+                    }
+                    /* The row's inline -7% margin and 12% date indent are
+                       tuned for the 220px desktop rail. */
+                    .archive-build-row .list-group-item {
+                        margin-bottom: 0 !important;
+                    }
+                    .archive-build-row .list-group-item > span:last-child {
+                        padding-left: 6px !important;
+                    }
+                    .archive-body {
+                        max-width: 100%;
+                        margin-bottom: 14px;
+                    }
+                    /* Total and chart stack instead of overlapping. */
+                    .archive-total {
+                        position: static !important;
+                        width: 100% !important;
+                        padding-top: 0 !important;
+                    }
+                    .archive-body > div[style*="margin-top: -5%"] {
+                        margin-top: 0 !important;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-around;
+                        flex-wrap: wrap;
+                        padding: 0 14px;
+                    }
+                    .archive-chart-container {
+                        width: 55% !important;
+                        min-width: 220px;
+                        height: auto !important;
+                        margin: 0 !important;
+                    }
+                    .archive-chart-container canvas {
+                        float: none !important;
+                        margin: 0 !important;
+                        padding-left: 0 !important;
+                    }
+                    .total__tests {
+                        font-size: 4rem;
+                        padding-top: 0;
+                    }
+                    .archive__label {
+                        font-size: 1rem;
+                    }
+                    .archive__bar {
+                        margin-top: 12px !important;
+                        padding-top: 0 !important;
+                    }
+                    .statistic-section-pass, .statistic-section-fail {
+                        padding-top: 18px;
+                        padding-bottom: 18px;
+                    }
+                    /* Seven columns at a hard 14.2% collide well before this. */
+                    .archive__bar .row {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 10px 0;
+                        margin: 0;
+                    }
+                    .archive__bar .row > div {
+                        max-width: none !important;
+                        flex: none !important;
+                        padding: 0;
+                    }
+                    .archive__bar .container {
+                        margin-top: 0 !important;
+                        padding: 0 10px;
+                    }
+                    .counter {
+                        margin-bottom: 0 !important;
+                    }
+                    .count-title {
+                        font-size: 28px;
+                        margin-top: 0;
+                    }
+                    .stats-text {
+                        font-size: 11px;
+                        margin-top: 4px;
+                    }
+
+                    /* ---- Suites / Test Metrics tables ---- */
+                    .tablecard {
+                        font-size: 12px;
+                    }
+                }
+
+                @media screen and (max-width: 768px) {
+                    .sidenav {
+                        width: 56px;
+                    }
+                    .sidenav a {
+                        font-size: 0;
+                        padding: 12px 10px 8px 16px;
+                    }
+                    .sidenav a i {
+                        font-size: 18px;
+                    }
+                    .sidenav a.logo-link {
+                        display: none;
+                    }
+                    /* The rail is icon-only here, so the sponsor keeps just the
+                       pin. Its size has to leave em behind: the .sidenav a
+                       font-size:0 above is what collapses the wordmark. */
+                    .sidenav a.sponsor {
+                        padding: 12px 0 14px 0;
+                        text-align: center;
+                    }
+                    .sponsor__label {
+                        display: none;
+                    }
+                    .sponsor .brandmark {
+                        font-size: 0;
+                    }
+                    .sponsor .brandmark__pin {
+                        height: 21px;
+                        width: 17px;
+                        top: 0;
+                        margin: 0;
+                    }
+                    .main {
+                        margin-left: 56px;
+                        padding: 10px 8px 15px 8px;
+                    }
+
+                    .card__content {
+                        padding: 12px 14px;
+                    }
+                    .header__title {
+                        font-size: 1.15rem;
+                    }
+                    .total__count {
+                        font-size: 3rem;
+                    }
+                    .outer_my_chart, .inner_my_chart {
+                        width: 124px !important;
+                        height: 124px !important;
+                        max-width: 124px !important;
+                    }
+                    .inner_my_chart {
+                        max-height: 124px !important;
+                    }
+                    .footer-section__data {
+                        font-size: 1.6rem;
+                    }
+                    .chart-wrap--trends {
+                        height: 240px;
+                    }
+                    .chart-wrap--suite {
+                        height: 300px;
+                    }
+                }
+
+                /* Below this the count and the doughnut stop fitting side by
+                   side, so the summary card becomes a single centred column. */
+                @media screen and (max-width: 560px) {
+                    .card__content {
+                        grid-template-columns: minmax(0, 1fr);
+                        grid-template-areas:
+                            "meta"
+                            "head"
+                            "count"
+                            "chart"
+                            "stats";
+                        justify-items: center;
+                    }
+                    .dashboard-card-inner {
+                        text-align: center !important;
+                    }
+                    .card__content .summary-heading {
+                        width: 100%;
+                    }
+                    /* .card__header is a flex row, so centring the column has
+                       to be asked of it directly. */
+                    .card__content .card__header {
+                        justify-content: center;
+                    }
+                    .card__content > .suite-stats-wrapper {
+                        width: 100%;
+                        margin-top: 16px !important;
+                    }
+                    .card__content > .summary-chart {
+                        margin-top: 14px !important;
+                    }
+                    .card__footer {
+                        grid-template-columns: repeat(4, 1fr);
+                    }
+                    .footer-section__data {
+                        font-size: 1.45rem;
+                    }
+                    .footer-section__label {
+                        font-size: 7.5pt;
+                    }
+                    .chart-wrap {
+                        margin: 8px 8px 12px 8px;
+                    }
+                    .chart-wrap--trends {
+                        height: 220px;
+                    }
+                    .chart-wrap--suite {
+                        height: 280px;
+                    }
+
+                    .archive-chart-container {
+                        width: 100% !important;
+                        min-width: 0;
+                    }
+                    .total__tests {
+                        font-size: 3.2rem;
+                    }
+                    .archive__bar .row {
+                        grid-template-columns: repeat(3, 1fr);
+                    }
+                    .count-title {
+                        font-size: 24px;
+                    }
+                    .archive-header, .archive-date {
+                        padding-left: 14px;
+                    }
+                }
+
+            </style>
+            <style>
+                /* ============================================================
+                   Suites / Test Metrics
+                   The tables live on the same card surface as the dashboard
+                   and borrow its palette, so moving between tabs feels like
+                   one product rather than a report bolted onto a dashboard.
+                   ============================================================ */
+                .metrics-page {
+                    padding: 0.4rem 0.3rem 1.4rem 0.3rem;
+                }
+
+                .metrics-page__head {
+                    display: flex;
+                    align-items: flex-end;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                    margin: 0 0.2rem 1rem 0.2rem;
+                }
+
+                .metrics-page__title {
+                    font-size: 1.9rem;
+                    font-weight: 550;
+                    font-family: sans-serif;
+                    color: darkgrey;
+                    line-height: 1.2;
+                }
+
+                .metrics-page__title i {
+                    font-size: 1.45rem;
+                    color: #a9a9a9;
+                    margin-right: 10px;
+                }
+
+                .metrics-page__subtitle {
+                    font-size: 0.9rem;
+                    font-family: sans-serif;
+                    color: darkgray;
+                    margin-top: 4px;
+                }
+
+                /* Totals for what the table is currently showing; they follow
+                   the search box so the numbers never disagree with the rows. */
+                .metrics-summary {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    align-items: center;
+                }
+
+                .metric-chip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    background-color: #ffffff;
+                    border: 1px solid #e9edf3;
+                    border-radius: 999px;
+                    padding: 6px 14px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.06);
+                }
+
+                .metric-chip__dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    flex: 0 0 auto;
+                }
+
+                .metric-chip__value {
+                    font-family: sans-serif;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                }
+
+                .metric-chip__label {
+                    text-transform: uppercase;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
+                    color: slategrey;
+                }
+
+                /* ---- Card shell ---- */
+                .metrics-card {
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    overflow: hidden;
+                }
+
+                /* ---- Toolbar: length + export buttons left, search right ---- */
+                .metrics-card .metrics-toolbar {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding: 14px 18px;
+                    background-color: #fcfcfd;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                .metrics-card .metrics-toolbar .dataTables_length,
+                .metrics-card .metrics-toolbar .dataTables_filter {
+                    float: none;
+                    margin: 0;
+                    padding: 0;
+                    text-align: left;
+                }
+
+                .metrics-card .dataTables_length label {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin: 0;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: slategrey;
+                }
+
+                .metrics-card .dataTables_length select {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 6px;
+                    background-color: #ffffff;
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' fill='none' stroke='%2398a0ad' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 8px center;
+                    background-size: 11px 11px;
+                    padding: 6px 26px 6px 10px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #4a5160;
+                    cursor: pointer;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metrics-card .dataTables_length select:hover {
+                    border-color: #cfd6e0;
+                }
+
+                .metrics-card .dataTables_length select:focus {
+                    outline: none;
+                    border-color: #8fb8dd;
+                    box-shadow: 0 0 0 3px rgba(53, 113, 163, 0.12);
+                }
+
+                /* Export/print/column buttons read as one segmented control. */
+                .metrics-card .metrics-buttons {
+                    display: inline-flex;
+                }
+
+                .metrics-card .dt-buttons {
+                    float: none;
+                    display: inline-flex;
+                    gap: 2px;
+                    margin: 0;
+                    padding: 3px;
+                    background-color: #f1f3f7;
+                    border-radius: 8px;
+                }
+
+                .metrics-card .dt-buttons .dt-button {
+                    margin: 0 !important;
+                    padding: 5px 11px !important;
+                    min-width: 34px;
+                    border: none !important;
+                    border-radius: 6px !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    color: #8a929e !important;
+                    font-size: 13px;
+                    line-height: 1.45;
+                    transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metrics-card .dt-buttons .dt-button:hover:not(.disabled),
+                .metrics-card .dt-buttons .dt-button.active {
+                    background-color: #ffffff !important;
+                    color: #3571a3 !important;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.14) !important;
+                }
+
+                .metrics-card .dt-buttons .dt-button:focus {
+                    outline: none;
+                }
+
+                div.dt-button-collection {
+                    padding: 6px !important;
+                    border: 1px solid #eceff3 !important;
+                    border-radius: 8px !important;
+                    background-color: #ffffff !important;
+                    box-shadow: 0 10px 28px rgba(46, 61, 73, 0.18) !important;
+                }
+
+                div.dt-button-collection .dt-button {
+                    border: none !important;
+                    border-radius: 6px !important;
+                    background: #ffffff !important;
+                    color: #4a5160 !important;
+                    font-size: 12.5px !important;
+                }
+
+                div.dt-button-collection .dt-button:hover {
+                    background: #f4f7fb !important;
+                }
+
+                div.dt-button-collection .dt-button.active {
+                    background: #eef4fa !important;
+                    color: #3571a3 !important;
+                }
+
+                .metrics-card .metrics-toolbar .dataTables_filter {
+                    margin-left: auto;
+                }
+
+                .metrics-card .dataTables_filter label {
+                    margin: 0;
+                }
+
+                .metrics-card .dataTables_filter input {
+                    margin: 0;
+                    width: 250px;
+                    max-width: 100%;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 8px;
+                    padding: 7px 12px 7px 32px;
+                    font-size: 13px;
+                    color: #4a5160;
+                    background-color: #ffffff;
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='%23a9b0ba' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='4.25'/%3E%3Cpath d='M10.3 10.3L13.5 13.5'/%3E%3C/g%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: 10px center;
+                    background-size: 14px 14px;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metrics-card .dataTables_filter input::placeholder {
+                    color: #a9b0ba;
+                }
+
+                .metrics-card .dataTables_filter input:focus {
+                    outline: none;
+                    border-color: #8fb8dd;
+                    box-shadow: 0 0 0 3px rgba(53, 113, 163, 0.12);
+                }
+
+                /* ---- The table itself ---- */
+                /* Eight columns never fit a narrow window: scroll the table
+                   inside its card instead of the whole page sideways. */
+                .metrics-card .metrics-scroll {
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                .metrics-card table.tablecard {
+                    width: 100% !important;
+                    margin: 0 !important;
+                    border: none;
+                    font-size: 13.5px;
+                }
+
+                .metrics-card table.tablecard thead th {
+                    position: relative;
+                    padding: 13px 16px !important;
+                    background-color: #fbfcfd;
+                    border-top: none !important;
+                    border-bottom: 1px solid #eceff3 !important;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #8a929e;
+                    white-space: nowrap;
+                    transition: color 0.15s ease, background-color 0.15s ease;
+                }
+
+                .metrics-card table.tablecard thead th.th-left {
+                    text-align: left;
+                }
+
+                .metrics-card table.tablecard thead th:hover {
+                    color: #5c6472;
+                    background-color: #f6f8fb;
+                }
+
+                /* Replace DataTables' bitmap sort arrows with crisp chevrons
+                   that pick up the accent colour when a column is active. */
+                .metrics-card table.dataTable thead th.sorting,
+                .metrics-card table.dataTable thead th.sorting_asc,
+                .metrics-card table.dataTable thead th.sorting_desc {
+                    background-image: none !important;
+                    padding-right: 28px !important;
+                    cursor: pointer;
+                }
+
+                .metrics-card table.dataTable thead th.sorting::after,
+                .metrics-card table.dataTable thead th.sorting_asc::after,
+                .metrics-card table.dataTable thead th.sorting_desc::after {
+                    content: "";
+                    position: absolute;
+                    right: 10px;
+                    top: 50%;
+                    margin-top: -7px;
+                    width: 10px;
+                    height: 14px;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                    background-size: 10px 14px;
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 1.5L8 5.5H2z' fill='%23ccd2da'/%3E%3Cpath d='M5 12.5L2 8.5h6z' fill='%23ccd2da'/%3E%3C/svg%3E");
+                }
+
+                .metrics-card table.dataTable thead th.sorting_asc::after {
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 1.5L8 5.5H2z' fill='%233571a3'/%3E%3Cpath d='M5 12.5L2 8.5h6z' fill='%23dfe4ea'/%3E%3C/svg%3E");
+                }
+
+                .metrics-card table.dataTable thead th.sorting_desc::after {
+                    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M5 1.5L8 5.5H2z' fill='%23dfe4ea'/%3E%3Cpath d='M5 12.5L2 8.5h6z' fill='%233571a3'/%3E%3C/svg%3E");
+                }
+
+                .metrics-card table.tablecard tbody tr {
+                    background-color: #ffffff;
+                    transition: background-color 0.15s ease;
+                }
+
+                .metrics-card table.tablecard tbody tr:hover {
+                    background-color: #f7fafd;
+                }
+
+                .metrics-card table.tablecard tbody td {
+                    padding: 12px 16px !important;
+                    border-top: 1px solid #f2f4f7 !important;
+                    color: #4a5160;
+                    vertical-align: middle;
+                }
+
+                .metrics-card table.tablecard tbody tr:first-child td {
+                    border-top: none !important;
+                }
+
+                .metrics-card table.tablecard tbody td.dataTables_empty {
+                    padding: 42px 16px !important;
+                    color: #a9b0ba;
+                    font-size: 13px;
+                }
+
+                /* ---- Suite path: file name leads, directories recede ---- */
+                .metrics-card td.suite-cell {
+                    text-align: left;
+                    max-width: 460px;
+                    white-space: normal;
+                    word-break: break-word;
+                    color: #39404d;
+                }
+
+                .metrics-card td.suite-cell::before {
+                    content: "\f15b";
+                    font-family: FontAwesome;
+                    font-size: 12px;
+                    color: #c3c9d2;
+                    margin-right: 9px;
+                }
+
+                .metrics-card td.suite-cell .suite-dir {
+                    color: #98a0ad;
+                }
+
+                .metrics-card td.suite-cell .suite-file {
+                    font-weight: 600;
+                    color: #39404d;
+                }
+
+                /* ---- Counts as pills in the dashboard's status colours ---- */
+                .metrics-card td.metric-num .metric-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 32px;
+                    padding: 3px 9px;
+                    border-radius: 7px;
+                    font-size: 12.5px;
+                    font-weight: 700;
+                    background-color: #f4f6f9;
+                    color: #98a0ad;
+                }
+
+                .metrics-card td.metric-pass .metric-pill {
+                    background-color: rgba(152, 204, 100, 0.18);
+                    color: #5c8f2e;
+                }
+
+                .metrics-card td.metric-fail .metric-pill {
+                    background-color: rgba(252, 103, 102, 0.15);
+                    color: #d5403c;
+                }
+
+                .metrics-card td.metric-skip .metric-pill {
+                    background-color: rgba(255, 208, 80, 0.24);
+                    color: #a07405;
+                }
+
+                .metrics-card td.metric-xpass .metric-pill {
+                    background-color: rgba(170, 170, 170, 0.20);
+                    color: #6f747c;
+                }
+
+                .metrics-card td.metric-xfail .metric-pill {
+                    background-color: rgba(211, 95, 191, 0.15);
+                    color: #a53c94;
+                }
+
+                .metrics-card td.metric-error .metric-pill {
+                    background-color: rgba(177, 54, 53, 0.14);
+                    color: #9d3231;
+                }
+
+                .metrics-card td.metric-rerun .metric-pill {
+                    background-color: rgba(230, 168, 0, 0.18);
+                    color: #936c00;
+                }
+
+                /* A zero is not news: keep it quiet so real counts carry the row. */
+                .metrics-card td.metric-num .metric-pill.is-zero {
+                    background-color: transparent !important;
+                    color: #ccd2da !important;
+                    font-weight: 600;
+                }
+
+                /* ---- Test Metrics status pill ---- */
+                .metrics-card td .status-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 4px 11px;
+                    border-radius: 999px;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    background-color: rgba(170, 170, 170, 0.16);
+                    color: #6f747c;
+                }
+
+                .metrics-card td .status-pill::before {
+                    content: "";
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 50%;
+                    background-color: currentColor;
+                }
+
+                .metrics-card td .status-pill--pass {
+                    background-color: rgba(152, 204, 100, 0.18);
+                    color: #5c8f2e;
+                }
+
+                .metrics-card td .status-pill--fail {
+                    background-color: rgba(252, 103, 102, 0.15);
+                    color: #d5403c;
+                }
+
+                .metrics-card td .status-pill--skip {
+                    background-color: rgba(255, 208, 80, 0.24);
+                    color: #a07405;
+                }
+
+                .metrics-card td .status-pill--xfail {
+                    background-color: rgba(211, 95, 191, 0.15);
+                    color: #a53c94;
+                }
+
+                .metrics-card td .status-pill--error {
+                    background-color: rgba(177, 54, 53, 0.14);
+                    color: #9d3231;
+                }
+
+                /* ---- Footer: count on the left, pagination on the right ---- */
+                .metrics-card .metrics-footer {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding: 12px 18px;
+                    background-color: #fcfcfd;
+                    border-top: 1px solid #eef1f5;
+                }
+
+                .metrics-card .dataTables_info {
+                    float: none;
+                    margin: 0;
+                    padding: 0;
+                    font-size: 12px;
+                    color: #8a929e;
+                }
+
+                .metrics-card .dataTables_paginate {
+                    float: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button {
+                    margin: 0 !important;
+                    padding: 5px 11px !important;
+                    min-width: 32px;
+                    border: 1px solid transparent !important;
+                    border-radius: 6px !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    color: #7b8390 !important;
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button:hover {
+                    background: #f1f4f9 !important;
+                    border-color: #e3e7ee !important;
+                    color: #3f4550 !important;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button.current,
+                .metrics-card .dataTables_paginate .paginate_button.current:hover {
+                    background: #565656 !important;
+                    border-color: #565656 !important;
+                    color: #ffffff !important;
+                }
+
+                .metrics-card .dataTables_paginate .paginate_button.disabled,
+                .metrics-card .dataTables_paginate .paginate_button.disabled:hover {
+                    background: transparent !important;
+                    border-color: transparent !important;
+                    color: #ccd2da !important;
+                    cursor: default;
+                }
+
+                @media screen and (max-width: 768px) {
+                    .metrics-page__title {
+                        font-size: 1.5rem;
+                    }
+                    .metrics-card .metrics-toolbar {
+                        padding: 12px 14px;
+                    }
+                    .metrics-card .metrics-toolbar .dataTables_filter {
+                        margin-left: 0;
+                        width: 100%;
+                    }
+                    .metrics-card .dataTables_filter input {
+                        width: 100%;
+                    }
+                    .metrics-card .metrics-scroll table.tablecard {
+                        min-width: 640px;
+                    }
+                    .metrics-card .metrics-footer {
+                        padding: 12px 14px;
+                    }
+                }
+
+                @media screen and (max-width: 560px) {
+                    .metrics-page__head {
+                        align-items: flex-start;
+                    }
+                    .metrics-card table.tablecard tbody td,
+                    .metrics-card table.tablecard thead th {
+                        padding: 10px 12px !important;
+                    }
+                }
             </style>
             <style>
                 .progress-bar.downloading {
@@ -979,7 +2279,7 @@
                 }
             </style>
         </head>
-    <body>
+    <body data-tab="dashboard">
         <div class="loader"></div>
         <div class="sidenav">
             <a class="logo-link" onclick="openPage('dashboard', this, '', '', '')" href="#dashboard">
@@ -1000,9 +2300,14 @@
             <a class="tablink" href="#screenshots" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-camera" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Screenshots
             </a>
+            <a class="sponsor" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="Pickoh &mdash; sponsor of pytest-html-reporter">
+                <span class="sponsor__label">Sponsored by</span>
+                <span class="brandmark">PICK<svg class="brandmark__pin" viewBox="3 1 18 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M12 2a8 8 0 0 1 8 8c0 5.2-5.6 10.6-7.4 12.2a.9.9 0 0 1-1.2 0C9.6 20.6 4 15.2 4 10a8 8 0 0 1 8-8Zm0 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z"/></svg>H</span>
+            </a>
         </div>
         <div class="main" style="height: 100%;">
             <div class="tabcontent" id="dashboard">
+              <div class="dashboard-viewport">
 
                 <div class="row rowcard">
                     <div class="col-md-6 card dashboard-card" style="max-width: 49%;">
@@ -1014,23 +2319,23 @@
                                     Time taken %(execution_time)%
                             </span>
                           </div>
-                          <div>
-                              <div class="card__header">
-                                <div class="header__title">
-                                  %(title)%
+                          <div class="summary-info">
+                              <div class="summary-heading">
+                                <div class="card__header">
+                                  <div class="header__title">
+                                    %(title)%
+                                  </div>
+                                </div>
+                                <div class="card__header">
+                                  <span class="header__date">%(date)%</span>
                                 </div>
                               </div>
-                              <div class="card__header">
-                                <span class="header__date">%(date)%</span>
-                              </div>
-                              <div style="display: flex;">
+                              <div class="total-count-block">
                                 <span class="total__count">%(total)%</span>
-                              </div>
-                              <div style="display: flex;">
                                 <span class="total_count__label">TEST CASES</span>
                               </div>
                           </div>
-                          <div>
+                          <div class="summary-chart">
                               <div class="outer_my_chart">
                                 <canvas id="myChart" class="inner_my_chart" style="height: 38%;"></canvas>
                               </div>
@@ -1083,7 +2388,9 @@
                                 <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;"><svg height="32pt" viewBox="0 0 512 512.00007" width="25pt" xmlns="http://www.w3.org/2000/svg"><path style="fill: currentColor;" d="m509.785156 15.433594c-.773437-6.972656-6.277344-12.480469-13.253906-13.253906-118.703125-13.183594-219.890625 34.300781-302.429688 119.265624-23.621093 24.316407-44.109374 50.054688-61.597656 74.894532-29.597656-1.203125-62.414062 12.1875-85.679687 35.453125l-42.429688 42.429687c-4.800781 4.800782-5.777343 12.230469-2.382812 18.109375 3.394531 5.878907 10.3125 8.742188 16.875 6.988281 9.84375-2.644531 25.839843-5.71875 41.207031-6.433593 5.617188-.261719 10.285156-.179688 14.164062.117187-9.363281 18.007813-16.539062 33.09375-18.917968 36.871094-3.726563 5.929688-2.863282 13.644531 2.089844 18.597656l24.550781 24.550782c-35.730469 48.730468-36.320313 73.6875-36.195313 77.222656.261719 7.488281 6.101563 14.503906 15.773438 14.503906 8.375 0 32.394531-3.554688 76.121094-36.027344l25.824218 25.824219c4.988282 4.988281 12.78125 5.824219 18.71875 2.011719 4.039063-2.597656 18.238282-9.472656 35.265625-18.371094.28125 12.691406-1.441406 31.328125-5.179687 56.589844-2.125 14.328125 15.292968 22.953125 25.445312 12.804687l42.429688-42.429687c21.878906-21.878906 34.566406-54.375 33.628906-84.859375 26.167969-18.285157 53.390625-39.855469 78.808594-64.78125 84.15625-82.527344 130.179687-182.949219 117.164062-300.078125zm-28.695312 15.4375c2.394531 32.34375-.160156 63.695312-7.601563 94.035156-18.480469-5.820312-36.546875-17.253906-52.863281-33.566406-16.375-16.378906-27.832031-34.519532-33.628906-53.066406 30.328125-7.332032 61.699218-9.816407 94.09375-7.402344zm-422.953125 232.039062 9.898437-9.902344c11.972656-11.96875 27.542969-20.589843 43.027344-24.464843-8.089844 12.839843-15.300781 25.101562-21.660156 36.417969-9.824219-2.167969-20.746094-2.570313-31.265625-2.050782zm28.386719 72.230469c3.246093-6.40625 7.171874-14.4375 14.378906-28.054687l19.746094 19.75c-7.347657 7.882812-13.980469 15.371093-19.957032 22.46875zm73.355468-5.738281c10.929688-10.925782 21.410156-12.921875 34.429688-13.203125-.285156 12.6875-2.320313 23.523437-13.214844 34.417969-46.570312 46.570312-78.492188 67.367187-97.582031 76.648437 9.417969-19.457031 30.269531-51.765625 76.367187-97.863281zm16.871094 95.964844-15.46875-15.472657c7.0625-6 14.527344-12.652343 22.402344-20.027343l21.019531 21.019531c-13.820313 7.378906-19.585937 10.15625-27.953125 14.480469zm82.214844 18.570312-12.007813 12.011719c.972657-14.550781.636719-25.152344-.738281-33.332031 11.03125-6.210938 23.011719-13.253907 35.566406-21.132813-3.578125 15.859375-11.621094 31.257813-22.820312 42.453125zm-26.953125-48.167969-26.894531-26.898437c19.902343-21.898438 19.160156-43 19.160156-67.652344 0-8.285156-6.714844-15-15-15-23.03125 0-45.195313-1.234375-67.652344 19.164062l-25.683594-25.683593c70.132813-122.980469 151.199219-200.839844 242.28125-232.902344 7.210938 23.332031 21.246094 45.8125 41.191406 65.757813 19.851563 19.855468 42.226563 33.855468 65.457032 41.09375-32.25 90.582031-110.089844 171.597656-232.859375 242.121093zm0 0"/><path style="fill: currentColor;" d="m378.199219 133.765625c-29.246094-29.242187-76.832031-29.242187-106.074219 0-29.242188 29.246094-29.242188 76.832031 0 106.074219 29.242188 29.242187 76.828125 29.246094 106.074219 0 29.242187-29.242188 29.242187-76.828125 0-106.074219zm-21.214844 84.859375c-17.546875 17.546875-46.101563 17.546875-63.644531 0-17.546875-17.546875-17.546875-46.097656 0-63.644531 17.542968-17.542969 46.09375-17.546875 63.644531 0 17.546875 17.546875 17.546875 46.097656 0 63.644531zm0 0"/></svg>&nbsp;&nbsp;Trends
                                 </div>
                             </div>
-                            <canvas id="trends" width="100%" height="360px" style="margin-top: 10%; max-height: 375px; padding-bottom: 4%;"></canvas>
+                            <div class="chart-wrap chart-wrap--trends">
+                                <canvas id="trends"></canvas>
+                            </div>
                         </div>
                       </div>
                     </div>
@@ -1098,7 +2405,9 @@
                                 %(test_suite_length)%
                             </div>
                         </div>
-                        <canvas class="chart" id="groupBarChart" style="margin-top: 6%; height: 451px; width: 903px;"></canvas>
+                        <div class="chart-wrap chart-wrap--suite">
+                            <canvas class="chart" id="groupBarChart"></canvas>
+                        </div>
                     </div>
                     <div class="col-md-4 card border-left" style="max-width: 32.4%; padding-left: 3%; padding-top: 2%; margin-left: 0.75%;">
                         <div class="dashboard__headers">
@@ -1124,15 +2433,17 @@
                 </div>
                 <hr/>
 
-                <div class="row">
-                    <div class="col-md-12" style="width:auto;">
-                        <p class="text-muted" style="text-align:center;font-size:9px"> <a href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank">pytest-html-reporter</a>
-                        </p>
-                    </div>
-                </div>
+                <footer class="page-footer page-footer--inline">
+                    <a class="page-footer__credit" href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank" rel="noopener noreferrer">pytest-html-reporter</a>
+                    <span class="page-footer__dot">&middot;</span>
+                    <span class="page-footer__label">Sponsored by</span>
+                    <a class="sponsor-link" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="pickoh.com">
+                        <span class="brandmark">PICK<svg class="brandmark__pin" viewBox="3 1 18 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M12 2a8 8 0 0 1 8 8c0 5.2-5.6 10.6-7.4 12.2a.9.9 0 0 1-1.2 0C9.6 20.6 4 15.2 4 10a8 8 0 0 1 8-8Zm0 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z"/></svg>H</span>
+                    </a>
+                </footer>
+              </div>
                 <script>
                     window.onload = function() {
-                        alignTotalCount();
                         failureScreenshots();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
@@ -1140,44 +2451,60 @@
                 </script>
             </div>
             <div class="tabcontent" id="suiteMetrics">
-                <table class="table row-border tablecard" id="sm">
-                    <thead>
-                        <tr>
-                            <th>Suite</th>
-                            <th>Pass</th>
-                            <th>Fail</th>
-                            <th>Skip</th>
-                            <th>xPass</th>
-                            <th>xFail</th>
-                            <th>Error</th>
-                            <th>Rerun</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        %(suite_metrics_row)%
-                    </tbody>
-                </table>
-                <div class="row">
-                    <div class="col-md-12" style="height:25px;width:auto;"></div>
+                <div class="metrics-page">
+                    <div class="metrics-page__head">
+                        <div>
+                            <div class="metrics-page__title"><i class="fa fa-briefcase"></i>Suites</div>
+                            <div class="metrics-page__subtitle">Outcome breakdown for every test suite in this run</div>
+                        </div>
+                        <div class="metrics-summary" id="suiteSummary"></div>
+                    </div>
+                    <div class="metrics-card">
+                        <table class="table row-border tablecard" id="sm">
+                            <thead>
+                                <tr>
+                                    <th class="th-left">Suite</th>
+                                    <th>Pass</th>
+                                    <th>Fail</th>
+                                    <th>Skip</th>
+                                    <th>xPass</th>
+                                    <th>xFail</th>
+                                    <th>Error</th>
+                                    <th>Rerun</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                %(suite_metrics_row)%
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         <div class="tabcontent" id="testMetrics">
-            <table class="table row-border tablecard" id="tm">
-                <thead>
-                    <tr>
-                        <th>Suite</th>
-                        <th>Test Case</th>
-                        <th>Status</th>
-                        <th>Time (s)</th>
-                        <th>Error Message</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    %(test_metrics_row)%
-                </tbody>
-            </table>
-            <div class="row">
-                <div class="col-md-12" style="height:25px;width:auto;"></div>
+            <div class="metrics-page">
+                <div class="metrics-page__head">
+                    <div>
+                        <div class="metrics-page__title"><i class="fa fa-server"></i>Test Metrics</div>
+                        <div class="metrics-page__subtitle">Every test case with its status, duration and error</div>
+                    </div>
+                    <div class="metrics-summary" id="testSummary"></div>
+                </div>
+                <div class="metrics-card">
+                    <table class="table row-border tablecard" id="tm">
+                        <thead>
+                            <tr>
+                                <th class="th-left">Suite</th>
+                                <th class="th-left">Test Case</th>
+                                <th>Status</th>
+                                <th>Time (s)</th>
+                                <th class="th-left">Error Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            %(test_metrics_row)%
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div class="tabcontent" id="archives">
@@ -1199,12 +2526,33 @@
                         %(attach_screenshot_details)%
                         <div class="below-desc"></div>
                       </div>
+                      <div class="screenshot-empty">
+                        <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
+                        <div class="screenshot-empty__title">No screenshots in this run</div>
+                        <div class="screenshot-empty__text">
+                          Nothing was captured while the tests ran. Attach one from a test and it
+                          shows up here, next to the suite and the error it belongs to.
+                        </div>
+                        <div class="screenshot-empty__snippet">
+                          from pytest_html_reporter import <b>attach</b><br />
+                          <b>attach</b>(data=self.driver.get_screenshot_as_png())
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
         </div>
+        <footer class="page-footer">
+            <a class="page-footer__credit" href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank" rel="noopener noreferrer">pytest-html-reporter</a>
+            <span class="page-footer__dot">&middot;</span>
+            <span class="page-footer__label">Sponsored by</span>
+            <a class="sponsor-link" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="pickoh.com">
+                <span class="brandmark">PICK<svg class="brandmark__pin" viewBox="3 1 18 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M12 2a8 8 0 0 1 8 8c0 5.2-5.6 10.6-7.4 12.2a.9.9 0 0 1-1.2 0C9.6 20.6 4 15.2 4 10a8 8 0 0 1 8-8Zm0 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z"/></svg>H</span>
+                <i class="fa fa-external-link page-footer__ext"></i>
+            </a>
+        </footer>
         <script>
             function createBarGraph(tableID, keyword_column, time_column, limit, ChartID, Label, type) {
                 var status = [];
@@ -1280,25 +2628,171 @@
             }
         </script>
         <script>
+            // The dashboard's status palette, reused by the table pills and
+            // the summary chips so a colour means the same thing everywhere.
+            var METRICS_COLORS = {
+                pass:  '#98cc64',
+                fail:  '#fc6766',
+                skip:  '#ffd050',
+                xpass: '#aaaaaa',
+                xfail: '#d35fbf',
+                error: '#b13635',
+                rerun: '#e6a800'
+            };
+
+            // Cell values arrive as HTML (the counts are wrapped in pills), so
+            // read them as text before treating them as numbers.
+            function metricsText(value) {
+                return $('<div>').html(value === null || value === undefined ? '' : String(value)).text().trim();
+            }
+
+            function metricsChip(color) {
+                return '<span class="metric-chip">' +
+                           '<span class="metric-chip__dot" style="background-color:' + color + '"></span>' +
+                           '<span class="metric-chip__value"></span>' +
+                           '<span class="metric-chip__label"></span>' +
+                       '</span>';
+            }
+
+            function renderMetricsChips(target, chips) {
+                if (!target.length) { return; }
+                target.empty();
+                $.each(chips, function(_, chip) {
+                    var node = $(metricsChip(chip.color));
+                    node.find('.metric-chip__value').text(chip.value);
+                    node.find('.metric-chip__label').text(chip.label);
+                    target.append(node);
+                });
+            }
+
+            // Totals for the rows the search box is currently showing.
+            function renderSuiteSummary(api) {
+                var rows = api.rows({ search: 'applied' }).count();
+                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'suite' : 'suites' }];
+                var columns = [
+                    [1, 'passed', 'pass'],
+                    [2, 'failed', 'fail'],
+                    [3, 'skipped', 'skip'],
+                    [4, 'xpassed', 'xpass'],
+                    [5, 'xfailed', 'xfail'],
+                    [6, 'error', 'error'],
+                    [7, 'rerun', 'rerun']
+                ];
+
+                $.each(columns, function(_, column) {
+                    var total = 0;
+                    api.column(column[0], { search: 'applied' }).data().each(function(value) {
+                        var parsed = parseInt(metricsText(value), 10);
+                        if (!isNaN(parsed)) { total += parsed; }
+                    });
+                    // Only surface outcomes this run actually produced.
+                    if (total > 0) {
+                        chips.push({ color: METRICS_COLORS[column[2]], value: total, label: column[1] });
+                    }
+                });
+
+                renderMetricsChips($('#suiteSummary'), chips);
+            }
+
+            function renderTestSummary(api) {
+                var rows = api.rows({ search: 'applied' }).count();
+                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'test' : 'tests' }];
+                var counts = {};
+
+                api.column(2, { search: 'applied' }).data().each(function(value) {
+                    var key = metricsText(value).toLowerCase().replace(/[^a-z]/g, '');
+                    if (key) { counts[key] = (counts[key] || 0) + 1; }
+                });
+
+                $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
+                        ['xpass', 'xpassed'], ['xfail', 'xfailed'], ['error', 'error']], function(_, status) {
+                    if (counts[status[0]]) {
+                        chips.push({ color: METRICS_COLORS[status[0]], value: counts[status[0]], label: status[1] });
+                    }
+                });
+
+                renderMetricsChips($('#testSummary'), chips);
+            }
+
+            // DataTables re-renders rows on every draw, so the presentation
+            // touches are re-applied here rather than baked into the markup.
+            function decorateMetricsTable(tabname) {
+                var table = $(tabname);
+
+                table.find('td.metric-num .metric-pill').each(function() {
+                    $(this).toggleClass('is-zero', $(this).text().trim() === '0');
+                });
+
+                // Split the suite path so the file name leads and the
+                // directories stay in the background.
+                table.find('td.suite-cell').each(function() {
+                    var cell = $(this);
+                    if (cell.find('.suite-file').length) { return; }
+
+                    var path = cell.text().trim();
+                    if (!path) { return; }
+
+                    var cut = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+                    cell.html('<span class="suite-dir"></span><span class="suite-file"></span>');
+                    cell.find('.suite-dir').text(cut === -1 ? '' : path.slice(0, cut + 1));
+                    cell.find('.suite-file').text(cut === -1 ? path : path.slice(cut + 1));
+                });
+
+                if (tabname === '#tm') {
+                    table.find('tbody tr').each(function() {
+                        var cell = $(this).children('td').eq(2);
+                        if (!cell.length || cell.find('.status-pill').length) { return; }
+
+                        var status = cell.text().trim();
+                        if (!status) { return; }
+
+                        var key = status.toLowerCase().replace(/[^a-z]/g, '');
+                        cell.html('<span class="status-pill status-pill--' + key + '"></span>')
+                            .find('.status-pill').text(status);
+                    });
+                }
+            }
+
             function executeDataTable(tabname, sortCol) {
-                var fileTitle;
+                var fileTitle, searchPlaceholder;
                 switch (tabname) {
                     case "#sm":
                         fileTitle = "SuiteMetrics";
+                        searchPlaceholder = "Search suites";
                         break;
                     case "#tm":
                         fileTitle = "TestMetrics";
+                        searchPlaceholder = "Search tests";
                         break;
                     default:
                         fileTitle = "metrics";
+                        searchPlaceholder = "Search";
                 }
                 $(tabname).DataTable({
                     retrieve: true,
                     "order": [
                         [Number(sortCol), "desc"]
                     ],
-                    dom: 'l<".margin" B>frtip',
+                    dom: '<"metrics-toolbar"l<"metrics-buttons"B>f>r<"metrics-scroll"t><"metrics-footer"ip>',
                     "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                    language: {
+                        lengthMenu: 'Show _MENU_',
+                        search: '',
+                        searchPlaceholder: searchPlaceholder,
+                        info: 'Showing _START_ to _END_ of _TOTAL_',
+                        infoEmpty: 'Nothing to show',
+                        infoFiltered: ' (filtered from _MAX_)',
+                        zeroRecords: 'No matching records found',
+                        paginate: {
+                            previous: 'Previous',
+                            next: 'Next'
+                        }
+                    },
+                    drawCallback: function() {
+                        decorateMetricsTable(tabname);
+                        if (tabname === '#sm') { renderSuiteSummary(this.api()); }
+                        if (tabname === '#tm') { renderTestSummary(this.api()); }
+                    },
                     buttons: [
                     {
                         extend:    'copyHtml5',
@@ -1361,32 +2855,23 @@
         }
         </script>
         <script>
-            function alignTotalCount() {
-                arr1 = [1, 2, 3, 4, 5];
-                arr2 = ['8%', '6%', '5%', '4%', '3%'];
-                zipped = arr1.map((x, i) => [x, arr2[i]]);
-                var x = parseInt(%(total)%);
-                size = zipped[(x.toString().length)-1][1];
-                document.getElementsByClassName("total__count")[0].style.paddingLeft = `${size}`;
+            // Resize only the Chart.js canvases that are currently visible.
+            // Charts inside a hidden tab report a 0px container, so resizing
+            // them there would collapse the canvas; we skip those and re-size
+            // them when their tab becomes visible.
+            function resizeVisibleCharts() {
+                if (window.Chart && Chart.instances) {
+                    Object.keys(Chart.instances).forEach(function(key){
+                        try {
+                            var inst = Chart.instances[key];
+                            if (inst.canvas && inst.canvas.offsetParent !== null) {
+                                inst.resize();
+                            }
+                        } catch (e) {}
+                    });
+                }
             }
-        </script>
-        <script>
-            function archiveTotalCase(total, i) {
-                number = [1, 2, 3, 4, 5];
-                container = ['23%', '20%', '15%', '12%', '7%'];
-                label = ['-24%', '-2%', '15%', '27%', '31%'];
 
-                zipped = container.map((x, i) => [x, label[i]]);
-                var x = parseInt(total);
-
-                acontainer = zipped[(x.toString().length)-1][0];
-                alabel = zipped[(x.toString().length)-1][1];
-
-                document.getElementById(`archive-container-${i}`).style.paddingLeft = `${acontainer}`;
-                document.getElementById(`archive-label-${i}`).style.marginLeft = `${alabel}`;
-            }
-        </script>
-        <script>
             function openPage(pageName,elmnt,color,bgcolor,borderstyle) {
                 var i, tabcontent, tablinks;
                 tabcontent = document.getElementsByClassName("tabcontent");
@@ -1400,11 +2885,61 @@
                     tablinks[i].style.borderRight = "";
                 }
                 document.getElementById(pageName).style.display = "block";
+                // The dashboard carries its own footer inside the one-screen
+                // viewport, so the page-level footer keys off the open tab.
+                document.body.setAttribute("data-tab", pageName);
                 elmnt.style.color = color;
                 elmnt.style.background = bgcolor;
                 elmnt.style.borderRight = borderstyle;
+                // The freshly shown tab now has real dimensions, so re-size its
+                // charts (e.g. the per-build archive charts) to make them visible.
+                setTimeout(resizeVisibleCharts, 0);
             }
-            
+
+            // Show the Archives tab without going through the nav link's own
+            // click(), which would follow its href and replace the build anchor
+            // in the URL with #archives. Returns true when the tab was hidden.
+            function showArchivesTab() {
+                var archives = document.getElementById('archives');
+                if (archives && archives.style.display === 'block') { return false; }
+
+                var navLinks = document.getElementsByClassName("tablink");
+                for (var k = 0; k < navLinks.length; k++) {
+                    if (navLinks[k].getAttribute('href') === '#archives') {
+                        openPage('archives', navLinks[k], 'white', '#565656', 'groove');
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function highlightArchiveRow(id) {
+                var rows = document.querySelectorAll('#list-example a.list-group-item');
+                for (var i = 0; i < rows.length; i++) {
+                    var isTarget = rows[i].getAttribute('href') === '#' + id;
+                    rows[i].classList.toggle('active', isTarget);
+                }
+            }
+
+            // Bring an archived build (e.g. list-item-10) into view.
+            function scrollToArchiveBuild(id) {
+                var target = document.getElementById(id);
+                if (!target) { return; }
+
+                var switched = showArchivesTab();
+                highlightArchiveRow(id);
+
+                // Showing a tab resizes its charts on the next tick, which
+                // shifts the layout; scroll once that has settled.
+                setTimeout(function () {
+                    try {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } catch (e) {
+                        target.scrollIntoView();
+                    }
+                }, switched ? 60 : 0);
+            }
+
             // Function to open page based on URL hash
             function openPageFromHash() {
                 var hash = window.location.hash.substring(1); // Remove the # symbol
@@ -1429,6 +2964,14 @@
                             }
                         }
                     }
+
+                    // In-page archive build anchor (e.g. #list-item-10).
+                    // Open the Archives tab and scroll the selected build into
+                    // view instead of falling back to the default page.
+                    if (hash.indexOf('list-item-') === 0) {
+                        scrollToArchiveBuild(hash);
+                        return;
+                    }
                 }
                 // If no hash or invalid hash, open default page
                 var defaultBtn = document.getElementById("defaultOpen");
@@ -1446,10 +2989,63 @@
                 
                 // Listen for hash changes (back/forward browser buttons)
                 window.addEventListener('hashchange', openPageFromHash);
+
+                // Archive build rows: scroll to the build ourselves so the jump
+                // is smooth and repeatable (a plain anchor jump is undone by the
+                // tab/chart relayout, and re-clicking the same build fires no
+                // hashchange at all).
+                $(document).on('click', '#list-example a[href^="#list-item-"]', function(e) {
+                    var id = this.getAttribute('href').substring(1);
+                    if (!id || !document.getElementById(id)) { return; }
+
+                    e.preventDefault();
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', '#' + id);
+                    }
+                    scrollToArchiveBuild(id);
+                });
             });
         </script>
         <script>
-            $(window).on('load',function(){$('.loader').fadeOut();});
+            $(window).on('load',function(){
+                // Recompute every Chart.js canvas at the true container size and
+                // device pixel ratio once the flex layout has settled, so charts
+                // (and their on-canvas tooltip text) render crisp and un-stretched.
+                function resizeAllCharts() {
+                    resizeVisibleCharts();
+                }
+                // The off-screen copy captured for the PDF export gets no
+                // animation frames, so it drops the overlay outright: a jQuery
+                // fade would never reach its callback there. Its charts are
+                // already drawn, having been built with animation disabled.
+                if (window.__pytestHtmlReporterCapture) {
+                    $('.loader').hide();
+                    resizeAllCharts();
+                    return;
+                }
+
+                $('.loader').fadeOut(300, function(){
+                    // Run across a few frames to catch the fully-settled layout.
+                    requestAnimationFrame(resizeAllCharts);
+                    setTimeout(resizeAllCharts, 150);
+                    setTimeout(resizeAllCharts, 400);
+                });
+            });
+        </script>
+        <script>
+            // Chart.js 2.8 clamps a tooltip's x into the canvas but never its y
+            // (see getBackgroundPoint), so a tall tooltip on a short chart is
+            // drawn past the top or bottom edge and gets clipped. Nudge it back
+            // inside once its final size and position are known.
+            function keepTooltipInsideCanvas(model) {
+                if (!model || !model.height) { return; }
+
+                var margin = (model.borderWidth || 0) + 1;
+                var maxY = this._chart.height - model.height - margin;
+
+                if (model.y > maxY) { model.y = maxY; }
+                if (model.y < margin) { model.y = margin; }
+            }
         </script>
         <script>
             var ctx = document.getElementById('myChart');
@@ -1492,6 +3088,7 @@
                     display: false
                   },
                   responsive: true,
+                  maintainAspectRatio: false,
                   cutoutPercentage: 80,
                   tooltips: {
                       callbacks: {
@@ -1508,19 +3105,22 @@
                         }
                       },
                       backgroundColor: '#FFF',
-                      titleFontSize: 16,
+                      custom: keepTooltipInsideCanvas,
+                      titleFontSize: 13,
                       titleFontColor: '#555555',
+                      titleMarginBottom: 7,
                       bodyFontColor: '#000',
-                      bodyFontSize: 14,
+                      bodyFontSize: 12,
+                      bodySpacing: 5,
                       displayColors: false,
                       borderColor: '#555555',
-                      borderWidth: 3,
+                      borderWidth: 2,
                       multiKeyBackground: '#555555',
-                      cornerRadius: 3,
-                      caretSize: 15,
-                      caretPadding: 13,
-                      xPadding: 12,
-                      yPadding: 12
+                      cornerRadius: 4,
+                      caretSize: 6,
+                      caretPadding: 8,
+                      xPadding: 10,
+                      yPadding: 9
                   }
                 }
             });
@@ -1551,8 +3151,10 @@
         </script>
 
         <script>
-            for(var i=0; i<=%(archive_count)%; i++) {
-                var MeSeContext = document.getElementById("archive-chart-"+i).getContext("2d");
+            for(var i=0; i<%(archive_count)%; i++) {
+                var archiveCanvas = document.getElementById("archive-chart-"+i);
+                if (!archiveCanvas) { continue; }
+                var MeSeContext = archiveCanvas.getContext("2d");
                 var archives = %(archives)%;
                 var pass = archives[i].pass;
                 var fail = archives[i].fail;
@@ -1561,8 +3163,6 @@
                 var xfail = archives[i].xfail;
                 var error = archives[i].error;
                 var total = archives[i].total;
-
-                archiveTotalCase(total, i)
 
                 var MeSeData = {
                     labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
@@ -1668,32 +3268,46 @@
                         mode: 'index',
                         intersect: false,
                         backgroundColor: '#FFF',
-                        titleFontSize: 16,
+                        custom: keepTooltipInsideCanvas,
+                        titleFontSize: 15,
                         titleFontColor: '#555555',
+                        titleMarginBottom: 7,
                         bodyFontColor: '#000',
                         bodyFontSize: 14,
+                        bodySpacing: 5,
                         displayColors: false,
                         borderColor: '#555555',
-                        borderWidth: 3,
+                        borderWidth: 2,
                         multiKeyBackground: '#555555',
-                        cornerRadius: 3,
-                        caretSize: 15,
-                        caretPadding: 13,
-                        xPadding: 12,
-                        yPadding: 12
+                        cornerRadius: 4,
+                        caretSize: 6,
+                        caretPadding: 8,
+                        xPadding: 10,
+                        yPadding: 9
                     },
                     legend: {
                         display: false
                     },
                     responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         xAxes: [{
-                            stacked: true
+                            stacked: true,
+                            maxBarThickness: 45,
+                            ticks: {
+                                fontSize: 13,
+                                fontColor: '#666'
+                            },
+                            gridLines: {
+                                display: false
+                            }
                         }],
                         yAxes: [{
                             stacked: true,
                             ticks: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                fontSize: 12,
+                                fontColor: '#999'
                             }
                         }]
                     }
@@ -1740,29 +3354,66 @@
                     },
                     responsive: true,
                     maintainAspectRatio: false,
+                    elements: {
+                        line: {
+                            borderWidth: 2
+                        },
+                        point: {
+                            radius: 3,
+                            hoverRadius: 5
+                        }
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 11,
+                                fontColor: '#999'
+                            },
+                            gridLines: {
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                                fontSize: 12,
+                                fontColor: '#999'
+                            }
+                        }]
+                    },
                     tooltips: {
                         mode: 'point',
                         intersect: false,
                         backgroundColor: '#FFF',
-                        titleFontSize: 16,
+                        custom: keepTooltipInsideCanvas,
+                        titleFontSize: 13,
                         titleFontColor: '#555555',
+                        titleMarginBottom: 7,
                         bodyFontColor: '#000',
-                        bodyFontSize: 14,
+                        bodyFontSize: 12,
+                        bodySpacing: 5,
                         displayColors: false,
                         borderColor: '#555555',
-                        borderWidth: 3,
+                        borderWidth: 2,
                         multiKeyBackground: '#555555',
-                        cornerRadius: 3,
-                        caretSize: 15,
-                        caretPadding: 13,
-                        xPadding: 12,
-                        yPadding: 12
+                        cornerRadius: 4,
+                        caretSize: 6,
+                        caretPadding: 8,
+                        xPadding: 10,
+                        yPadding: 9
                     }
                 }
             });
         </script>
         <script>
             function failureScreenshots() {
+                // The grid is baked in at report-generation time, so a run that
+                // attached nothing leaves the tab as a blank slab. Flag the empty
+                // case here and let the stylesheet swap in the placeholder.
+                $('#screenshots .bg-highlight').each(function () {
+                    $(this).toggleClass('is-empty', $(this).find('.img-hover').length === 0);
+                });
+
                 $('.video').hover(function (e) {
                   var hoverText = $(this).siblings('.text-desc').html();
 
@@ -1772,29 +3423,179 @@
                 });
             }
 
-            $('#download').click(function () {
-                domtoimage.toPng(document.getElementById('dashboard'))
-                .then(function (blob) {
-                    var pdf = new jsPDF('l', 'pt', [$('#dashboard').width()+20, $('#dashboard').height()]);
-                    pdf.addImage(blob, 'PNG', 10, 10, $('#dashboard').width(), $('#dashboard').height());
-                    pdf.save("pytest_html_reporter.pdf");
+            // The exported PDF always shows the desktop dashboard. The
+            // layout is driven by media queries, which key off the viewport
+            // and not the element, so the only way to capture the desktop
+            // arrangement from a narrow window is to re-render the report in
+            // an off-screen iframe that has a desktop-sized viewport.
+            var PDF_VIEWPORT = { width: 1600, height: 900 };
+
+            // Chart.js animates its first draw, so a capture taken while that
+            // is still running records half-grown bars and a part-swept
+            // doughnut. Telling every chart to finish now is what makes the
+            // capture deterministic -- in the copy, whose animation frames may
+            // never come, and equally on a click made moments after load.
+            function settleCharts() {
+                if (!window.Chart || !Chart.instances) { return; }
+
+                Object.keys(Chart.instances).forEach(function (key) {
+                    try {
+                        var inst = Chart.instances[key];
+                        if (inst.canvas && inst.canvas.offsetParent !== null) {
+                            inst.stop();
+                            inst.update({ duration: 0, lazy: false });
+                        }
+                    } catch (e) {}
+                });
+            }
+
+            function capturePng(node, done, fail) {
+                settleCharts();
+                var rect = node.getBoundingClientRect();
+
+                // #dashboard is transparent -- the grey comes from <body> --
+                // and jsPDF paints transparent pixels black, so the capture
+                // needs the page colour painted in behind it.
+                domtoimage.toPng(node, { bgcolor: '#eeeeee' })
+                    .then(function (png) { done(png, rect.width, rect.height); })
+                    .catch(fail);
+            }
+
+            // The desktop-sized copy of this report used for the PDF export
+            // captures its own dashboard on request and posts the image back.
+            // Opened from file://, every document gets a unique origin, so the
+            // parent cannot reach into the frame and do this itself --
+            // postMessage is the one channel that crosses that boundary.
+            window.addEventListener('message', function (event) {
+                if (window.parent === window) { return; }
+                if (!event.data || event.data.pytestHtmlReporterCapture !== true) { return; }
+
+                var reply = function (message) {
+                    (event.source || window.parent).postMessage(message, '*');
+                };
+                var button = document.getElementById('download');
+                if (button) { button.style.visibility = 'hidden'; }
+
+                capturePng(document.getElementById('dashboard'), function (png, width, height) {
+                    reply({ pytestHtmlReporterPng: png, width: width, height: height });
+                }, function (e) {
+                    reply({ pytestHtmlReporterError: String(e) });
                 });
             });
 
-            // Auto-refresh on window resize for responsive adaptation
+            function captureDashboard(done, fail) {
+                if (window.innerWidth >= 1200) {
+                    capturePng(document.getElementById('dashboard'), done, fail);
+                    return;
+                }
+
+                // Chrome throttles rendering of frames that are off screen,
+                // and the capture needs the copy to actually paint. So the
+                // frame keeps its full desktop layout size on screen and is
+                // scaled down to a near-invisible speck: a transform does not
+                // change the viewport the copy lays out against.
+                var frame = document.createElement('iframe');
+                frame.setAttribute('scrolling', 'no');
+                frame.style.cssText = 'position:fixed;top:0;left:0;z-index:-1;border:0;' +
+                    'width:' + PDF_VIEWPORT.width + 'px;height:' + PDF_VIEWPORT.height + 'px;' +
+                    'transform:scale(0.02);transform-origin:0 0;opacity:0.01;pointer-events:none;';
+
+                var settled = false;
+                var finish = function (callback, arg1, arg2, arg3) {
+                    if (settled) { return; }
+                    settled = true;
+                    window.removeEventListener('message', onMessage);
+                    clearTimeout(giveUp);
+                    frame.remove();
+                    callback(arg1, arg2, arg3);
+                };
+
+                var requested = false;
+                var requestCapture = function () {
+                    if (settled || requested || !frame.contentWindow) { return; }
+                    requested = true;
+                    frame.contentWindow.postMessage({ pytestHtmlReporterCapture: true }, '*');
+                };
+
+                var onMessage = function (event) {
+                    if (event.source !== frame.contentWindow || !event.data) { return; }
+                    if (event.data.pytestHtmlReporterReady) {
+                        // Timers barely run in the copy, so the wait for its
+                        // remaining load handlers is kept on this side.
+                        setTimeout(requestCapture, 300);
+                    } else if (event.data.pytestHtmlReporterPng) {
+                        finish(done, event.data.pytestHtmlReporterPng,
+                               event.data.width, event.data.height);
+                    } else if (event.data.pytestHtmlReporterError) {
+                        finish(fail, event.data.pytestHtmlReporterError);
+                    }
+                };
+
+                // Fall back to the dashboard as it stands rather than leaving
+                // the click with nothing to show for it.
+                var giveUp = setTimeout(function () {
+                    finish(function () {
+                        capturePng(document.getElementById('dashboard'), done, fail);
+                    });
+                }, 20000);
+
+                window.addEventListener('message', onMessage);
+
+                // The copy signals as soon as it loads; this only covers the
+                // case where that signal never arrives, e.g. a script the copy
+                // needs failed to load.
+                frame.addEventListener('load', function () {
+                    setTimeout(requestCapture, 6000);
+                });
+
+                document.body.appendChild(frame);
+
+                // Everything the copy needs to differ on is injected here, at
+                // the end of its <head>: Chart.js is already loaded by that
+                // point, and the chart set-up further down the body has not run
+                // yet. Charts draw synchronously because a frame this small
+                // gets few animation frames, and the ready signal rides a
+                // native load listener so it cannot be lost to a library's
+                // animation queue.
+                frame.srcdoc = ('<!doctype html>' + document.documentElement.outerHTML).replace(
+                    '</head>',
+                    '<script>window.__pytestHtmlReporterCapture=true;' +
+                    'if(window.Chart){Chart.defaults.global.animation.duration=0;}' +
+                    // Timers are throttled in a frame this small, so the copy
+                    // signals the moment it loads and adds no delay of its own.
+                    'window.addEventListener("load",function(){' +
+                    'parent.postMessage({pytestHtmlReporterReady:true},"*");});' +
+                    '<\/script></head>');
+            }
+
+            $('#download').click(function () {
+                var link = document.getElementById('download');
+
+                // Below 1200px the link sits inside #dashboard, so it would
+                // otherwise appear in its own export. It is positioned, so
+                // hiding it costs no reflow.
+                link.style.visibility = 'hidden';
+                var restore = function () { link.style.visibility = ''; };
+
+                captureDashboard(function (png, width, height) {
+                    var pdf = new jsPDF('l', 'pt', [width+20, height+20]);
+                    pdf.addImage(png, 'PNG', 10, 10, width, height);
+                    pdf.save("pytest_html_reporter.pdf");
+                    restore();
+                }, function (e) {
+                    console.error('pytest-html-reporter: PDF export failed', e);
+                    restore();
+                });
+            });
+
+            // Re-fit the charts once a resize settles. Reloading the page
+            // here would throw away the open tab, the scroll position and any
+            // table filtering, and the layout is CSS-driven anyway.
             var resizeTimer;
-            var lastWidth = window.innerWidth;
-            
+
             window.addEventListener('resize', function() {
                 clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    var currentWidth = window.innerWidth;
-                    // Only refresh if width changed significantly (crossing breakpoints)
-                    if (Math.abs(currentWidth - lastWidth) > 50) {
-                        lastWidth = currentWidth;
-                        location.reload();
-                    }
-                }, 500); // Wait 500ms after resize stops
+                resizeTimer = setTimeout(resizeVisibleCharts, 150);
             });
         </script>
 
