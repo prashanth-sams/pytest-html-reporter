@@ -514,7 +514,8 @@ class HTMLReporter(object):
             tfail=str(ConfigVars.tfail),
             tskip=str(ConfigVars.tskip),
             attach_screenshot_details=str(ConfigVars._attach_screenshot_details),
-            environment_rows=str(ConfigVars._environment_rows)
+            environment_rows=str(ConfigVars._environment_rows),
+            environment=str(ConfigVars._environment)
         )
 
         return str(template_text)

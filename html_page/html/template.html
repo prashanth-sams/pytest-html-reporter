@@ -1718,6 +1718,28 @@
                    Lives in an overlay opened from the summary card, so it adds
                    nothing to the dashboard's fixed-height layout.
                    ============================================================ */
+                /* Named via --environment / the environment ini key. Renders
+                   nothing at all when unset, so the title is unchanged. */
+                .env-badge {
+                    display: inline-block;
+                    vertical-align: middle;
+                    margin-left: 10px;
+                    padding: 3px 9px;
+                    border-radius: 3px;
+                    background: #50597b;
+                    color: #ffffff;
+                    font-family: sans-serif;
+                    font-size: 0.62rem;
+                    font-weight: 600;
+                    letter-spacing: 0.1em;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                }
+
+                .env-badge:empty {
+                    display: none;
+                }
+
                 .env-trigger {
                     display: inline-flex;
                     align-items: center;
@@ -2485,7 +2507,7 @@
                               <div class="summary-heading">
                                 <div class="card__header">
                                   <div class="header__title">
-                                    %(title)%
+                                    %(title)%<span class="env-badge">%(environment)%</span>
                                   </div>
                                 </div>
                                 <div class="card__header">

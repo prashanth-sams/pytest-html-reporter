@@ -76,12 +76,32 @@ Add ``--archive-count`` tag followed by an integer to limit showing the number o
 
 ..
 
+        Environment and build details
+
+Add ``--environment`` tag followed by the environment under test; it shows as a badge beside the report title::
+
+    $ pytest tests/ --environment=staging
+
+Add ``--build-info`` tag followed by ``key=value`` to add any other detail to the ``Environment`` panel; repeat it as
+often as you like::
+
+    $ pytest tests/ --environment=prod --build-info branch=main --build-info sha=$GITHUB_SHA
+
+..
+
         pytest.ini
 
 Alternate option is to add this snippet in the ``pytest.ini`` file::
 
     [pytest]
     addopts = -vs -rf --html-report=./report --title='PYTEST REPORT'
+    environment = staging
+    build_info =
+        branch=main
+        team=payments
+
+**Note:** ``--environment`` overrides the ``environment`` ini value; ``--build-info`` entries are added to the ones
+set in the ini file rather than replacing them
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 

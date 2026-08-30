@@ -110,12 +110,49 @@ def _invocation_args(config):
     return " ".join(args) if args else " ".join(sys.argv[1:])
 
 
+def _ini(config, name):
+    """An ini value, tolerating pytest builds where the key is unregistered."""
+    try:
+        return config.getini(name)
+    except (ValueError, KeyError):
+        return None
+
+
+def environment_name(config):
+    """The environment under test. --environment wins over the ini key."""
+    return str(config.getoption("environment", None) or _ini(config, "environment") or "").strip()
+
+
+def build_info(config):
+    """(label, value) pairs from --build-info and the build_info ini key."""
+    entries = list(config.getoption("build_info", None) or [])
+    entries += list(_ini(config, "build_info") or [])
+
+    pairs = []
+    for entry in entries:
+        entry = str(entry).strip()
+        if not entry:
+            continue
+
+        key, _, value = entry.partition("=")
+        pairs.append((key.strip(), value.strip()))
+
+    return pairs
+
+
 def generate_environment_info(config):
     uname = platform.uname()
     plugins = _plugin_versions(config)
     root = getattr(config, "rootpath", None) or getattr(config, "rootdir", "")
 
-    entries = [
+    ConfigVars._environment = environment_name(config)
+
+    entries = []
+    if ConfigVars._environment:
+        entries.append(("Environment", ConfigVars._environment))
+    entries += build_info(config)
+
+    entries += [
         ("Host", uname.node),
         ("Platform", (uname.system + " " + uname.release).strip()),
         ("Python", platform.python_version()),
