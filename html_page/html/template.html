@@ -2780,7 +2780,7 @@
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
             </a>
             <a class="tablink" href="#suites" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
-                <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Suites
+                <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Suites
             </a>
             <a class="tablink" href="#test-metrics" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics
@@ -3045,7 +3045,7 @@
                 <div class="metrics-page">
                     <div class="metrics-page__head">
                         <div>
-                            <div class="metrics-page__title"><i class="fa fa-briefcase"></i>Suites</div>
+                            <div class="metrics-page__title"><i class="fa fa-briefcase"></i>Test Suites</div>
                             <div class="metrics-page__subtitle">Outcome breakdown for every test suite in this run</div>
                         </div>
                         <div class="metrics-summary" id="suiteSummary"></div>
@@ -3290,7 +3290,7 @@
             // Totals for the rows the search box is currently showing.
             function renderSuiteSummary(api) {
                 var rows = api.rows({ search: 'applied' }).count();
-                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'suite' : 'suites' }];
+                var chips = [{ color: '#565656', value: rows, label: rows === 1 ? 'test suite' : 'test suites' }];
                 var columns = [
                     [1, 'passed', 'pass'],
                     [2, 'failed', 'fail'],
