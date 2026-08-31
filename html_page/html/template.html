@@ -4454,6 +4454,13 @@ CAPTURE = {
                 // The freshly shown tab now has real dimensions, so re-size its
                 // charts (e.g. the per-build archive charts) to make them visible.
                 setTimeout(resizeVisibleCharts, 0);
+                // A nav href that names a real container - #archives, #screenshots -
+                // makes the browser jump to it once this handler returns, landing
+                // the tab part-scrolled while the tabs whose hash matches nothing
+                // (#suites, #test-metrics, #api-logs) open at the top. Undo that
+                // jump so every tab opens the same way. The deep link to an
+                // archived build re-scrolls after this, on a longer timer.
+                setTimeout(function() { window.scrollTo(0, 0); }, 0);
             }
 
             // Show the Archives tab without going through the nav link's own
