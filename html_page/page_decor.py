@@ -42,7 +42,7 @@ def html_page(cls):
 
             template_path = next((path for path in candidates if os.path.isfile(path)), candidates[0])
 
-            with open(template_path) as html:
+            with open(template_path, encoding="utf-8") as html:
                 self.__content = html.read()
 
         return self.__content

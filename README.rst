@@ -37,6 +37,7 @@ Features
   - Test suite details
 * Archives / History
 * Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
+* Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
@@ -250,16 +251,20 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
         team=payments
     report_logs = all
     report_log_limit = 10000
+    report_attachments = all
+    report_attachment_limit = 20000
 
 ``report_logs`` takes the same values as ``--report-logs`` (``all`` / ``failed`` / ``none``) and ``report_log_limit``
-the same as ``--report-log-limit`` (a character count, or ``0`` for no limit).
+the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). ``report_attachments`` and
+``report_attachment_limit`` mirror ``--report-attachments`` and ``--report-attachment-limit`` the same way.
 
 ``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
 location without going through ``addopts``.
 
 **Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
-``--report-logs`` and ``--report-log-limit`` override their ini values
+``--report-logs``, ``--report-log-limit``, ``--report-attachments`` and ``--report-attachment-limit`` override their
+ini values
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
@@ -332,6 +337,190 @@ The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page``
 
 
 .. image:: https://i.imgur.com/1HSYkdC.gif
+
+
+attachments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See it before you wire anything up - the bundled demo needs no browser and no network::
+
+    $ pytest tests/functional/test_attachments.py --html-report=./report
+
+A picture is no use when the thing under test is an API. ``attach_text``, ``attach_json``, ``attach_api`` and
+``attach_file`` take the payloads instead, and everything a test hands over is kept against that test and opened from
+the new ``Attachments`` tab. The ``Test Metrics`` table gains a ``Data`` column counting what each test attached;
+clicking it crosses to the tab with the list already narrowed to that one test.
+
+.. code-block:: python
+
+    from pytest_html_reporter import attach_api, attach_file, attach_json, attach_text
+
+    attach_api(requests.get(url))                         # the whole call
+    attach_json({"expected": order, "got": response})     # pretty-printed, secrets blanked
+    attach_text(query, name="Query", format="sql")        # any text at all
+    attach_file("payloads/order.json")                    # a small file from disk
+
+
+For example, attaching the JSON response body
+
+.. code-block:: python
+
+    attach_json(requests.get("https://reqres.in/api/users/2").json())
+
+
+api calls
+"""""""""""""""""""""""""""
+
+``attach_api`` is the one to reach for when a test talks HTTP. Hand it a response object and it takes the call apart::
+
+    def test_creates_an_order():
+        response = requests.post(url, json=payload, headers=headers)
+        attach_api(response)
+
+        assert response.status_code == 201
+
+The attachment holds the response body, the request body, both sets of headers, and the **curl command that repeats
+the call** - which is the first thing anyone does with a failed request, and the tedious thing to rebuild by hand from
+a report. The rail entry carries the method, the path, the status code (coloured by class) and how long it took.
+
+Nothing is imported to read the response, so ``requests`` and ``httpx`` both work out of the box - and so does the
+async one, since it is the returned response that is passed, not the client::
+
+    attach_api(httpx.get(url))                     # httpx
+    attach_api(await client.get(url))              # httpx, async API
+
+Every field can also be given directly, and an explicit one always wins over the response object. That is what makes
+the helper usable from a client neither library resembles, from a call reconstructed out of a log, or through a proxy
+that rewrites the URL::
+
+    attach_api(method="POST", url="/orders", status=500,
+               request_body=payload, response_body=body, duration=1.4)
+
+    attach_api(response, url=upstream_url)         # override just the one field
+
+=========================  ==============================================================================
+Argument                   What it is
+=========================  ==============================================================================
+``response``               a response object to read the rest off; optional
+``name``                   the title in the rail *(default:* ``METHOD /path`` *)*
+``method`` ``url``         the request line
+``status`` ``reason``      the response line, e.g. ``422`` and ``Unprocessable Entity``
+``duration``               how long the call took, **in seconds**
+``request_headers``        a dict, a list of pairs, or any headers object with ``items()``
+``request_body``           ``str``, ``bytes``, or a ``dict`` / ``list`` to be serialised
+``response_headers``       as above
+``response_body``          as above
+``content_type``           forces the syntax when there is no ``Content-Type`` header to read
+``redact``                 ``False`` keeps credentials in the report - see below
+=========================  ==============================================================================
+
+**Note:** a body that parses as JSON is pretty-printed, whichever way it arrived. One that does not is kept exactly as
+it came, so half a response - the interesting case when a call is cut off - is still readable.
+
+credentials are blanked out
+"""""""""""""""""""""""""""
+
+A report is a build artifact. It gets published by CI, attached to tickets and pasted into chat, so ``attach_api`` and
+``attach_json`` replace anything that looks like a credential with ``<redacted>`` - in the headers, in the curl
+command, and in the fields of a JSON body at any depth. ``Authorization``, ``Cookie``, ``Set-Cookie``, any name
+containing ``token``, ``secret``, ``password``, ``api-key`` or ``x-auth``, and their underscore spellings, are all
+covered - in a query string as well, since ``?api_key=`` is as ordinary in an API suite as the header is.
+
+::
+
+    Authorization: <redacted>
+    Content-Type: application/json
+
+Pass ``redact=False`` when the report is not leaving your machine and you need the real value::
+
+    attach_api(response, redact=False)
+
+text, json and files
+"""""""""""""""""""""""""""
+
+``attach_text`` takes anything at all. ``format`` only picks how the viewer lays the text out - it is never used to
+reinterpret what you passed - and understands ``text`` *(default)*, ``json``, ``xml``, ``html``, ``yaml``, ``sql`` and
+``curl``::
+
+    attach_text(response.text, name="Response body", format="json")
+    attach_text(cursor.query, name="Query", format="sql")
+    attach_text("the third retry is the one that worked")
+
+``attach_json`` takes a ``dict``, a ``list`` or a JSON string and pretty-prints it, with the same redaction applied::
+
+    attach_json({"expected": {"id": 4711}, "got": {"error": "sku unknown"}}, name="Diff")
+
+``attach_file`` reads a small text file - a payload, a config, a HAR - and names it after the file. The syntax is
+guessed from the extension unless ``format`` says otherwise::
+
+    attach_file("payloads/order.json")
+    attach_file(har_path, name="Network trace")
+
+A file holding JSON is redacted and pretty-printed like any other body - of everything you can attach this is the
+likeliest to be carrying a credential, since a HAR is a recording of the auth headers. A file that is not structured
+is kept verbatim: there is nothing to key a redaction off, and mangling a config file would be worse than not trying.
+
+when to call them
+"""""""""""""""""""""""""""
+
+Like ``attach``, these can be called from anywhere in the test's lifecycle: the test body, a ``unittest``
+``tearDown``, a pytest fixture's teardown or a ``pytest_runtest_makereport`` hook. Attaching the last call only when a
+test fails is a fixture away::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach_api
+
+    @pytest.fixture
+    def api(request):
+        client = Client()
+        yield client
+        if request.node.rep_call.failed and client.last_response is not None:
+            attach_api(client.last_response)
+
+    @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        rep = outcome.get_result()
+        setattr(item, "rep_" + rep.when, rep)
+
+**Note:** hooks have to live in ``conftest.py``. pytest only registers conftest files as plugins, so a
+``pytest_runtest_makereport`` written at the top of a test module is silently never called.
+
+A test that is retried by ``pytest-rerunfailures`` and attaches nothing on the attempt that finally passed keeps what
+the failing attempt attached, rather than losing the evidence by succeeding.
+
+keeping the file down
+"""""""""""""""""""""""""""
+
+Attachments are held outside the metrics table, so they are never swept into its search box or into the CSV, Excel and
+print exports. Two options decide how much of them is kept at all.
+
+``--report-attachments`` narrows whose attachments survive:
+
+=========================  ==============================================================================
+Value                      Kept
+=========================  ==============================================================================
+``all`` *(default)*        Every test's
+``failed``                 Only ``FAIL`` and ``ERROR`` tests'
+``none``                   Nothing - the tab and the ``Data`` column go quiet
+=========================  ==============================================================================
+
+``--report-attachment-limit`` caps the characters kept per payload. What survives is the **start** of it - which is
+the opposite of the log limit, because a response puts its status, its error field and its first records at the top -
+with a note saying how much was dropped:
+
+=========================  ==============================================================================
+Value                      Kept
+=========================  ==============================================================================
+``20000`` *(default)*      20,000 characters per payload
+any positive integer       Characters per payload
+``0``                      Everything
+=========================  ==============================================================================
+
+::
+
+    $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 
 
 parallel runs

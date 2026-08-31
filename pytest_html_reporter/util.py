@@ -77,6 +77,15 @@ def xdist_worker_id(config):
 def screenshot(data=None):
     from pytest_html_reporter.html_reporter import HTMLReporter
 
+    # Pillow fails on a string with "cannot identify image file", which says
+    # nothing about the mistake actually made now that the package also has
+    # helpers that do take text.
+    if isinstance(data, str):
+        raise TypeError(
+            "attach() takes the bytes of an image; to attach text use "
+            "attach_text(), attach_json() or attach_api() instead"
+        )
+
     ConfigVars.screen_base = HTMLReporter.base_path
     ConfigVars.screen_img = Image.open(BytesIO(data))
 
@@ -283,6 +292,32 @@ def report_log_limit(config):
     return max(limit, 0)
 
 
+ATTACHMENT_MODES = ("all", "failed", "none")
+ATTACHMENT_LIMIT_DEFAULT = 20000
+
+
+def report_attachments_mode(config):
+    """Which tests keep their attachments: 'all', 'failed' or 'none'."""
+    mode = str(config.getoption("report_attachments", None)
+               or _ini(config, "report_attachments") or "all").strip().lower()
+
+    return mode if mode in ATTACHMENT_MODES else "all"
+
+
+def report_attachment_limit(config):
+    """Characters kept per attached part; 0 means no limit."""
+    value = config.getoption("report_attachment_limit", None)
+    if value in (None, ""):
+        value = _ini(config, "report_attachment_limit")
+
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        return ATTACHMENT_LIMIT_DEFAULT
+
+    return max(limit, 0)
+
+
 def _log_section_rank(title):
     """Sort key that replays a test's output in the order it was produced.
 
@@ -369,8 +404,8 @@ def format_log_sections(buffer, limit):
     return trim_log_sections(sections, limit)
 
 
-def escape_log_text(value):
-    """HTML-escape captured output for the report page.
+def escape_report_text(value):
+    """HTML-escape text on its way into the report page.
 
     ``%(`` is broken up as well: the page is assembled by substituting
     ``%(name)%`` placeholders, so a log line that happens to look like one

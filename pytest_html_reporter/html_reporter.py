@@ -11,6 +11,10 @@ import pytest
 
 from html_page.archive_body import ArchiveBody
 from html_page.archive_row import ArchiveRow
+from html_page.attachment_body import AttachmentBody
+from html_page.attachment_item import AttachmentItem
+from html_page.attachment_meta import AttachmentMeta
+from html_page.attachment_part import AttachmentPart
 from html_page.floating_error import FloatingError
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
@@ -29,8 +33,17 @@ from pytest_html_reporter.util import (
     report_log_limit,
     merge_log_sections,
     format_log_sections,
-    escape_log_text,
+    escape_report_text,
     count_log_lines,
+    report_attachments_mode,
+    report_attachment_limit,
+)
+from pytest_html_reporter.attachments import (
+    attachment_size,
+    filename_for,
+    human_size,
+    take_attachments,
+    trim_parts,
 )
 from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
@@ -51,6 +64,8 @@ class HTMLReporter(object):
         self._log_sections = {}
         self.logs_mode = report_logs_mode(config)
         self.log_limit = report_log_limit(config)
+        self.attachments_mode = report_attachments_mode(config)
+        self.attachment_limit = report_attachment_limit(config)
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
@@ -205,7 +220,7 @@ class HTMLReporter(object):
             generate_logs_notice(self.config)
 
             # generate html report
-            live_logs_file = open(path, 'w')
+            live_logs_file = open(path, 'w', encoding='utf-8')
             message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
             live_logs_file.write(message)
             live_logs_file.close()
@@ -300,6 +315,7 @@ class HTMLReporter(object):
             'worker': self.worker_id,
             'screenshot': None,
             'logs': self.collect_logs(str(ConfigVars._test_status)),
+            'attachments': self.collect_attachments(str(ConfigVars._test_status)),
         }
 
         # Whatever the test did. A screenshot of a pass is a baseline, and one
@@ -331,6 +347,27 @@ class HTMLReporter(object):
 
         return format_log_sections(self._log_sections, self.log_limit)
 
+    def collect_attachments(self, status):
+        """The text, JSON and API calls this test handed over, trimmed to size.
+
+        The buffer is drained whatever the mode says. An attachment left in it
+        would be picked up by the next test to finish and reported as that
+        test's own - the bug screenshots had before every record started
+        claiming the pending image.
+        """
+        pending = take_attachments()
+
+        if self.attachments_mode == 'none': return []
+        if (self.attachments_mode == 'failed') and (status not in ('FAIL', 'ERROR')): return []
+
+        collected = []
+        for attachment in pending:
+            attachment = dict(attachment)
+            attachment['parts'] = trim_parts(attachment['parts'], self.attachment_limit)
+            collected.append(attachment)
+
+        return collected
+
     def store_test_record(self, record):
         """Keep one record per test, however many times it was attempted.
 
@@ -358,8 +395,11 @@ class HTMLReporter(object):
         record['rerun'] = int(superseded['rerun']) + int(record['rerun']) + 1
 
         # A retry that attached no screenshot of its own keeps the one from the
-        # attempt it replaces, rather than dropping it from the report.
+        # attempt it replaces, rather than dropping it from the report. The
+        # same goes for its attachments: a flaky test that captured the failing
+        # response on its first attempt should not lose it by then passing.
         if record['screenshot'] is None: record['screenshot'] = superseded['screenshot']
+        if not record.get('attachments'): record['attachments'] = superseded.get('attachments') or []
 
         record['index'] = superseded['index']
         self._records[slot] = record
@@ -396,7 +436,8 @@ class HTMLReporter(object):
             dur=str(record['duration']),
             msg=str(record['message'][:50]),
             runt=row_id,
-            log_count=str(self.attach_test_logs(record, row_id))
+            log_count=str(self.attach_test_logs(record, row_id)),
+            attach_count=str(self.attach_test_data(record, row_id))
         )
 
         if len(record['message']) < 49:
@@ -432,18 +473,92 @@ class HTMLReporter(object):
         body = ''
         for section in sections:
             body += str(TestLogSection(
-                title=escape_log_text(section['title']),
-                text=escape_log_text(section['text'])
+                title=escape_report_text(section['title']),
+                text=escape_report_text(section['text'])
             ))
 
         ConfigVars._test_logs_content += str(TestLog(
             runt=row_id,
-            sname=escape_log_text(record['suite_name']),
-            name=escape_log_text(record['test_name']),
+            sname=escape_report_text(record['suite_name']),
+            name=escape_report_text(record['test_name']),
             sections=body
         ))
 
         return count_log_lines(sections)
+
+    def attach_test_data(self, record, row_id):
+        """Park a test's attachments outside the table, return how many there are.
+
+        Same reasoning as the captured output: a response body sitting in a
+        cell would be swept into the table's search index and into every CSV,
+        Excel and print export. The row keeps the count, which is all it needs
+        to show a button and all the Attachments tab needs to be linked to.
+        """
+        attachments = record.get('attachments') or []
+
+        for index, attachment in enumerate(attachments):
+            aid = '%s-%s' % (row_id, index)
+
+            parts = ''
+            for part in attachment['parts']:
+                parts += str(AttachmentPart(
+                    title=escape_report_text(part['title']),
+                    format=escape_report_text(part['format']),
+                    text=escape_report_text(part['text'])
+                ))
+
+            meta = ''
+            for label, value in attachment['meta']:
+                meta += str(AttachmentMeta(
+                    label=escape_report_text(label),
+                    value=escape_report_text(value),
+                    title=escape_report_text(value)
+                ))
+
+            ConfigVars._attachment_store += str(AttachmentBody(
+                aid=aid,
+                sname=escape_report_text(record['suite_name']),
+                name=escape_report_text(record['test_name']),
+                title=escape_report_text(attachment['title']),
+                filename=escape_report_text(filename_for(record['test_name'], attachment['title'])),
+                meta=meta,
+                parts=parts
+            ))
+
+            ConfigVars._attachment_items += str(AttachmentItem(
+                aid=aid,
+                runt=row_id,
+                kind=escape_report_text(attachment['kind']),
+                status=escape_report_text(attachment['status']),
+                code=escape_report_text(attachment['code']),
+                detail=escape_report_text(attachment['detail']
+                                          or human_size(attachment_size(attachment))),
+                ms=escape_report_text(attachment.get('ms', '')),
+                size=str(attachment_size(attachment)),
+                title=escape_report_text(attachment['title']),
+                # The file name, not the path: every entry in the rail carries
+                # the same directories, and they were crowding out the test
+                # name, which is the half that says which entry this is.
+                sname=escape_report_text(record['suite_name'].split('/')[-1]),
+                name=escape_report_text(record['test_name']),
+                search=escape_report_text(self.attachment_search_text(record, attachment))
+            ))
+
+        return len(attachments)
+
+    def attachment_search_text(self, record, attachment):
+        """What the Attachments search box matches an entry on.
+
+        The suite, the test, the title and every meta value - so a url, a
+        method or a status code finds the call - but not the payloads: those
+        are already several thousand characters each, and repeating them in an
+        attribute would double the size of the file to no end.
+        """
+        terms = [record['suite_name'], record['test_name'], attachment['title'],
+                 attachment['kind'], attachment['code']]
+        terms += [value for _, value in attachment['meta']]
+
+        return ' '.join(term for term in terms if term).lower()
 
     def generate_screenshot_data(self):
         """Save the attached image and describe it for the report.
@@ -629,6 +744,8 @@ class HTMLReporter(object):
             tskip=str(ConfigVars.tskip),
             attach_screenshot_details=str(ConfigVars._attach_screenshot_details),
             test_logs=str(ConfigVars._test_logs_content),
+            attachment_items=str(ConfigVars._attachment_items),
+            attachment_store=str(ConfigVars._attachment_store),
             logs_notice=str(ConfigVars._logs_notice),
             environment_rows=str(ConfigVars._environment_rows),
             environment=str(ConfigVars._environment_label),

@@ -9,9 +9,11 @@ from pytest_html_reporter.util import (
     custom_title,
     environment_label,
     environment_name,
-    escape_log_text,
+    escape_report_text,
     format_log_sections,
     merge_log_sections,
+    report_attachment_limit,
+    report_attachments_mode,
     report_log_limit,
     report_logs_mode,
     report_path,
@@ -134,6 +136,39 @@ def test_report_log_limit_ignores_a_negative_value():
     assert report_log_limit(_FakeConfig(options={"report_log_limit": -20})) == 0
 
 
+def test_report_attachments_mode_defaults_to_all():
+    assert report_attachments_mode(_FakeConfig()) == "all"
+
+
+def test_report_attachments_mode_from_ini():
+    assert report_attachments_mode(_FakeConfig(ini={"report_attachments": "failed"})) == "failed"
+
+
+def test_report_attachments_mode_cli_beats_ini():
+    config = _FakeConfig(options={"report_attachments": "none"}, ini={"report_attachments": "all"})
+    assert report_attachments_mode(config) == "none"
+
+
+def test_report_attachments_mode_falls_back_on_nonsense():
+    assert report_attachments_mode(_FakeConfig(options={"report_attachments": "maybe"})) == "all"
+
+
+def test_report_attachment_limit_defaults():
+    assert report_attachment_limit(_FakeConfig()) == 20000
+
+
+def test_report_attachment_limit_zero_means_no_limit():
+    assert report_attachment_limit(_FakeConfig(options={"report_attachment_limit": 0})) == 0
+
+
+def test_report_attachment_limit_from_ini():
+    assert report_attachment_limit(_FakeConfig(ini={"report_attachment_limit": "500"})) == 500
+
+
+def test_report_attachment_limit_ignores_a_negative_value():
+    assert report_attachment_limit(_FakeConfig(options={"report_attachment_limit": -5})) == 0
+
+
 def test_merge_log_sections_skips_empty_captures():
     buffer = {}
     merge_log_sections(buffer, [("Captured log call", "hello"), ("Captured stdout call", "")])
@@ -224,10 +259,10 @@ def test_count_log_lines_covers_every_section():
     assert count_log_lines(sections) == 3
 
 
-def test_escape_log_text_defuses_the_template_placeholder_syntax():
+def test_escape_report_text_defuses_the_template_placeholder_syntax():
     """A log line that looks like a placeholder must be shown, not filled in
     when the page is assembled."""
-    escaped = escape_log_text("see %(archive_status)% and <b>this</b>")
+    escaped = escape_report_text("see %(archive_status)% and <b>this</b>")
 
     assert "%(" not in escaped
     assert "&#40;" in escaped

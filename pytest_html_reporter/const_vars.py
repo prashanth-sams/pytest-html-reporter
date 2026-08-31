@@ -68,6 +68,9 @@ class ConfigVars:
     screen_base = ''
     screen_img = None
     _attach_screenshot_details = ''
+    _attachments = []
+    _attachment_items = ''
+    _attachment_store = ''
     _environment_rows = ''
     _environment = ''
     _environment_label = ''

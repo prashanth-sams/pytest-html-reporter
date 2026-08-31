@@ -5,6 +5,10 @@ from bs4 import BeautifulSoup
 
 from html_page.archive_body import ArchiveBody
 from html_page.archive_row import ArchiveRow
+from html_page.attachment_body import AttachmentBody
+from html_page.attachment_item import AttachmentItem
+from html_page.attachment_meta import AttachmentMeta
+from html_page.attachment_part import AttachmentPart
 from html_page.env_row import EnvRow
 from html_page.floating_error import FloatingError
 from html_page.screenshot_details import ScreenshotDetails
@@ -169,8 +173,11 @@ def test_test_row():
     log_count = str(get_random_number())
     runt = get_random_string()
 
+    attach_count = str(get_random_number())
+
     test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, msg=msg,
-                       floating_error_text=floating_error_text, log_count=log_count, runt=runt)
+                       floating_error_text=floating_error_text, log_count=log_count,
+                       attach_count=attach_count, runt=runt)
     soup = BeautifulSoup(str(test_row), "html.parser")
 
     cells = soup.findAll("td")
@@ -185,17 +192,22 @@ def test_test_row():
     assert log_cell.find("button")["onclick"] == "showLogs('%s')" % runt
     assert log_count in log_cell.find("button").text
 
+    attach_cell = cells[6]
+    assert attach_cell["data-logs"] == attach_count
+    assert attach_cell.find("button")["onclick"] == "showAttachmentsFor('%s')" % runt
+    assert attach_count in attach_cell.find("button").text
+
 
 def test_test_row_without_logs_says_so():
     """The button is left in the row and hidden by `data-logs`, so a test that
     captured nothing shows a dash instead of opening an empty panel."""
     test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", msg="",
-                       floating_error_text="", log_count="0", runt="0-0")
+                       floating_error_text="", log_count="0", attach_count="0", runt="0-0")
     soup = BeautifulSoup(str(test_row), "html.parser")
 
-    log_cell = soup.findAll("td")[5]
-    assert log_cell["data-logs"] == "0"
-    assert log_cell.find("span", class_="log-none") is not None
+    for cell in soup.findAll("td")[5:7]:
+        assert cell["data-logs"] == "0"
+        assert cell.find("span", class_="log-none") is not None
 
 
 def test_test_log_holds_every_section():
@@ -214,6 +226,101 @@ def test_test_log_holds_every_section():
     assert [node.text for node in bodies] == ["line 0", "line 1", "line 2"]
     assert bodies[0].find_parent("div", class_="log-section") \
                     .find("div", class_="log-section__head").text == "Captured log call"
+
+def test_attachment_item():
+    aid = get_random_string()
+    runt = get_random_string()
+    title = get_random_string()
+    sname = get_random_string()
+    name = get_random_string()
+    detail = get_random_string()
+    search = get_random_string().lower()
+
+    item = AttachmentItem(aid=aid, runt=runt, kind="api", status="4xx", code="422",
+                          detail=detail, title=title, sname=sname, name=name,
+                          ms="1420", size="640", search=search)
+    soup = BeautifulSoup(str(item), "html.parser")
+
+    button = soup.find("button", class_="attach-item")
+    assert button["id"] == "attach-item-%s" % aid
+    assert button["data-aid"] == aid
+    assert button["data-row"] == runt
+    assert button["data-kind"] == "api"
+    assert button["data-status"] == "4xx"
+    assert button["data-ms"] == "1420"
+    assert button["data-size"] == "640"
+    assert button["data-search"] == search
+    assert button["onclick"] == "showAttachment('%s')" % aid
+
+    assert soup.find("span", class_="attach-item__kind").text.strip() == "api"
+    assert soup.find("span", class_="attach-item__title").text.strip() == title
+    # The test name leads; the suite file follows it, faded.
+    assert soup.find("span", class_="attach-item__test").text.strip().startswith(name)
+    assert soup.find("span", class_="attach-item__test").find("em").text.strip() == sname
+    assert soup.find("span", class_="attach-code").text.strip() == "422"
+    assert "attach-code--4xx" in soup.find("span", class_="attach-code")["class"]
+    assert soup.find("span", class_="attach-item__detail").text.strip() == detail
+
+
+def test_attachment_item_without_a_status_leaves_the_pill_empty():
+    """CSS hides an empty pill, which is how a plain text entry avoids one."""
+    item = AttachmentItem(aid="0-0-0", kind="text", status="", code="", title="Note",
+                          sname="s", name="n", detail="12 B", search="note")
+    soup = BeautifulSoup(str(item), "html.parser")
+
+    assert soup.find("span", class_="attach-code").text == ""
+
+
+def test_attachment_part():
+    text = get_random_string()
+
+    part = AttachmentPart(title="Response body", format="json", text=text)
+    soup = BeautifulSoup(str(part), "html.parser")
+
+    section = soup.find("section", class_="attach-part")
+    assert section["data-part"] == "Response body"
+    assert section["data-format"] == "json"
+    # Every part starts hidden; the viewer reveals the one it opens.
+    assert section.has_attr("hidden")
+    assert section.find("pre", class_="attach-part__body").text == text
+
+
+def test_attachment_meta():
+    label = get_random_string()
+    value = get_random_string()
+
+    meta = AttachmentMeta(label=label, value=value, title=value)
+    soup = BeautifulSoup(str(meta), "html.parser")
+
+    assert soup.find("em").text.strip() == label
+
+    node = soup.find("span", class_="attach-meta__value")
+    assert node.text.strip() == value
+    assert node["title"] == value
+
+
+def test_attachment_body_holds_its_meta_and_every_part():
+    parts = "".join(str(AttachmentPart(title="Part %d" % i, format="text", text="body %d" % i))
+                    for i in range(3))
+    meta = str(AttachmentMeta(label="Status", value="200 OK", title="200 OK"))
+
+    body = AttachmentBody(aid="1-2-0", sname="tests/test_a.py", name="test_thing",
+                          title="GET /orders", filename="test_thing-GET-orders",
+                          meta=meta, parts=parts)
+    soup = BeautifulSoup(str(body), "html.parser")
+
+    payload = soup.find("div", class_="attach-payload")
+    assert payload["id"] == "attach-1-2-0"
+    assert payload["data-suite"] == "tests/test_a.py"
+    assert payload["data-test"] == "test_thing"
+    assert payload["data-title"] == "GET /orders"
+    assert payload["data-file"] == "test_thing-GET-orders"
+    assert payload.has_attr("hidden")
+
+    assert payload.find("div", class_="attach-meta").find("em").text.strip() == "Status"
+    assert [node.text for node in payload.findAll("pre", class_="attach-part__body")] == \
+           ["body 0", "body 1", "body 2"]
+
 
 def test_env_row():
     label = get_random_string()
@@ -267,6 +374,8 @@ def test_template():
     tfail = str(get_random_number())
     tskip = str(get_random_number())
     attach_screenshot_details = get_random_string()
+    attachment_items = get_random_string()
+    attachment_store = get_random_string()
     environment_rows = get_random_string()
     environment = get_random_string()
     title_full = get_random_string()
@@ -309,6 +418,8 @@ def test_template():
         tfail=tfail,
         tskip=tskip,
         attach_screenshot_details=attach_screenshot_details,
+        attachment_items=attachment_items,
+        attachment_store=attachment_store,
         environment_rows=environment_rows,
         environment=environment,
         title_full=title_full
@@ -374,6 +485,9 @@ def test_template():
 
     environment_grid = soup.find("div", class_="env-grid")
     assert environment_grid.text.strip() == environment_rows
+
+    assert soup.find("div", id="attachRail").text.strip().startswith(attachment_items)
+    assert soup.find("div", id="attachStore").text.strip() == attachment_store
 
     scripts = soup.findAll("script")
     assert [script for script in scripts if f"data: [{_pass}, {fail}, {skip}, {xpass}, {xfail}, {error}]," in script.text]
