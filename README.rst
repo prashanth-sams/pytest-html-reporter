@@ -320,8 +320,8 @@ Or skip the fixture and attach straight from the hook, which already has the bro
             if driver is not None:
                 attach(data=driver.get_screenshot_as_png())
 
-**Note:** hooks have to live in ``conftest.py``. pytest only registers conftest files as plugins, so a
-``pytest_runtest_makereport`` written at the top of a test module is silently never called.
+**Note:** put the hook in ``conftest.py``. pytest does pick one up from a test module as well, but only for that
+module's own tests - a conftest covers every test under it, which is almost always what you want.
 
 The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page`` fixture instead::
 
@@ -339,7 +339,7 @@ The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page``
 .. image:: https://i.imgur.com/1HSYkdC.gif
 
 
-attachments
+api logs / attachments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 See it before you wire anything up - the bundled demo needs no browser and no network::
@@ -348,7 +348,7 @@ See it before you wire anything up - the bundled demo needs no browser and no ne
 
 A picture is no use when the thing under test is an API. ``attach_text``, ``attach_json``, ``attach_api`` and
 ``attach_file`` take the payloads instead, and everything a test hands over is kept against that test and opened from
-the new ``Attachments`` tab. The ``Test Metrics`` table gains a ``Data`` column counting what each test attached;
+the new ``API Logs`` tab. The ``Test Metrics`` table gains a ``Data`` column counting what each test attached;
 clicking it crosses to the tab with the list already narrowed to that one test.
 
 .. code-block:: python
@@ -378,6 +378,31 @@ api calls
         attach_api(response)
 
         assert response.status_code == 201
+
+**Attach on failure, not on every call.** Keeping every response buries the one that matters and grows the report for
+no reason; the payload worth having is the one behind a failure. Attach from a fixture's teardown and let the outcome
+decide - the reporter builds a test's record after the finalizers have run, which is what makes this work::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach_api
+
+    @pytest.fixture
+    def api(request):
+        client = ApiClient()
+        yield client
+
+        if request.node.rep_call.failed:
+            attach_api(client.last_response)
+
+    # lets the fixture above see how the test ended
+    @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        setattr(item, "rep_" + outcome.get_result().when, outcome.get_result())
+
+The same guidance is printed on the ``API Logs`` tab itself whenever a run attaches nothing, so it is there when you
+go looking for it.
 
 The attachment holds the response body, the request body, both sets of headers, and the **curl command that repeats
 the call** - which is the first thing anyone does with a failed request, and the tedious thing to rebuild by hand from
@@ -484,8 +509,8 @@ test fails is a fixture away::
         rep = outcome.get_result()
         setattr(item, "rep_" + rep.when, rep)
 
-**Note:** hooks have to live in ``conftest.py``. pytest only registers conftest files as plugins, so a
-``pytest_runtest_makereport`` written at the top of a test module is silently never called.
+**Note:** put the hook in ``conftest.py``. pytest does pick one up from a test module as well, but only for that
+module's own tests - a conftest covers every test under it, which is almost always what you want.
 
 A test that is retried by ``pytest-rerunfailures`` and attaches nothing on the attempt that finally passed keeps what
 the failing attempt attached, rather than losing the evidence by succeeding.

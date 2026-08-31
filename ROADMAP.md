@@ -4,7 +4,7 @@ High-value, low-effort additions to the generated HTML report, ranked by payoff 
 
 Baseline (already shipped, do not re-implement): DataTables search + sort, export buttons
 (copy / CSV / Excel / print / column visibility), Dashboard charts, Trends, Suite Highlights,
-Archives, Screenshots on failure, Attachments (text / JSON / API calls), and rerun support.
+Archives, Screenshots on failure, API Logs (attached calls, JSON and text), and rerun support.
 
 ---
 
@@ -122,7 +122,7 @@ rendered in the header.
 Issue #191: a picture is no use when the thing under test is an API.
 
 *Shipped as:* `pytest_html_reporter/attachments.py` (`attach_text`, `attach_json`, `attach_api`,
-`attach_file`), the four `Attachment*` components, an `Attachments` tab, a `Data` column on Test
+`attach_file`), the four `Attachment*` components, an `API Logs` tab, a `Data` column on Test
 Metrics, and `--report-attachments` / `--report-attachment-limit`. The collection path mirrors
 screenshots (a buffer drained by every record, so nothing leaks to the next test) and the storage
 path mirrors logs (payloads parked outside the table, out of its search index and its exports).

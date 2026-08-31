@@ -22,7 +22,7 @@
 
 ### Attachments
 
-`test_attachments.py` fills the `Attachments` tab. It needs no browser and no network -
+`test_attachments.py` fills the `API Logs` tab. It needs no browser and no network -
 its HTTP client is a stub shaped like a `requests` response - so it is the quickest way
 to see what the tab does:
 

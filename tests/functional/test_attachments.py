@@ -77,8 +77,9 @@ def api(request):
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    # Only here so the file is self-contained; in a real suite this lives in
-    # conftest.py, which is the only place pytest picks hooks up from.
+    # Here so the file stands alone. pytest calls a hook defined in a test
+    # module, but only for that module's tests, so in a real suite this belongs
+    # in conftest.py where it covers everything under it.
     outcome = yield
     setattr(item, "rep_" + outcome.get_result().when, outcome.get_result())
 

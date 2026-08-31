@@ -1,15 +1,16 @@
 0.3.5 (31/08/2026)
 -------------------
 - Added text attachments: attach_text(), attach_json(), attach_api() and attach_file() keep a payload against the test that produced it, alongside the screenshots attach() already took (#191)
-- Added an Attachments tab: a rail of everything the run attached with the payload open beside it, filterable by kind, searchable by test, title, URL or status code, with Copy and Download per payload
+- The API Logs tab guides you when a run attaches nothing: what to call, and the recipe worth copying - attach from a fixture teardown only when the response failed, rather than on every call
+- Added an API Logs tab: a rail of everything the run attached with the payload open beside it, filterable by kind, searchable by test, title, URL or status code, with Copy and Download per payload
 - attach_api() takes a response object apart into the response body, the request body, both sets of headers and the curl command that repeats the call; the entry shows the method, path, status code and duration
 - Response objects are read by duck typing, so requests and httpx both work with no new dependency, and every field can be passed directly instead - a client neither library resembles, or a call rebuilt from a log, makes the same attachment
 - Credentials are blanked out of attachments by default: Authorization, Cookie and anything named like a token, secret, password or api key, in headers, in a URL query string, in the curl line and in the fields of a JSON body at any depth; redact=False keeps them
 - attach_file() redacts and pretty-prints a file holding JSON, including a HAR's {"name": "Authorization", "value": ...} header lists; an unstructured file is kept verbatim
 - Added tests/functional/test_attachments.py, a demo run that fills the tab with no browser and no network
 - A JSON body is pretty-printed however it arrived, and one that does not parse is kept exactly as it came, so a truncated response is still readable
-- The Test Metrics table gained a Data column counting what each test attached; clicking it opens the Attachments tab narrowed to that one test
-- The Attachments summary counts what the rail is currently showing - calls, ok, failed, slowest and total payload - so the numbers never disagree with the list under them
+- The Test Metrics table gained a Data column counting what each test attached; clicking it opens the API Logs tab narrowed to that one test
+- The API Logs summary counts what the rail is currently showing - calls, ok, failed, slowest and total payload - so the numbers never disagree with the list under them
 - Added --report-attachments / the report_attachments ini key (all, failed or none) to narrow whose attachments are kept
 - Added --report-attachment-limit / the report_attachment_limit ini key to cap the characters kept per payload (default 20000, 0 keeps everything); a trimmed payload keeps its start, unlike a trimmed log, which keeps its end
 - A test retried by pytest-rerunfailures that attaches nothing on the attempt that passed keeps what the failing attempt attached

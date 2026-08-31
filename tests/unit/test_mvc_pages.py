@@ -336,6 +336,50 @@ def test_env_row():
     assert value_node["title"] == value
 
 
+def _hash_map(page):
+    """The hash -> tab id table the page routes #anchors through."""
+    block = re.search(r"var hashToPageMap = \{(.*?)\};", page, re.S).group(1)
+
+    return dict(re.findall(r"'([\w-]+)'\s*:\s*'(\w+)'", block))
+
+
+def test_every_nav_link_routes_to_the_tab_it_opens():
+    """The two halves of a tab's identity have to agree.
+
+    Renaming this tab's label and hash silently broke the Test Metrics button
+    that jumps to it, because the jump found the nav link by its href. Nothing
+    failed - the link was still there, it had just stopped being found.
+    """
+    page = str(HtmlTemplate())
+
+    links = re.findall(r'<a class="tablink" href="#([\w-]+)" onclick="openPage\(\'(\w+)\'', page)
+    tabs = set(re.findall(r'<div class="tabcontent" id="(\w+)"', page))
+    hashes = _hash_map(page)
+
+    assert links, "no nav links found - the markup moved"
+
+    for anchor, page_id in links:
+        assert page_id in tabs, "%s opens a tab that does not exist" % anchor
+        assert hashes.get(anchor) == page_id, "#%s does not route to %s" % (anchor, page_id)
+
+
+def test_every_routed_hash_lands_on_a_real_tab():
+    """Aliases included: #attachments still has to reach the renamed tab."""
+    page = str(HtmlTemplate())
+    tabs = set(re.findall(r'<div class="tabcontent" id="(\w+)"', page))
+
+    for anchor, page_id in _hash_map(page).items():
+        assert page_id in tabs, "#%s routes to a tab that does not exist" % anchor
+
+
+def test_the_api_logs_tab_is_reachable_by_both_of_its_names():
+    """#attachments was the hash before the tab was renamed; links were shared."""
+    hashes = _hash_map(str(HtmlTemplate()))
+
+    assert hashes["api-logs"] == "attachments"
+    assert hashes["attachments"] == "attachments"
+
+
 def test_template():
     custom_logo = get_random_string()
     execution_time = str(get_random_number())

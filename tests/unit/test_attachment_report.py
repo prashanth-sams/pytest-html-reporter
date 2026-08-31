@@ -263,14 +263,20 @@ def test_attaching_from_a_fixture_teardown_still_lands_on_the_test(tmp_path):
     assert [item[2] for item in _items(page)] == ["Last call"]
 
 
-def test_the_tab_is_empty_when_nothing_was_attached(tmp_path):
+def test_the_tab_guides_you_when_nothing_was_attached(tmp_path):
+    """An empty tab is the only moment anyone reads setup instructions."""
     page = _run(tmp_path, '''
         def test_quiet():
             assert True
     ''')
 
     assert _items(page) == []
-    assert "No attachments in this run" in page
+    assert "No API logs in this run" in page
+
+    # the recipe worth copying, not just the one-liner
+    assert "Better: only when the response fails" in page
+    assert "request.node.rep_call.failed" in page
+    assert "conftest.py" in page
 
 
 @pytest.mark.skipif(
