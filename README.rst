@@ -39,6 +39,8 @@ Features
 * Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
 * Captured logs per test (stdout, stderr and ``logging``)
+* Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
+* Custom side-nav links to any page of your own
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
 
@@ -275,10 +277,19 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_log_limit = 10000
     report_attachments = all
     report_attachment_limit = 20000
+    report_coverage = auto
+    report_coverage_limit = 500
+    report_link =
+        Coverage=htmlcov/index.html
+        CI job=https://ci.example.com/job/42
 
 ``report_logs`` takes the same values as ``--report-logs`` (``all`` / ``failed`` / ``none``) and ``report_log_limit``
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). ``report_attachments`` and
-``report_attachment_limit`` mirror ``--report-attachments`` and ``--report-attachment-limit`` the same way.
+``report_attachment_limit`` mirror ``--report-attachments`` and ``--report-attachment-limit`` the same way, as do
+``report_coverage``, ``report_coverage_file`` and ``report_coverage_limit``.
+
+``report_link`` takes one ``Label=URL`` per line and, like ``build_info``, adds to whatever ``--report-link`` passes
+rather than being replaced by it.
 
 ``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
 location without going through ``addopts``.
@@ -289,8 +300,10 @@ place for it: set it once and every invocation, however it is started, keeps the
 
 **Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
-``--archive-count``, ``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``,
-``--report-attachments`` and ``--report-attachment-limit`` override their ini values
+``--report-link`` entries are added to the ones set in the ini file the same way; ``--archive-count``,
+``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``, ``--report-attachments``,
+``--report-attachment-limit``, ``--report-coverage``, ``--report-coverage-file`` and ``--report-coverage-limit``
+override their ini values
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
@@ -606,6 +619,130 @@ any positive integer       Characters per payload
 
     $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 
+
+coverage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Run with ``pytest-cov`` and the report grows a ``Coverage`` tab: the overall percentage as a ring, the counts beside
+it, a row per file with its missing lines, and the percentage plotted across the builds you have kept. A chip on the
+``Dashboard`` shows the figure and crosses to the tab. Nothing needs configuring - if coverage was measured, it is
+there::
+
+    $ pytest tests/ --cov=my_package --html-report=./report
+    $ pytest tests/ --cov=my_package --cov-branch --html-report=./report
+
+``--cov`` takes the **import name or the path of the code under test** - your package, not the tests. Getting that
+wrong is the one thing that leaves the tab empty after doing everything else right, so the tab says so when it
+happens rather than showing you a guide to what you just did.
+
+The number is coverage.py's own, taken through its public API, so **the tab and your terminal always agree**. With
+``--cov-branch`` on, branch coverage is folded into it exactly as ``pytest-cov`` folds it in, and the table gains a
+``Branches`` column; without it, that column is dropped rather than filled with zeroes.
+
+Files are listed **least covered first**, which is the order worth reading and the only defensible way to shorten the
+list on a large project.
+
+..
+
+        Coverage that was measured somewhere else
+
+The tab does not need ``pytest-cov`` to have run in this session. Point ``--report-coverage-file`` at a report that
+already exists - useful in CI, where coverage is often produced by an earlier step::
+
+    $ pytest tests/ --report-coverage-file=coverage.xml     # Cobertura, from `coverage xml`
+    $ pytest tests/ --report-coverage-file=coverage.json    # from `coverage json`
+    $ pytest tests/ --report-coverage-file=.coverage        # coverage.py's own data file
+
+The kind is worked out from the file's contents, not its name. A ``coverage.json`` or ``coverage.xml`` sitting beside
+the report or at the project root is found without being named at all. A ``.coverage`` data file is **not** picked up
+that way - one is usually left over from an earlier run, and quietly publishing a number from last Tuesday is worse
+than publishing none - so name it if you want it. Whichever source is used, the tab says which, and for a file it says
+when that file was written.
+
+Reading a Cobertura ``coverage.xml`` needs no ``coverage`` package installed at all, which makes it the useful one when
+the reporting job is not the job that ran the tests.
+
+=================================  =============================================================================
+Option                             What it does
+=================================  =============================================================================
+``--report-coverage``              ``auto`` *(default)* builds the tab from whatever coverage is there; ``none``
+                                   switches it off, including the entry in ``output.json``
+``--report-coverage-file``         Read coverage from this file instead of looking for one
+``--report-coverage-limit``        Files listed in the table, least covered first: ``500`` *(default)*, any
+                                   positive integer, or ``0`` for all of them
+=================================  =============================================================================
+
+..
+
+        Colour, targets and drift
+
+The ring is green at 90% and above, amber at 75%, red below that - unless the project has stated its own bar with
+``--cov-fail-under``, in which case that is the line the colour is drawn at and the tab says so. A report should not
+disagree with the build that just passed or failed beside it::
+
+    $ pytest tests/ --cov=my_package --cov-fail-under=80 --html-report=./report
+
+The percentage is written into ``output.json`` alongside the test counts, so it travels with the archived builds. That
+is what gives the tab its ``+0.8 since the last build`` and its trend line. A build that ran without coverage leaves a
+gap in that line rather than a drop to zero.
+
+..
+
+        The annotated source
+
+The one thing a summary cannot replace is the source, line by line, with the missed lines marked. Generate it and the
+tab links to it::
+
+    $ pytest tests/ --cov=my_package --cov-report=html --html-report=./report
+
+It is **linked, never embedded**. Framing ``htmlcov`` into this page would break the property the whole reporter is
+built on - one file you can mail, publish as a CI artifact or open off a stick - and it would break silently, showing
+an empty frame wherever the folder did not travel with it. The link is offered only when the folder was written by
+*this* run, so an ``htmlcov`` left over from last week is not passed off as current.
+
+.. image:: images/test_coverage.png
+   :alt: Test Coverage
+   :width: 800px
+
+.. image:: images/test_coverage_list.png
+   :alt: Test Coverage List
+   :width: 800px
+
+the Coverage tab is empty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Work down this list; the first one that applies is the answer:
+
+1. **Did anything measure coverage?** ``pytest-cov`` has to be installed *and* ``--cov`` passed. With neither, the
+   tab shows the setup guide - which is the correct answer, not a fault.
+2. **Is** ``--cov`` **pointing at code that actually gets imported?** This is the usual one.
+   ``--cov=src`` against a project that has no ``src`` directory measures nothing at all, and ``pytest-cov`` prints
+   ``Module src was never imported`` and ``No data was collected`` in among the rest of the run. The tab repeats it,
+   naming the flag you typed. Pass your package instead - ``--cov=my_package``, or a path like ``--cov=./app``.
+3. **Is** ``--report-coverage=none`` **set?** Check ``addopts`` and ``report_coverage`` in ``pytest.ini`` /
+   ``pyproject.toml`` / ``tox.ini``, not just the command you typed.
+4. **Is** ``--report-coverage-file`` **pointing at something that is not a coverage report?** The tab names the file
+   it could not read.
+
+Whichever source the numbers do come from, the tab states it - ``Measured by pytest-cov during this run``, or
+``Read from coverage.xml, written 2026-08-31 20:23`` - so you can always tell which of these you are in.
+
+custom side-nav links
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``--report-link`` adds an entry to the report's side nav pointing at any page you like - the annotated coverage
+source, a CI job, a Grafana board, an internal wiki page. Repeat it as often as you need::
+
+    $ pytest tests/ --report-link "Coverage=htmlcov/index.html" \
+                    --report-link "CI job=https://ci.example.com/job/42"
+
+Relative paths are resolved from wherever the report is written, so linking a folder that ships beside it works. Links
+open in a new tab. Anything carrying a scheme other than ``http``, ``https`` or ``mailto`` - ``javascript:`` and
+``data:``, in practice - is dropped rather than rendered: a report is a build artifact that gets published and passed
+round, and a nav entry has no business being able to run something in whoever opens it.
+
+.. image:: images/side_nav.png
+   :alt: Side Nav
 
 parallel runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -15,8 +15,10 @@ from pytest_html_reporter.util import (
     report_attachment_limit,
     report_attachments_mode,
     report_log_limit,
+    report_links,
     report_logs_mode,
     report_path,
+    safe_link,
     trim_log_sections,
 )
 
@@ -346,3 +348,45 @@ def test_report_path_leaves_a_plain_path_alone():
 def test_report_path_keeps_an_escaped_percent():
     config = _FakeConfig(options={"path": "./report/%%Y.html"})
     assert report_path(config) == "./report/%Y.html"
+
+
+def test_report_links_from_the_command_line():
+    config = _FakeConfig(options={"report_link": ["Coverage=htmlcov/index.html",
+                                                  "CI=https://ci.example.com/42"]})
+
+    assert report_links(config) == [("Coverage", "htmlcov/index.html"),
+                                    ("CI", "https://ci.example.com/42")]
+
+
+def test_report_links_from_the_ini_too():
+    config = _FakeConfig(options={"report_link": ["A=a.html"]},
+                         ini={"report_link": ["B=b.html"]})
+
+    assert report_links(config) == [("A", "a.html"), ("B", "b.html")]
+
+
+def test_report_links_ignores_an_entry_missing_half_of_itself():
+    config = _FakeConfig(options={"report_link": ["", "=nowhere.html", "Label=", "  "]})
+
+    assert report_links(config) == []
+
+
+def test_safe_link_keeps_relative_paths_and_the_schemes_it_knows():
+    assert safe_link("htmlcov/index.html") == "htmlcov/index.html"
+    assert safe_link("./reports/a.html") == "./reports/a.html"
+    assert safe_link("https://example.com") == "https://example.com"
+    assert safe_link("mailto:team@example.com") == "mailto:team@example.com"
+
+
+def test_safe_link_drops_a_scheme_that_would_run_something():
+    """A report is a build artifact that gets published and passed round; a nav
+    entry must not become a way to run code in whoever opens the page."""
+    assert safe_link("javascript:alert(1)") == ""
+    assert safe_link("JavaScript:alert(1)") == ""
+    assert safe_link("data:text/html,<script>alert(1)</script>") == ""
+    assert safe_link("vbscript:msgbox") == ""
+
+
+def test_safe_link_reads_a_windows_drive_letter_as_a_path():
+    """A one-character scheme is a drive letter everywhere it actually occurs."""
+    assert safe_link("C:/builds/htmlcov/index.html") == "C:/builds/htmlcov/index.html"

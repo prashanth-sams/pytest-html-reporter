@@ -3439,6 +3439,290 @@
                 }
             </style>
             <style>
+                /* ============================================================
+                   Coverage (issue #203)
+                   The numbers are drawn here rather than htmlcov being framed
+                   into the page: an iframe empties itself the moment the
+                   report is mailed or published on its own, and it does it
+                   without saying so. The annotated source is linked instead.
+                   ============================================================ */
+                .cov-page.is-empty .cov-shell {
+                    display: none;
+                }
+
+                .cov-page.is-empty .cov-empty {
+                    display: block;
+                }
+
+                .cov-page.no-trend .cov-trend {
+                    display: none;
+                }
+
+                .cov-hero {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 26px;
+                    padding: 22px 26px;
+                    margin-bottom: 14px;
+                }
+
+                .cov-ring-wrap {
+                    position: relative;
+                    flex: 0 0 auto;
+                    width: 132px;
+                    height: 132px;
+                }
+
+                .cov-ring {
+                    width: 132px;
+                    height: 132px;
+                    /* Start the arc at twelve o'clock rather than at three. */
+                    transform: rotate(-90deg);
+                }
+
+                .cov-ring circle {
+                    fill: none;
+                    stroke-width: 11;
+                }
+
+                .cov-ring__track {
+                    stroke: #eef1f6;
+                }
+
+                .cov-ring__value {
+                    stroke-linecap: round;
+                }
+
+                .cov-grade-strong .cov-ring__value { stroke: #98cc64; }
+                .cov-grade-fair   .cov-ring__value { stroke: #ffd050; }
+                .cov-grade-low    .cov-ring__value { stroke: #fc6766; }
+
+                .cov-ring__label {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    font-family: sans-serif;
+                }
+
+                .cov-ring__figure {
+                    font-size: 1.85rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                    line-height: 1;
+                }
+
+                .cov-ring__unit {
+                    margin-top: 6px;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    color: slategrey;
+                }
+
+                .cov-hero__body {
+                    flex: 1 1 340px;
+                    min-width: 0;
+                }
+
+                .cov-tiles {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                }
+
+                .cov-tile {
+                    min-width: 94px;
+                    padding: 10px 16px;
+                    border: 1px solid #e9edf3;
+                    border-radius: 0.5rem;
+                    background-color: #ffffff;
+                }
+
+                .cov-tile__value {
+                    font-family: sans-serif;
+                    font-size: 1.15rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                }
+
+                .cov-tile__label {
+                    margin-top: 2px;
+                    text-transform: uppercase;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
+                    color: slategrey;
+                }
+
+                .cov-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 6px 14px;
+                    margin-top: 14px;
+                    font-family: sans-serif;
+                    font-size: 0.85rem;
+                    color: slategrey;
+                }
+
+                /* Every part of this line is optional - there is no delta on a
+                   first build, no target unless one was set, no link unless
+                   htmlcov is really there - so each hides itself when empty
+                   rather than leaving a gap or a dead anchor behind. */
+                .cov-meta > :empty,
+                .cov-meta .cov-link[href=""] {
+                    display: none;
+                }
+
+                .cov-delta {
+                    font-weight: 700;
+                }
+
+                .cov-delta.is-up { color: #6aa63b; }
+                .cov-delta.is-down { color: #d64b4a; }
+                .cov-delta.is-level { color: slategrey; }
+
+                .cov-target {
+                    padding: 2px 9px;
+                    border: 1px solid #e9edf3;
+                    border-radius: 0.5rem;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
+                    text-transform: uppercase;
+                }
+
+                .cov-link {
+                    color: #6c7480;
+                    text-decoration: none;
+                    border-bottom: 1px solid #dfe4ec;
+                }
+
+                .cov-link:hover {
+                    color: #39404d;
+                }
+
+                .cov-link .fa {
+                    margin-left: 6px;
+                    font-size: 0.75rem;
+                }
+
+                .cov-trend {
+                    padding: 16px 22px 20px 22px;
+                    margin-bottom: 14px;
+                }
+
+                .cov-trend__head {
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    color: darkgrey;
+                    margin-bottom: 8px;
+                }
+
+                .cov-trend__head i {
+                    color: #a9a9a9;
+                    margin-right: 9px;
+                }
+
+                .cov-trend__wrap {
+                    position: relative;
+                    height: 170px;
+                }
+
+                /* ---- The per-file table ---- */
+                .metrics-card td.cov-cell {
+                    white-space: nowrap;
+                }
+
+                .cov-bar {
+                    display: inline-block;
+                    vertical-align: middle;
+                    width: 84px;
+                    height: 7px;
+                    margin-right: 9px;
+                    border-radius: 4px;
+                    background-color: #eef1f6;
+                    overflow: hidden;
+                }
+
+                .cov-bar__fill {
+                    display: block;
+                    height: 100%;
+                    border-radius: 4px;
+                }
+
+                .cov-bar__fill--strong { background-color: #98cc64; }
+                .cov-bar__fill--fair   { background-color: #ffd050; }
+                .cov-bar__fill--low    { background-color: #fc6766; }
+
+                .cov-bar__value {
+                    font-family: sans-serif;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    color: #4a5160;
+                }
+
+                .metrics-card td.cov-lines {
+                    max-width: 320px;
+                    font-family: monospace;
+                    font-size: 0.78rem;
+                    color: #98a0ad;
+                    white-space: normal;
+                    word-break: break-word;
+                }
+
+                .cov-note {
+                    margin: 10px 4px 0 4px;
+                    font-family: sans-serif;
+                    font-size: 0.82rem;
+                    color: #a9b0ba;
+                }
+
+                .cov-note:empty {
+                    display: none;
+                }
+
+                .cov-notice {
+                    max-width: 620px;
+                    margin: 20px auto 0 auto;
+                    padding: 11px 16px;
+                    border: 1px solid #f6cccb;
+                    border-radius: 0.5rem;
+                    background-color: #fff6f6;
+                    font-family: sans-serif;
+                    font-size: 0.85rem;
+                    color: #b05654;
+                    text-align: center;
+                }
+
+                .cov-notice:empty {
+                    display: none;
+                }
+
+                /* ---- The dashboard chip ---- */
+                .cov-trigger--strong { color: #6aa63b; border-color: #d9e9c8; }
+                .cov-trigger--fair   { color: #b58900; border-color: #f3e4b2; }
+                .cov-trigger--low    { color: #d64b4a; border-color: #f6cccb; }
+
+                @media screen and (max-width: 900px) {
+                    .cov-hero {
+                        justify-content: center;
+                        text-align: center;
+                    }
+
+                    .cov-tiles,
+                    .cov-meta {
+                        justify-content: center;
+                    }
+                }
+
+            </style>
+            <style>
                 .progress-bar.downloading {
                     background: -webkit-linear-gradient(left, #fc6665 %(max_failure_percent)%%,#50597b %(max_failure_percent)%%); /* Chrome10+,Safari5.1+ */
                     background: -ms-linear-gradient(left, #fc6665 %(max_failure_percent)%%,#50597b %(max_failure_percent)%%); /* IE10+ */
@@ -3470,6 +3754,10 @@
             <a class="tablink" href="#api-logs" onclick="openPage('attachments', this, 'white', '#565656', 'groove'); refreshAttachments();">
                 <i class="fa fa-exchange" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> API Logs
             </a>
+            <a class="tablink" href="#coverage" onclick="openPage('coverage', this, 'white', '#565656', 'groove'); executeDataTable('#cov',4,'asc')">
+                <i class="fa fa-shield" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Coverage
+            </a>
+            %(report_links)%
             <a class="sponsor" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="Pickoh &mdash; sponsor of pytest-html-reporter">
                 <span class="sponsor__label">Sponsored by</span>
                 <span class="brandmark">PICK<svg class="brandmark__pin" viewBox="3 1 18 22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M12 2a8 8 0 0 1 8 8c0 5.2-5.6 10.6-7.4 12.2a.9.9 0 0 1-1.2 0C9.6 20.6 4 15.2 4 10a8 8 0 0 1 8-8Zm0 11.6a3.6 3.6 0 1 0 0-7.2 3.6 3.6 0 0 0 0 7.2Z"/></svg>H</span>
@@ -3487,6 +3775,7 @@
                             <button type="button" class="env-trigger" aria-haspopup="dialog" aria-controls="environmentOverlay" onclick="toggleEnvironment(true)">
                                 <i class="fa fa-desktop" aria-hidden="true"></i><span>Environment</span>
                             </button>
+                            %(coverage_chip)%
                             <span class="time__taken">
                                 <svg width="22px" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="margin: -1% 2% 0% 29%; -ms-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg);" preserveAspectRatio="xMidYMid meet" viewBox="0 0 1536 1536"><path d="M896 416v448q0 14-9 23t-23 9H544q-14 0-23-9t-9-23v-64q0-14 9-23t23-9h224V416q0-14 9-23t23-9h64q14 0 23 9t9 23zm416 352q0-148-73-273t-198-198t-273-73t-273 73t-198 198t-73 273t73 273t198 198t273 73t273-73t198-198t73-273zm224 0q0 209-103 385.5T1153.5 1433T768 1536t-385.5-103T103 1153.5T0 768t103-385.5T382.5 103T768 0t385.5 103T1433 382.5T1536 768z" fill="#a9a9a9"/></svg>
                                     Time taken %(execution_time)%
@@ -3717,6 +4006,9 @@
                         failureScreenshots();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
+                        // Ascending: the files worth opening the tab for are
+                        // the ones at the bottom of the percentage.
+                        executeDataTable('#cov', 4, 'asc');
                     };
                 </script>
             </div>
@@ -4049,6 +4341,128 @@ CAPTURE = {
                 <div id="attachStore" hidden>%(attachment_store)%</div>
             </div>
         </div>
+        <div class="tabcontent" id="coverage">
+            <div class="metrics-page cov-page %(coverage_state)% %(coverage_trend_state)%">
+                <div class="metrics-page__head">
+                    <div>
+                        <div class="metrics-page__title"><i class="fa fa-shield"></i>Coverage</div>
+                        <div class="metrics-page__subtitle">How much of the code under test this run actually ran</div>
+                    </div>
+                </div>
+
+                <div class="cov-shell">
+                    <div class="metrics-card cov-hero cov-grade-%(coverage_grade)%">
+                        <div class="cov-ring-wrap">
+                            <svg class="cov-ring" viewBox="0 0 120 120" role="img" aria-label="%(coverage_display)% percent covered">
+                                <circle class="cov-ring__track" cx="60" cy="60" r="52"></circle>
+                                <circle class="cov-ring__value" cx="60" cy="60" r="52" stroke-dasharray="%(coverage_dash)%"></circle>
+                            </svg>
+                            <div class="cov-ring__label">
+                                <span class="cov-ring__figure">%(coverage_display)%%</span>
+                                <span class="cov-ring__unit">covered</span>
+                            </div>
+                        </div>
+                        <div class="cov-hero__body">
+                            <div class="cov-tiles">%(coverage_tiles)%</div>
+                            <div class="cov-meta">
+                                <span class="cov-source">%(coverage_meta)%</span>
+                                <span class="cov-delta %(coverage_delta_class)%">%(coverage_delta)%</span>
+                                <span class="cov-target">%(coverage_target)%</span>
+                                <a class="cov-link" href="%(coverage_link)%" target="_blank" rel="noopener noreferrer">Annotated source<i class="fa fa-external-link"></i></a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metrics-card cov-trend">
+                        <div class="cov-trend__head"><i class="fa fa-line-chart"></i>Coverage across the last builds</div>
+                        <div class="cov-trend__wrap"><canvas id="coverageTrend"></canvas></div>
+                    </div>
+
+                    <div class="metrics-card">
+                        <table class="table row-border tablecard" id="cov">
+                            <thead>
+                                <tr>
+                                    <th class="th-left">File</th>
+                                    <th>Statements</th>
+                                    <th>Missing</th>
+                                    <th>Branches</th>
+                                    <th>Coverage</th>
+                                    <th class="th-left">Missing lines</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                %(coverage_rows)%
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="cov-note">%(coverage_note)%</div>
+                </div>
+
+                <div class="attach-empty cov-empty">
+                    <div class="attach-empty__head">
+                        <div class="attach-empty__icon"><i class="fa fa-shield"></i></div>
+                        <div class="attach-empty__title">No coverage in this run</div>
+                        <div class="attach-empty__text">
+                          Measure it and this tab fills itself in - the percentage, the split by file,
+                          and the lines nothing touched - beside the tests that did the measuring.
+                        </div>
+                    </div>
+
+                    <div class="cov-notice">%(coverage_notice)%</div>
+
+                    <div class="setup-guide">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Run with coverage</div>
+                            <div class="setup-step__note">
+                                Nothing else to configure. Whatever <b>pytest-cov</b> measured is read
+                                straight out of the finished run, so the number here is the number your
+                                terminal just printed.
+                            </div>
+                            <pre class="setup-step__code">pip install pytest-cov
+
+pytest <b>--cov</b>=src <b>--cov-branch</b></pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Or read a report you already have<span class="setup-step__badge">for CI</span></div>
+                            <div class="setup-step__note">
+                                When coverage was produced by an earlier step rather than by this run.
+                                A <b>coverage.json</b>, a Cobertura <b>coverage.xml</b> or a <b>.coverage</b>
+                                data file all work - and the first two are found without being named if
+                                they sit beside the report.
+                            </div>
+                            <pre class="setup-step__code">pytest <b>--report-coverage-file</b>=coverage.xml</pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Keep the annotated source a click away</div>
+                            <div class="setup-step__note">
+                                Line-by-line source is the one thing a summary cannot replace. Generate it
+                                and it is linked from the card above; <b>--report-link</b> does the same for
+                                any page of your own.
+                            </div>
+                            <pre class="setup-step__code">pytest <b>--cov</b>=src <b>--cov-report</b>=html
+
+<span class="c"># anything else worth reaching from the side nav</span>
+pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span></pre>
+                        </div>
+                    </div>
+
+                    <div class="setup-foot">
+                        <i class="fa fa-file-o" aria-hidden="true"></i>
+                        <span>
+                            Read, never re-run, and never framed in. Embedding <b>htmlcov</b> would empty
+                            this tab the moment the report was mailed on its own - so the figures are
+                            rendered here and the annotated source is <b>linked</b>.
+                        </span>
+                    </div>
+
+                    <div class="setup-links">
+                        <a href="https://github.com/prashanth-sams/pytest-html-reporter#coverage" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="log-overlay" id="logOverlay" hidden>
             <div class="log-overlay__backdrop" onclick="toggleLogs(false)"></div>
             <div class="log-overlay__panel" role="dialog" aria-modal="true" aria-label="Captured output">
@@ -4311,7 +4725,21 @@ CAPTURE = {
                 }
             }
 
-            function executeDataTable(tabname, sortCol) {
+            // Whether this run measured branch coverage at all.
+            var coverageHasBranches = %(coverage_branch)%;
+
+            // The Branch column is dropped when the run measured no branches:
+            // a column of dashes says only that --cov-branch was not passed.
+            // Every other table keeps the entry it always had.
+            function metricsColumnDefs(tabname) {
+                if (tabname === '#cov' && !coverageHasBranches) {
+                    return [ { targets: 3, visible: false } ];
+                }
+
+                return [ { visible: false } ];
+            }
+
+            function executeDataTable(tabname, sortCol, sortDir) {
                 var fileTitle, searchPlaceholder;
                 switch (tabname) {
                     case "#sm":
@@ -4322,6 +4750,10 @@ CAPTURE = {
                         fileTitle = "TestMetrics";
                         searchPlaceholder = "Search tests";
                         break;
+                    case "#cov":
+                        fileTitle = "Coverage";
+                        searchPlaceholder = "Search files";
+                        break;
                     default:
                         fileTitle = "metrics";
                         searchPlaceholder = "Search";
@@ -4329,7 +4761,7 @@ CAPTURE = {
                 $(tabname).DataTable({
                     retrieve: true,
                     "order": [
-                        [Number(sortCol), "desc"]
+                        [Number(sortCol), sortDir || "desc"]
                     ],
                     dom: '<"metrics-toolbar"l<"metrics-buttons"B>f>r<"metrics-scroll"t><"metrics-footer"ip>',
                     "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
@@ -4405,9 +4837,7 @@ CAPTURE = {
                         postfixButtons: [ 'colvisRestore' ]
                     },
                 ],
-                columnDefs: [ {
-                    visible: false,
-                } ]
+                columnDefs: metricsColumnDefs(tabname)
                 }
             );
         }
@@ -4526,6 +4956,7 @@ CAPTURE = {
                         'test-metrics': 'testMetrics',
                         'archives': 'archives',
                         'screenshots': 'screenshots',
+                        'coverage': 'coverage',
                         'api-logs': 'attachments',
                         // The tab was called Attachments before it was called
                         // API Logs; a link handed round in the meantime still
@@ -4996,6 +5427,87 @@ CAPTURE = {
             });
         </script>
         <script>
+            // Coverage across the retained builds, read out of the same
+            // output.json files the Trends chart is drawn from. Oldest first:
+            // this chart is about drift, and drift reads left to right.
+            var coverageTrendLabels = %(coverage_trend_labels)%;
+            var coverageTrendValues = %(coverage_trend_values)%;
+
+            (function() {
+                var canvas = document.getElementById('coverageTrend');
+                if (!canvas || coverageTrendValues.length < 2) { return; }
+
+                new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: coverageTrendLabels,
+                        datasets: [{
+                            label: 'Coverage',
+                            fill: true,
+                            backgroundColor: 'rgba(152, 204, 100, 0.13)',
+                            borderColor: '#98cc64',
+                            pointBackgroundColor: '#b3c89e',
+                            // A build that measured nothing leaves a hole in
+                            // the line, not the drop to zero it never took.
+                            spanGaps: false,
+                            data: coverageTrendValues
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: {
+                            line: { borderWidth: 2 },
+                            point: { radius: 3, hoverRadius: 5 }
+                        },
+                        scales: {
+                            xAxes: [{
+                                ticks: { fontSize: 11, fontColor: '#999' },
+                                gridLines: { display: false }
+                            }],
+                            yAxes: [{
+                                ticks: {
+                                    // Pinned to the full scale: an axis that
+                                    // fits itself to the data turns half a
+                                    // point of movement into a cliff.
+                                    beginAtZero: true,
+                                    min: 0,
+                                    max: 100,
+                                    stepSize: 25,
+                                    fontSize: 12,
+                                    fontColor: '#999',
+                                    callback: function(value) { return value + '%'; }
+                                }
+                            }]
+                        },
+                        tooltips: {
+                            mode: 'point',
+                            intersect: false,
+                            backgroundColor: '#FFF',
+                            custom: keepTooltipInsideCanvas,
+                            titleFontSize: 13,
+                            titleFontColor: '#555555',
+                            titleMarginBottom: 7,
+                            bodyFontColor: '#000',
+                            bodyFontSize: 12,
+                            displayColors: false,
+                            borderColor: '#555555',
+                            borderWidth: 2,
+                            cornerRadius: 4,
+                            caretSize: 6,
+                            caretPadding: 8,
+                            xPadding: 10,
+                            yPadding: 9,
+                            callbacks: {
+                                label: function(item) { return item.yLabel + '% covered'; }
+                            }
+                        }
+                    }
+                });
+            })();
+        </script>
+        <script>
             function failureScreenshots() {
                 // The grid is baked in at report-generation time, so a run that
                 // attached nothing leaves the tab as a blank slab. Flag the empty
@@ -5219,6 +5731,14 @@ CAPTURE = {
             // than by its href. Matching on the href is what broke the row
             // button when this tab's label and hash changed: the link was
             // still there, and nothing said it had stopped being found.
+            // The dashboard's coverage chip crosses to the tab rather than
+            // opening an overlay of its own: the ring, the per-file split and
+            // the trend are all worth more room than a card can spare.
+            function openCoverageTab() {
+                var link = tabLinkFor('coverage');
+                if (link) { link.click(); }
+            }
+
             function tabLinkFor(pageName) {
                 var links = document.getElementsByClassName('tablink');
                 for (var i = 0; i < links.length; i++) {

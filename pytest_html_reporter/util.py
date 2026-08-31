@@ -16,6 +16,7 @@ from PIL import Image
 
 from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
+from html_page.report_link import ReportLink
 from pytest_html_reporter.const_vars import ConfigVars
 
 
@@ -231,6 +232,66 @@ def build_info(config):
         pairs.append((key.strip(), value.strip()))
 
     return pairs
+
+
+# A scheme of two characters or more, so a Windows drive letter - C:/reports -
+# is read as the path it is rather than as a scheme this does not know.
+_URL_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]+:")
+
+SAFE_SCHEMES = ("http://", "https://", "mailto:")
+
+
+def safe_link(url):
+    """A url fit to put in the report's nav, or '' when it is not one.
+
+    The nav is assembled out of whatever a command line said, and the report is
+    a build artifact that gets published and passed round. A scheme this does
+    not know - javascript:, data: - is dropped rather than rendered, so a nav
+    entry cannot become a way to run something in whoever opens the page.
+    Relative paths are left alone: linking ./htmlcov/index.html beside the
+    report is the whole point of the option.
+    """
+    url = str(url).strip()
+
+    if not url:
+        return ""
+
+    if _URL_SCHEME.match(url) and not url.lower().startswith(SAFE_SCHEMES):
+        return ""
+
+    return url
+
+
+def report_links(config):
+    """(label, url) pairs from --report-link and the report_link ini key.
+
+    Issue #203 asked for the coverage html report inside this one. The answer
+    to the general form of that - "let me reach my own pages from here" - is a
+    link in the nav rather than a frame in the page: a frame would quietly
+    empty itself the moment the report is mailed or published on its own,
+    while a link that does not resolve at least says so in the address bar.
+    """
+    entries = list(config.getoption("report_link", None) or [])
+    entries += list(_ini(config, "report_link") or [])
+
+    links = []
+    for entry in entries:
+        label, _, url = str(entry).strip().partition("=")
+        label = label.strip()
+        url = safe_link(url)
+
+        if label and url:
+            links.append((label, url))
+
+    return links
+
+
+def generate_report_links(config):
+    ConfigVars._report_links = "".join(
+        str(ReportLink(label=escape_report_text(label), url=escape_report_text(url),
+                       title=escape_report_text(url)))
+        for label, url in report_links(config)
+    )
 
 
 def generate_environment_info(config):

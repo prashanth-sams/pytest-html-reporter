@@ -9,6 +9,10 @@ from html_page.attachment_body import AttachmentBody
 from html_page.attachment_item import AttachmentItem
 from html_page.attachment_meta import AttachmentMeta
 from html_page.attachment_part import AttachmentPart
+from html_page.coverage_chip import CoverageChip
+from html_page.coverage_row import CoverageRow
+from html_page.coverage_tile import CoverageTile
+from html_page.report_link import ReportLink
 from html_page.env_row import EnvRow
 from html_page.floating_error import FloatingError
 from html_page.screenshot_details import ScreenshotDetails
@@ -334,6 +338,88 @@ def test_env_row():
     value_node = soup.find("span", class_="env-item__value")
     assert value_node.text.strip() == value
     assert value_node["title"] == value
+
+
+def test_coverage_row():
+    name = "src/" + get_random_string() + ".py"
+
+    row = CoverageRow(name=name, statements="42", missing="7", branches="4",
+                      branch_cell="3/4", percent="83.33", display="83.3",
+                      grade="fair", lines="12-15, 88")
+    soup = BeautifulSoup(str(row), "html.parser")
+    cells = soup.findAll("td")
+
+    assert cells[0].text.strip() == name
+    assert cells[0]["title"] == name
+    for node, expected in zip(cells[1:4], ["42", "7", "3/4"]):
+        assert node.text.strip() == expected
+
+    # The bar is what the eye reads; data-order is what the table sorts on, so
+    # 100 cannot end up between 1 and 2 the way the rendered text would.
+    assert cells[3]["data-order"] == "4"
+    assert cells[4]["data-order"] == "83.33"
+    assert cells[4].find("span", class_="cov-bar__value").text.strip() == "83.3%"
+
+    fill = cells[4].find("span", class_="cov-bar__fill")
+    assert "cov-bar__fill--fair" in fill["class"]
+    assert fill["style"] == "width:83.33%"
+
+    assert cells[5].text.strip() == "12-15, 88"
+
+
+def test_coverage_row_for_a_file_with_no_branches():
+    """A dash, not a 0: this file has no branches to cover, which is not the
+    same statement as none of its branches being covered."""
+    row = CoverageRow(name="src/a.py", statements="3", missing="0", branches="0",
+                      branch_cell="&mdash;", percent="100.00", display="100",
+                      grade="strong", lines="")
+    soup = BeautifulSoup(str(row), "html.parser")
+    cells = soup.findAll("td")
+
+    assert cells[3].text.strip() == "\u2014"
+    assert cells[3]["data-order"] == "0"
+    assert cells[5].text.strip() == ""
+
+
+def test_coverage_tile():
+    label = get_random_string()
+    value = str(get_random_number())
+
+    soup = BeautifulSoup(str(CoverageTile(label=label, value=value)), "html.parser")
+
+    assert soup.find("div", class_="cov-tile__value").text.strip() == value
+    assert soup.find("div", class_="cov-tile__label").text.strip() == label
+
+
+def test_coverage_chip():
+    title = get_random_string()
+
+    soup = BeautifulSoup(str(CoverageChip(grade="strong", display="91.4", title=title)),
+                         "html.parser")
+    button = soup.find("button")
+
+    assert "cov-trigger--strong" in button["class"]
+    assert button["title"] == title
+    assert button["onclick"] == "openCoverageTab()"
+    assert button.find("span").text.strip() == "Coverage 91.4%"
+
+
+def test_report_link():
+    url = "https://ci.example.com/job/42"
+    label = get_random_string()
+
+    soup = BeautifulSoup(str(ReportLink(label=label, url=url, title=url)), "html.parser")
+    link = soup.find("a")
+
+    assert link["href"] == url
+    assert link["title"] == url
+    assert link.text.strip() == label
+    # A new tab, and no window.opener handed to whatever is at the far end.
+    assert link["target"] == "_blank"
+    assert link["rel"] == ["noopener", "noreferrer"]
+    # It must not look like a tab this page can open, or the hash router
+    # would try to route to a page that does not exist.
+    assert link["class"] == ["tablink", "tablink--out"]
 
 
 def _hash_map(page):
