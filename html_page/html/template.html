@@ -691,11 +691,19 @@
                      background-position: center center;
                      background-size: cover;
                 }
-                 .video:hover .video-hover-desc {
+                 /* Tabbing to a tile must not box it in the browser's blue
+                    focus ring; keyboard focus still shows, as the hover
+                    treatment the tile already has. */
+                 .video:focus {
+                     outline: none;
+                }
+                 .video:hover .video-hover-desc,
+                 .video:focus-visible .video-hover-desc {
                      margin-top: -170px;
                      height: 170px;
                 }
-                 .video:hover .video-hover-desc:before {
+                 .video:hover .video-hover-desc:before,
+                 .video:focus-visible .video-hover-desc:before {
                      background: linear-gradient(to top,rgba(35,72,133,0.82),rgba(35,72,133,0));
                      transition: .3s;
                 }
@@ -746,7 +754,10 @@
                     background-color: #ffffff;
                     border-radius: 6px;
                     box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
-                    padding: 58px 24px 62px 24px;
+                    padding: 52px 24px 44px 24px;
+                }
+
+                .screenshot-empty__head {
                     text-align: center;
                 }
 
@@ -793,25 +804,6 @@
                     line-height: 1.55;
                 }
 
-                .screenshot-empty__snippet {
-                    display: inline-block;
-                    margin-top: 20px;
-                    padding: 9px 14px;
-                    background-color: #fafbfc;
-                    border: 1px solid #eef1f5;
-                    border-radius: 5px;
-                    font-family: Menlo, Consolas, monospace;
-                    font-size: 11.5px;
-                    color: #7c8593;
-                    white-space: nowrap;
-                    overflow-x: auto;
-                    max-width: 100%;
-                }
-
-                .screenshot-empty__snippet b {
-                    font-weight: 600;
-                    color: #3571a3;
-                }
                 .modal p {
                     word-wrap: break-word;
                 }
@@ -2409,7 +2401,8 @@
                     margin: 0;
                 }
 
-                .metrics-card .dataTables_filter input {
+                .metrics-card .dataTables_filter input,
+                .metrics-card .attach-search input {
                     margin: 0;
                     width: 250px;
                     max-width: 100%;
@@ -2426,11 +2419,13 @@
                     transition: border-color 0.15s ease, box-shadow 0.15s ease;
                 }
 
-                .metrics-card .dataTables_filter input::placeholder {
+                .metrics-card .dataTables_filter input::placeholder,
+                .metrics-card .attach-search input::placeholder {
                     color: #a9b0ba;
                 }
 
-                .metrics-card .dataTables_filter input:focus {
+                .metrics-card .dataTables_filter input:focus,
+                .metrics-card .attach-search input:focus {
                     outline: none;
                     border-color: #8fb8dd;
                     box-shadow: 0 0 0 3px rgba(53, 113, 163, 0.12);
@@ -2741,7 +2736,8 @@
                         margin-left: 0;
                         width: 100%;
                     }
-                    .metrics-card .dataTables_filter input {
+                    .metrics-card .dataTables_filter input,
+                    .metrics-card .attach-search input {
                         width: 100%;
                     }
                     .metrics-card .metrics-scroll table.tablecard {
@@ -2759,6 +2755,686 @@
                     .metrics-card table.tablecard tbody td,
                     .metrics-card table.tablecard thead th {
                         padding: 10px 12px !important;
+                    }
+                }
+            </style>
+            <style>
+                /* ============================================================
+                   Attachments
+                   A rail of everything the run attached on the left, one
+                   payload open on the right. The list is what you scan and the
+                   payload is what you read, so they share a screen rather than
+                   taking turns in an overlay the way captured output does.
+                   ============================================================ */
+                .attach-shell {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .attach-toolbar {
+                    justify-content: space-between;
+                }
+
+                .attach-filters {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .attach-pill {
+                    border: 1px solid #e3e7ee;
+                    border-radius: 7px;
+                    background: #f7fafd;
+                    color: #6b7381;
+                    padding: 5px 12px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .attach-pill:hover {
+                    border-color: #cfd7e3;
+                }
+
+                .attach-pill:focus {
+                    outline: none;
+                }
+
+                .attach-pill.is-active {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                }
+
+                .attach-pill__count {
+                    opacity: 0.6;
+                    margin-left: 6px;
+                    font-weight: 600;
+                }
+
+                .attach-search {
+                    margin-left: auto;
+                }
+
+                /* Arriving from a row's paperclip filters the rail to that one
+                   test, which is only obvious if the page says so. */
+                .attach-scope {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 9px 18px;
+                    background: #f4f8fc;
+                    border-bottom: 1px solid #eef1f5;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #6b7381;
+                }
+
+                .attach-scope em {
+                    font-style: normal;
+                    font-weight: 700;
+                    color: #39404d;
+                }
+
+                .attach-scope button {
+                    margin-left: auto;
+                    border: 1px solid #dbe3ec;
+                    border-radius: 7px;
+                    background: #ffffff;
+                    color: #6b7381;
+                    padding: 3px 11px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                }
+
+                .attach-scope button:hover,
+                .attach-scope button:focus {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                    outline: none;
+                }
+
+                .attach-body {
+                    display: flex;
+                    align-items: stretch;
+                    min-height: 0;
+                    height: calc(100vh - 268px);
+                    min-height: 430px;
+                }
+
+                /* ---- Left: the rail ---- */
+                .attach-rail {
+                    flex: 0 0 314px;
+                    max-width: 314px;
+                    overflow-y: auto;
+                    border-right: 1px solid #eef1f5;
+                    background: #fcfcfd;
+                }
+
+                .attach-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 10px;
+                    width: 100%;
+                    padding: 11px 14px;
+                    border: none;
+                    border-bottom: 1px solid #f1f4f8;
+                    border-left: 3px solid transparent;
+                    background: none;
+                    text-align: left;
+                    cursor: pointer;
+                    transition: background-color 0.12s ease;
+                }
+
+                .attach-item:hover {
+                    background: #f3f7fb;
+                }
+
+                .attach-item:focus {
+                    outline: none;
+                }
+
+                .attach-item.is-active {
+                    background: #ffffff;
+                    border-left-color: #565656;
+                }
+
+                .attach-item__kind {
+                    flex: 0 0 auto;
+                    margin-top: 1px;
+                    border-radius: 4px;
+                    padding: 2px 6px;
+                    font-family: sans-serif;
+                    font-size: 8.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    background-color: rgba(107, 115, 129, 0.12);
+                    color: #6b7381;
+                }
+
+                .attach-item__kind--api {
+                    background-color: rgba(53, 113, 163, 0.13);
+                    color: #3571a3;
+                }
+
+                .attach-item__kind--json {
+                    background-color: rgba(128, 100, 161, 0.15);
+                    color: #7a58a1;
+                }
+
+                .attach-item__kind--file {
+                    background-color: rgba(36, 190, 170, 0.18);
+                    color: #2f8f86;
+                }
+
+                .attach-item__main {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 3px;
+                    flex: 1 1 auto;
+                    min-width: 0;
+                }
+
+                .attach-item__title {
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    color: #39404d;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .attach-item__test {
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    color: #a9b0ba;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                /* The suite path repeats down the whole rail, so it sits back
+                   and lets the test name carry the line. */
+                .attach-item__test em {
+                    font-style: normal;
+                    color: #ccd2da;
+                    margin-left: 6px;
+                }
+
+                .attach-item__tail {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    gap: 3px;
+                    flex: 0 0 auto;
+                }
+
+                .attach-code {
+                    border-radius: 999px;
+                    padding: 2px 8px;
+                    font-family: sans-serif;
+                    font-size: 10px;
+                    font-weight: 700;
+                    background-color: rgba(170, 170, 170, 0.16);
+                    color: #6f747c;
+                }
+
+                /* A call with no status - and every attachment that is not a
+                   call - would otherwise leave an empty pill behind. */
+                .attach-code:empty {
+                    display: none;
+                }
+
+                .attach-code--2xx {
+                    background-color: rgba(152, 204, 100, 0.18);
+                    color: #5c8f2e;
+                }
+
+                .attach-code--3xx {
+                    background-color: rgba(53, 113, 163, 0.13);
+                    color: #3571a3;
+                }
+
+                .attach-code--4xx {
+                    background-color: rgba(252, 103, 102, 0.15);
+                    color: #d5403c;
+                }
+
+                .attach-code--5xx {
+                    background-color: rgba(177, 54, 53, 0.14);
+                    color: #9d3231;
+                }
+
+                .attach-item__detail {
+                    font-family: sans-serif;
+                    font-size: 10px;
+                    color: #a9b0ba;
+                    white-space: nowrap;
+                }
+
+                .attach-rail__empty {
+                    padding: 26px 18px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #a9b0ba;
+                    text-align: center;
+                }
+
+                /* ---- Right: the open payload ---- */
+                .attach-view {
+                    display: flex;
+                    flex-direction: column;
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    min-height: 0;
+                }
+
+                .attach-view__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding: 16px 20px 12px 20px;
+                }
+
+                .attach-view__heading {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    min-width: 0;
+                }
+
+                .attach-view__title {
+                    font-family: sans-serif;
+                    font-size: 1.02rem;
+                    font-weight: 600;
+                    color: #39404d;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .attach-view__test {
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    color: #a9b0ba;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .attach-view__test em {
+                    font-style: normal;
+                    color: #ccd2da;
+                    margin-right: 7px;
+                }
+
+                .attach-view__actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex: 0 0 auto;
+                }
+
+                .attach-action {
+                    border: 1px solid #e3e7ee;
+                    border-radius: 7px;
+                    background: #f7fafd;
+                    color: #6b7381;
+                    padding: 4px 12px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .attach-action:hover,
+                .attach-action:focus {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                    outline: none;
+                }
+
+                .attach-view__meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px 26px;
+                    padding: 0 20px 14px 20px;
+                }
+
+                .attach-meta__item {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    min-width: 0;
+                }
+
+                .attach-meta__item em {
+                    font-family: sans-serif;
+                    font-style: normal;
+                    font-size: 8.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.09em;
+                    text-transform: uppercase;
+                    color: #b4bbc5;
+                }
+
+                .attach-meta__value {
+                    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+                    font-size: 11.5px;
+                    color: #4a5160;
+                    max-width: 430px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .attach-view__tabs {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    padding: 0 20px 12px 20px;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                /* One part is not a choice, so the strip only earns its space
+                   when a call brought a request, a response and a curl line. */
+                .attach-view__tabs:empty {
+                    display: none;
+                }
+
+                .attach-view__body {
+                    flex: 1 1 auto;
+                    min-height: 0;
+                    overflow: auto;
+                    padding: 16px 20px 20px 20px;
+                }
+
+                .attach-part__body {
+                    margin: 0;
+                    padding: 13px 15px;
+                    background: #fbfcfd;
+                    border: 1px solid #eef1f5;
+                    border-radius: 6px;
+                    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+                    font-size: 12px;
+                    line-height: 1.6;
+                    color: #4a5160;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                }
+
+                /* The gallery sits in its own container, so the heading takes
+                   the page padding the metrics tabs get from .metrics-page. */
+                .screenshot-head {
+                    margin: 0.4rem 0.2rem 1rem 0.2rem;
+                }
+
+                /* ---- API Logs tab with nothing attached ----
+                   An empty tab is the only moment anyone reads setup
+                   instructions, so this one carries them rather than an
+                   apology: what to call, and the recipe worth copying. ---- */
+                .attach-empty {
+                    display: none;
+                    width: 100%;
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    padding: 52px 24px 44px 24px;
+                }
+
+                .attach-empty__head {
+                    text-align: center;
+                }
+
+                .attach-page.is-empty .attach-shell {
+                    display: none;
+                }
+
+                .attach-page.is-empty .attach-empty {
+                    display: block;
+                }
+
+                .attach-page.is-empty .metrics-summary {
+                    display: none;
+                }
+
+                .attach-empty__icon {
+                    width: 74px;
+                    height: 74px;
+                    margin: 0 auto 22px auto;
+                    border-radius: 50%;
+                    background-color: #f4f7fa;
+                    border: 1px solid #e8edf3;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .attach-empty__icon i {
+                    font-size: 28px;
+                    color: #c3c9d2;
+                }
+
+                .attach-empty__title {
+                    font-family: sans-serif;
+                    font-size: 1.25rem;
+                    font-weight: 550;
+                    color: #6c7480;
+                }
+
+                .attach-empty__text {
+                    font-family: sans-serif;
+                    font-size: 0.9rem;
+                    color: #a9b0ba;
+                    margin: 9px auto 0 auto;
+                    max-width: 460px;
+                    line-height: 1.55;
+                }
+
+                /* ---- The setup guide ---- */
+                .setup-guide {
+                    max-width: 760px;
+                    margin: 34px auto 0 auto;
+                    text-align: left;
+                }
+
+                .setup-step + .setup-step {
+                    margin-top: 26px;
+                    padding-top: 26px;
+                    border-top: 1px solid #f2f5f8;
+                }
+
+                .setup-step__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-family: sans-serif;
+                    font-size: 0.98rem;
+                    font-weight: 600;
+                    color: #48505c;
+                }
+
+                .setup-step__num {
+                    flex: 0 0 auto;
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background-color: #eef3f9;
+                    color: #3571a3;
+                    font-size: 11.5px;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .setup-step__badge {
+                    margin-left: 2px;
+                    border-radius: 999px;
+                    padding: 2px 9px;
+                    background-color: rgba(152, 204, 100, 0.2);
+                    color: #5c8f2e;
+                    font-size: 9px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                }
+
+                .setup-step__note {
+                    font-family: sans-serif;
+                    font-size: 0.85rem;
+                    line-height: 1.65;
+                    color: #99a1ac;
+                    margin: 8px 0 12px 32px;
+                }
+
+                .setup-step__note b {
+                    font-weight: 600;
+                    color: #7b838f;
+                }
+
+                .setup-step__note--last {
+                    margin: 12px 0 0 32px;
+                }
+
+                .setup-step__code {
+                    margin: 0 0 0 32px;
+                    padding: 14px 16px;
+                    background-color: #fbfcfd;
+                    border: 1px solid #eef1f5;
+                    border-radius: 6px;
+                    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+                    font-size: 11.5px;
+                    line-height: 1.75;
+                    color: #5a6270;
+                    white-space: pre;
+                    overflow-x: auto;
+                }
+
+                /* The names you are meant to type stand out; keywords and
+                   comments step back, so the block reads as a shape rather
+                   than as a wall of identical grey. */
+                .setup-step__code b {
+                    font-weight: 600;
+                    color: #3571a3;
+                }
+
+                .setup-step__code .c {
+                    color: #a9b0ba;
+                }
+
+                .setup-step__code .s {
+                    color: #7a9c54;
+                }
+
+                .setup-foot {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 10px;
+                    max-width: 760px;
+                    margin: 34px auto 0 auto;
+                    padding: 12px 16px;
+                    border: 1px solid #edf0f4;
+                    border-radius: 7px;
+                    background-color: #fbfcfd;
+                    font-family: sans-serif;
+                    font-size: 0.82rem;
+                    line-height: 1.6;
+                    color: #8a929e;
+                    text-align: left;
+                }
+
+                .setup-foot .fa {
+                    color: #b4bbc5;
+                }
+
+                .setup-foot b {
+                    font-weight: 600;
+                    color: #6f7783;
+                }
+
+                /* The credential note is the one worth colouring. */
+                .setup-foot--secure {
+                    border-color: #eaf0e4;
+                    background-color: #fafcf7;
+                    color: #7d8a6c;
+                }
+
+                .setup-foot--secure .fa {
+                    color: #9cb37f;
+                }
+
+                .setup-foot--secure b {
+                    color: #64735a;
+                }
+
+                .setup-links {
+                    max-width: 760px;
+                    margin: 16px auto 0 auto;
+                    text-align: right;
+                }
+
+                .setup-links a {
+                    font-family: sans-serif;
+                    font-size: 0.82rem;
+                    color: #8b939f;
+                    text-decoration: none;
+                }
+
+                .setup-links a:hover {
+                    color: #3571a3;
+                }
+
+                .setup-links .fa {
+                    font-size: 10px;
+                    margin-left: 6px;
+                }
+
+                /* A 314px rail and a payload do not both fit a phone, so the
+                   rail becomes a short list above what it opens. */
+                @media (max-width: 900px) {
+                    .attach-body {
+                        flex-direction: column;
+                        height: auto;
+                    }
+
+                    .attach-rail {
+                        flex: 0 0 auto;
+                        max-width: none;
+                        max-height: 260px;
+                        border-right: none;
+                        border-bottom: 1px solid #eef1f5;
+                    }
+
+                    .attach-view__body {
+                        max-height: 60vh;
+                    }
+
+                    .attach-search {
+                        margin-left: 0;
+                        width: 100%;
+                    }
+
+                    .attach-meta__value {
+                        max-width: 100%;
+                    }
+
+                    .setup-step__note,
+                    .setup-step__code {
+                        margin-left: 0;
                     }
                 }
             </style>
@@ -2790,6 +3466,9 @@
             </a>
             <a class="tablink" href="#screenshots" onclick="openPage('screenshots', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-camera" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Screenshots
+            </a>
+            <a class="tablink" href="#api-logs" onclick="openPage('attachments', this, 'white', '#565656', 'groove'); refreshAttachments();">
+                <i class="fa fa-exchange" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> API Logs
             </a>
             <a class="sponsor" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="Pickoh &mdash; sponsor of pytest-html-reporter">
                 <span class="sponsor__label">Sponsored by</span>
@@ -3091,6 +3770,7 @@
                                 <th>Time (s)</th>
                                 <th class="th-left">Error Message</th>
                                 <th>Logs</th>
+                                <th>Data</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3118,27 +3798,255 @@
               <div class="fold-main">
                 <div class="container-fluid">
                   <div id="main-content">
+                    <!-- Outside .bg-highlight, so the empty-state toggle on that
+                         wrapper cannot take the heading down with the gallery. -->
+                    <div class="metrics-page__head screenshot-head">
+                        <div>
+                            <div class="metrics-page__title"><i class="fa fa-camera"></i>Screenshots</div>
+                            <div class="metrics-page__subtitle">Images attached while the tests ran, beside the suite and the error they belong to</div>
+                        </div>
+                    </div>
                     <div class="bg-highlight p-4 mt-3">
                       <div class="row">
                         %(attach_screenshot_details)%
                         <div class="below-desc"></div>
                       </div>
                       <div class="screenshot-empty">
-                        <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
-                        <div class="screenshot-empty__title">No screenshots in this run</div>
-                        <div class="screenshot-empty__text">
-                          Nothing was captured while the tests ran. Attach one from a test and it
-                          shows up here, next to the suite and the error it belongs to.
+                        <div class="screenshot-empty__head">
+                          <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
+                          <div class="screenshot-empty__title">No screenshots in this run</div>
+                          <div class="screenshot-empty__text">
+                            Hand <b>attach</b> the PNG bytes of a screenshot and it is kept against the
+                            test that took it, with the suite and the error it belongs to beside it.
+                          </div>
                         </div>
-                        <div class="screenshot-empty__snippet">
-                          from pytest_html_reporter import <b>attach</b><br />
-                          <b>attach</b>(data=self.driver.get_screenshot_as_png())
+
+                        <div class="setup-guide">
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Attach an image</div>
+                            <div class="setup-step__note">
+                              <b>attach</b> takes the picture, not the browser, so every framework goes
+                              through the same call - Selenium, Playwright, or anything else that can
+                              produce a PNG.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach</b>
+
+<b>attach</b>(data=driver.get_screenshot_as_png())   <span class="c"># Selenium</span>
+<b>attach</b>(data=page.screenshot())                <span class="c"># Playwright</span>
+<b>attach</b>(data=<span class="c">await</span> page.screenshot())          <span class="c"># Playwright, async API</span></pre>
+                          </div>
+
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Better: one hook, both drivers, failures only<span class="setup-step__badge">recommended</span></div>
+                            <div class="setup-step__note">
+                              The browser is already in <b>item.funcargs</b>, so a single hook covers
+                              Selenium and Playwright at once - no fixture of its own, and nothing to
+                              remember in each test. Running both? Add the fixture name to the table and
+                              that framework is covered too.
+                            </div>
+                            <pre class="setup-step__code"><span class="c"># conftest.py</span>
+<span class="c">import</span> pytest
+<span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach</b>
+
+CAPTURE = {
+    <span class="s">"driver"</span>: <span class="c">lambda</span> driver: driver.get_screenshot_as_png(),  <span class="c"># Selenium</span>
+    <span class="s">"page"</span>:   <span class="c">lambda</span> page: page.screenshot(),                 <span class="c"># Playwright</span>
+}
+
+<span class="c">@pytest.hookimpl</span>(hookwrapper=True)
+<span class="c">def</span> pytest_runtest_makereport(item, call):
+    outcome = <span class="c">yield</span>
+    report = outcome.get_result()
+
+    <span class="c">if</span> report.when != <span class="s">"call"</span> <span class="c">or not</span> report.failed:
+        <span class="c">return</span>
+
+    <span class="c">for</span> name, capture <span class="c">in</span> CAPTURE.items():
+        handle = item.funcargs.get(name)
+        <span class="c">if</span> handle <span class="c">is not None</span>:
+            <b>attach</b>(data=capture(handle))
+            <span class="c">return</span></pre>
+                            <div class="setup-step__note setup-step__note--last">
+                              Put the hook in <b>conftest.py</b>. pytest picks one up from a test module
+                              too, but only for that module's own tests - a conftest covers every test
+                              under it. Drop the <b>report.failed</b> check to photograph every test.
+                            </div>
+                          </div>
+
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Async tests, and unittest</div>
+                            <div class="setup-step__note">
+                              The hook above is synchronous, so an <b>async</b> Playwright test has nowhere
+                              to await - attach from the body instead. A <b>unittest</b> suite attaches
+                              from <b>tearDown</b>, which still runs while the driver is open.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">async def</span> test_home(page):                <span class="c"># Playwright, async API</span>
+    <span class="c">try</span>:
+        <span class="c">assert await</span> page.title() == <span class="s">"Example Domain"</span>
+    <span class="c">except</span> AssertionError:
+        <b>attach</b>(data=<span class="c">await</span> page.screenshot())
+        <span class="c">raise</span>
+
+<span class="c">def</span> tearDown(self):                          <span class="c"># unittest</span>
+    <b>attach</b>(data=self.driver.get_screenshot_as_png())
+    self.driver.quit()                        <span class="c"># after, never before</span></pre>
+                          </div>
+                        </div>
+
+                        <div class="setup-foot">
+                          <i class="fa fa-info-circle" aria-hidden="true"></i>
+                          <span>
+                            Every image you attach is kept, whatever the test did - a screenshot of a pass
+                            is a baseline worth having. Only the tests that called <b>attach</b> show up
+                            here, so capturing failures alone is a matter of when you call it.
+                          </span>
+                        </div>
+
+                        <div class="setup-links">
+                          <a href="https://github.com/prashanth-sams/pytest-html-reporter#screenshots" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
                         </div>
                       </div>
-                    </div>
+                                        </div>
                   </div>
                 </div>
               </div>
+            </div>
+        </div>
+        <div class="tabcontent" id="attachments">
+            <div class="metrics-page attach-page" id="attachPage">
+                <div class="metrics-page__head">
+                    <div>
+                        <div class="metrics-page__title"><i class="fa fa-exchange"></i>API Logs</div>
+                        <div class="metrics-page__subtitle">The request and response behind each test, with the curl line that repeats the call</div>
+                    </div>
+                    <div class="metrics-summary" id="attachmentSummary"></div>
+                </div>
+
+                <div class="metrics-card attach-shell">
+                    <div class="metrics-toolbar attach-toolbar">
+                        <div class="attach-filters" id="attachFilters"></div>
+                        <div class="attach-search">
+                            <input type="search" id="attachSearch" autocomplete="off" spellcheck="false"
+                                   placeholder="Search by test, title, URL or status" oninput="filterAttachments()" />
+                        </div>
+                    </div>
+                    <div class="attach-scope" id="attachScope" hidden>
+                        <span>Showing what <em id="attachScopeTest"></em> attached</span>
+                        <button type="button" onclick="clearAttachmentScope()">Show all</button>
+                    </div>
+                    <div class="attach-body">
+                        <div class="attach-rail" id="attachRail">
+                            %(attachment_items)%
+                            <div class="attach-rail__empty" id="attachRailEmpty" hidden>Nothing matches that search.</div>
+                        </div>
+                        <div class="attach-view" id="attachView">
+                            <div class="attach-view__head">
+                                <div class="attach-view__heading">
+                                    <span class="attach-view__title" id="attachViewTitle"></span>
+                                    <span class="attach-view__test" id="attachViewTest"></span>
+                                </div>
+                                <div class="attach-view__actions">
+                                    <button type="button" class="attach-action" id="attachCopy" onclick="copyAttachment()">Copy</button>
+                                    <button type="button" class="attach-action" id="attachDownload" onclick="downloadAttachment()">Download</button>
+                                </div>
+                            </div>
+                            <div class="attach-view__meta" id="attachViewMeta"></div>
+                            <div class="attach-view__tabs" id="attachViewTabs"></div>
+                            <div class="attach-view__body" id="attachViewBody"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="attach-empty">
+                    <div class="attach-empty__head">
+                        <div class="attach-empty__icon"><i class="fa fa-exchange"></i></div>
+                        <div class="attach-empty__title">No API logs in this run</div>
+                        <div class="attach-empty__text">
+                          Hand this tab the request and the response, and they are kept against the test
+                          that produced them - both bodies, both sets of headers, and the curl line that
+                          repeats the call.
+                        </div>
+                    </div>
+
+                    <div class="setup-guide">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Attach a call</div>
+                            <div class="setup-step__note">
+                                <b>attach_api</b> reads the response object, so <b>requests</b> and <b>httpx</b>
+                                both work as they are - nothing else to install.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach_api</b>
+
+<span class="c">def</span> test_creates_an_order():
+    response = requests.post(url, json=payload)
+    <b>attach_api</b>(response)
+
+    <span class="c">assert</span> response.status_code == 201</pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Better: only when the response fails<span class="setup-step__badge">recommended</span></div>
+                            <div class="setup-step__note">
+                                Attaching every call buries the one that matters and grows the report for
+                                no reason. The payload worth keeping is the one behind a <b>failure</b>, so
+                                attach from a fixture's teardown and let the outcome decide. The reporter
+                                builds a test's record after the finalizers have run, which is what makes
+                                this work.
+                            </div>
+                            <pre class="setup-step__code"><span class="c"># conftest.py</span>
+<span class="c">import</span> pytest
+<span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach_api</b>
+
+<span class="c">@pytest.fixture</span>
+<span class="c">def</span> api(request):
+    client = ApiClient()
+    <span class="c">yield</span> client
+
+    <span class="c">if</span> request.node.rep_call.failed:
+        <b>attach_api</b>(client.last_response)
+
+<span class="c"># lets the fixture above see how the test ended</span>
+<span class="c">@pytest.hookimpl</span>(tryfirst=True, hookwrapper=True)
+<span class="c">def</span> pytest_runtest_makereport(item, call):
+    outcome = <span class="c">yield</span>
+    setattr(item, <span class="s">"rep_"</span> + outcome.get_result().when, outcome.get_result())</pre>
+                            <div class="setup-step__note setup-step__note--last">
+                                Put the hook in <b>conftest.py</b>. pytest picks one up from a test module
+                                too, but only for that module's own tests - a conftest covers every test
+                                under it.
+                            </div>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Not only API calls</div>
+                            <div class="setup-step__note">
+                                Anything you would otherwise dig out of a terminal can go here beside the
+                                call it belongs to.
+                            </div>
+                            <pre class="setup-step__code"><b>attach_json</b>({<span class="s">"expected"</span>: order, <span class="s">"got"</span>: body}, name=<span class="s">"Diff"</span>)
+<b>attach_text</b>(query, name=<span class="s">"Query"</span>, format=<span class="s">"sql"</span>)
+<b>attach_file</b>(<span class="s">"payloads/order.json"</span>)</pre>
+                        </div>
+                    </div>
+
+                    <div class="setup-foot setup-foot--secure">
+                        <i class="fa fa-lock" aria-hidden="true"></i>
+                        <span>
+                            Credentials are blanked out before anything is written - in headers, in a
+                            <b>?api_key=</b> query string, in the curl line and in the fields of a JSON
+                            body. A report is a build artifact, and it gets published.
+                        </span>
+                    </div>
+
+                    <div class="setup-links">
+                        <a href="https://github.com/prashanth-sams/pytest-html-reporter#attachments" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
+                    </div>
+                </div>
+
+                <!-- The payloads live here rather than in the rail: the rail is
+                     filtered and re-drawn, and a few hundred KB of response
+                     bodies has no business being moved around with it. -->
+                <div id="attachStore" hidden>%(attachment_store)%</div>
             </div>
         </div>
         <div class="log-overlay" id="logOverlay" hidden>
@@ -3554,6 +4462,13 @@
                 // The freshly shown tab now has real dimensions, so re-size its
                 // charts (e.g. the per-build archive charts) to make them visible.
                 setTimeout(resizeVisibleCharts, 0);
+                // A nav href that names a real container - #archives, #screenshots -
+                // makes the browser jump to it once this handler returns, landing
+                // the tab part-scrolled while the tabs whose hash matches nothing
+                // (#suites, #test-metrics, #api-logs) open at the top. Undo that
+                // jump so every tab opens the same way. The deep link to an
+                // archived build re-scrolls after this, on a longer timer.
+                setTimeout(function() { window.scrollTo(0, 0); }, 0);
             }
 
             // Show the Archives tab without going through the nav link's own
@@ -3610,18 +4525,32 @@
                         'suites': 'suiteMetrics',
                         'test-metrics': 'testMetrics',
                         'archives': 'archives',
-                        'screenshots': 'screenshots'
+                        'screenshots': 'screenshots',
+                        'api-logs': 'attachments',
+                        // The tab was called Attachments before it was called
+                        // API Logs; a link handed round in the meantime still
+                        // has to land on it.
+                        'attachments': 'attachments'
                     };
                     
                     var pageId = hashToPageMap[hash];
                     if (pageId) {
-                        // Find the corresponding tab link
+                        // Find the corresponding tab link. An alias - #attachments
+                        // for #api-logs - matches no href, so the page id is the
+                        // fallback the link is looked up by.
                         var tablinks = document.getElementsByClassName("tablink");
                         for (var i = 0; i < tablinks.length; i++) {
                             if (tablinks[i].getAttribute('href') === '#' + hash) {
                                 tablinks[i].click();
                                 return;
                             }
+                        }
+                        // An alias - #attachments for #api-logs - matches no
+                        // href, so the link is found by the tab it opens.
+                        var aliased = tabLinkFor(pageId);
+                        if (aliased) {
+                            aliased.click();
+                            return;
                         }
                     }
 
@@ -4258,6 +5187,357 @@
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(resizeVisibleCharts, 150);
             });
+        </script>
+
+        <script>
+            // ================================================================
+            // Attachments
+            // Every payload the run attached is already in the page, parked in
+            // #attachStore. The rail is the index into it: filtering hides
+            // entries, opening one clones its parts into the viewer. Nothing
+            // is fetched, so the tab works from a file:// report or an email
+            // attachment the same way it does off a CI server.
+            // ================================================================
+            var attachSelected = '';
+            var attachKind = 'all';
+            var attachScopeRow = '';
+
+            var ATTACH_KINDS = [
+                ['all',  'All'],
+                ['api',  'API'],
+                ['json', 'JSON'],
+                ['text', 'Text'],
+                ['file', 'File']
+            ];
+
+            var ATTACH_EXTENSIONS = {
+                json: '.json', xml: '.xml', html: '.html', yaml: '.yaml',
+                sql: '.sql', curl: '.sh', headers: '.txt', text: '.txt'
+            };
+
+            // The nav link that opens a tab, found by the page it opens rather
+            // than by its href. Matching on the href is what broke the row
+            // button when this tab's label and hash changed: the link was
+            // still there, and nothing said it had stopped being found.
+            function tabLinkFor(pageName) {
+                var links = document.getElementsByClassName('tablink');
+                for (var i = 0; i < links.length; i++) {
+                    if ((links[i].getAttribute('onclick') || '').indexOf("openPage('" + pageName + "'") === 0) {
+                        return links[i];
+                    }
+                }
+
+                return null;
+            }
+
+            function attachItems() {
+                return Array.prototype.slice.call(document.querySelectorAll('#attachRail .attach-item'));
+            }
+
+            function attachVisibleItems() {
+                return attachItems().filter(function(item) { return !item.hidden; });
+            }
+
+            // Built from the entries themselves, so a run with no file
+            // attachments is not offered a File filter that matches nothing.
+            function renderAttachmentFilters() {
+                var target = document.getElementById('attachFilters');
+                if (!target) { return; }
+
+                // Counted within the scope, not across the run: while the
+                // rail is narrowed to one test, an "API 3" that includes two
+                // other tests' calls is a filter that lies about what it does.
+                var counts = {};
+                attachItems().forEach(function(item) {
+                    if (attachScopeRow && item.getAttribute('data-row') !== attachScopeRow) { return; }
+
+                    var kind = item.getAttribute('data-kind') || 'text';
+                    counts[kind] = (counts[kind] || 0) + 1;
+                    counts.all = (counts.all || 0) + 1;
+                });
+
+                // The kind that was selected may not exist inside the scope.
+                if (!counts[attachKind]) { attachKind = 'all'; }
+
+                target.innerHTML = '';
+                ATTACH_KINDS.forEach(function(kind) {
+                    if (!counts[kind[0]]) { return; }
+
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (attachKind === kind[0] ? ' is-active' : '');
+                    button.setAttribute('data-kind', kind[0]);
+                    button.textContent = kind[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = counts[kind[0]];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        attachKind = kind[0];
+                        renderAttachmentFilters();
+                        filterAttachments();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            // Totals for what the rail is currently showing, so the numbers
+            // never disagree with the list under them - the same contract the
+            // Suites and Test Metrics summaries keep.
+            function renderAttachmentSummary() {
+                var items = attachVisibleItems();
+                var calls = 0, ok = 0, bad = 0, slowest = 0, bytes = 0;
+
+                items.forEach(function(item) {
+                    var status = item.getAttribute('data-status') || '';
+                    var ms = parseFloat(item.getAttribute('data-ms'));
+                    var size = parseFloat(item.getAttribute('data-size'));
+
+                    if (item.getAttribute('data-kind') === 'api') { calls += 1; }
+                    if (status === '2xx' || status === '3xx') { ok += 1; }
+                    if (status === '4xx' || status === '5xx') { bad += 1; }
+                    if (!isNaN(ms) && ms > slowest) { slowest = ms; }
+                    if (!isNaN(size)) { bytes += size; }
+                });
+
+                var chips = [{ color: '#565656', value: items.length,
+                               label: items.length === 1 ? 'attachment' : 'attachments' }];
+
+                if (calls) { chips.push({ color: '#3571a3', value: calls, label: calls === 1 ? 'api call' : 'api calls' }); }
+                if (ok) { chips.push({ color: METRICS_COLORS.pass, value: ok, label: 'ok' }); }
+                if (bad) { chips.push({ color: METRICS_COLORS.fail, value: bad, label: 'failed' }); }
+                if (slowest) { chips.push({ color: METRICS_COLORS.rerun, value: attachDuration(slowest), label: 'slowest' }); }
+                if (bytes) { chips.push({ color: '#aaaaaa', value: attachSize(bytes), label: 'payload' }); }
+
+                renderMetricsChips($('#attachmentSummary'), chips);
+            }
+
+            function attachDuration(ms) {
+                return ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms';
+            }
+
+            function attachSize(count) {
+                if (count < 1024) { return count + ' B'; }
+                if (count < 1048576) { return (count / 1024).toFixed(1) + ' KB'; }
+                return (count / 1048576).toFixed(1) + ' MB';
+            }
+
+            function filterAttachments() {
+                var box = document.getElementById('attachSearch');
+                var needle = box ? box.value.trim().toLowerCase() : '';
+                var shown = 0;
+                var stillVisible = false;
+
+                attachItems().forEach(function(item) {
+                    var matches =
+                        (attachKind === 'all' || item.getAttribute('data-kind') === attachKind) &&
+                        (!attachScopeRow || item.getAttribute('data-row') === attachScopeRow) &&
+                        (!needle || (item.getAttribute('data-search') || '').indexOf(needle) !== -1);
+
+                    item.hidden = !matches;
+                    if (matches) {
+                        shown += 1;
+                        if (item.getAttribute('data-aid') === attachSelected) { stillVisible = true; }
+                    }
+                });
+
+                var empty = document.getElementById('attachRailEmpty');
+                if (empty) { empty.hidden = shown !== 0; }
+
+                document.getElementById('attachView').hidden = shown === 0;
+
+                // Filtering away whatever was open would otherwise leave the
+                // viewer showing a payload the rail no longer lists.
+                if (shown && !stillVisible) { showAttachment(attachVisibleItems()[0].getAttribute('data-aid')); }
+
+                renderAttachmentSummary();
+            }
+
+            function showAttachment(aid) {
+                var source = document.getElementById('attach-' + aid);
+                if (!source) { return; }
+
+                attachSelected = aid;
+
+                document.getElementById('attachViewTitle').textContent = source.getAttribute('data-title') || '';
+
+                var test = document.getElementById('attachViewTest');
+                test.innerHTML = '<em></em><span></span>';
+                test.querySelector('em').textContent = source.getAttribute('data-suite') || '';
+                test.querySelector('span').textContent = source.getAttribute('data-test') || '';
+
+                var meta = source.querySelector('.attach-meta');
+                document.getElementById('attachViewMeta').innerHTML = meta ? meta.innerHTML : '';
+
+                var body = document.getElementById('attachViewBody');
+                body.innerHTML = '';
+
+                var parts = source.querySelectorAll('.attach-part');
+                for (var i = 0; i < parts.length; i++) { body.appendChild(parts[i].cloneNode(true)); }
+
+                renderAttachmentTabs(parts.length);
+                showAttachmentPart(0);
+
+                attachItems().forEach(function(item) {
+                    item.classList.toggle('is-active', item.getAttribute('data-aid') === aid);
+                });
+
+                document.getElementById('attachView').hidden = false;
+                setAttachCopyLabel('Copy');
+            }
+
+            function renderAttachmentTabs(count) {
+                var tabs = document.getElementById('attachViewTabs');
+                tabs.innerHTML = '';
+
+                // A single part is not a choice; the strip collapses instead of
+                // offering one button that does nothing.
+                if (count < 2) { return; }
+
+                var parts = document.querySelectorAll('#attachViewBody .attach-part');
+                for (var i = 0; i < parts.length; i++) {
+                    (function(index) {
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'attach-pill';
+                        button.textContent = parts[index].getAttribute('data-part') || 'Part';
+                        button.onclick = function() { showAttachmentPart(index); };
+                        tabs.appendChild(button);
+                    })(i);
+                }
+            }
+
+            function showAttachmentPart(index) {
+                var parts = document.querySelectorAll('#attachViewBody .attach-part');
+                var tabs = document.querySelectorAll('#attachViewTabs .attach-pill');
+
+                for (var i = 0; i < parts.length; i++) { parts[i].hidden = i !== index; }
+                for (var k = 0; k < tabs.length; k++) { tabs[k].classList.toggle('is-active', k === index); }
+
+                setAttachCopyLabel('Copy');
+            }
+
+            function openAttachmentPart() {
+                return document.querySelector('#attachViewBody .attach-part:not([hidden])');
+            }
+
+            function setAttachCopyLabel(text) {
+                var button = document.getElementById('attachCopy');
+                if (button) { button.textContent = text; }
+            }
+
+            function copyAttachment() {
+                var part = openAttachmentPart();
+                if (!part) { return; }
+
+                var text = part.querySelector('.attach-part__body').textContent;
+
+                // Same fallback as the captured-output overlay: navigator.clipboard
+                // is not there when the report is opened straight off disk.
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(
+                        function() { setAttachCopyLabel('Copied'); },
+                        function() { legacyCopyAttachment(text); });
+                    return;
+                }
+
+                legacyCopyAttachment(text);
+            }
+
+            function legacyCopyAttachment(text) {
+                var scratch = document.createElement('textarea');
+                scratch.value = text;
+                scratch.setAttribute('readonly', '');
+                scratch.style.position = 'fixed';
+                scratch.style.opacity = '0';
+                document.body.appendChild(scratch);
+                scratch.select();
+
+                try { document.execCommand('copy'); setAttachCopyLabel('Copied'); }
+                catch (err) { setAttachCopyLabel('Press Ctrl+C'); }
+
+                document.body.removeChild(scratch);
+            }
+
+            function downloadAttachment() {
+                var part = openAttachmentPart();
+                var source = document.getElementById('attach-' + attachSelected);
+                if (!part || !source) { return; }
+
+                var format = part.getAttribute('data-format') || 'text';
+                var name = (source.getAttribute('data-file') || 'attachment')
+                         + (ATTACH_EXTENSIONS[format] || '.txt');
+
+                try {
+                    var blob = new Blob([part.querySelector('.attach-part__body').textContent],
+                                        { type: 'text/plain;charset=utf-8' });
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(function() { URL.revokeObjectURL(link.href); }, 0);
+                } catch (e) {
+                    console.error('pytest-html-reporter: attachment download failed', e);
+                }
+            }
+
+            // The paperclip on a Test Metrics row: cross to the tab with the
+            // rail already narrowed to that one test, rather than dropping
+            // someone into a list of every payload the run produced.
+            function showAttachmentsFor(runt) {
+                attachScopeRow = String(runt);
+                attachKind = 'all';
+
+                var search = document.getElementById('attachSearch');
+                if (search) { search.value = ''; }
+
+                var link = tabLinkFor('attachments');
+                if (link) {
+                    openPage('attachments', link, 'white', '#565656', 'groove');
+
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', link.getAttribute('href'));
+                    }
+                }
+
+                refreshAttachments();
+            }
+
+            function clearAttachmentScope() {
+                attachScopeRow = '';
+                refreshAttachments();
+            }
+
+            function refreshAttachments() {
+                var page = document.getElementById('attachPage');
+                if (!page) { return; }
+
+                var items = attachItems();
+                page.classList.toggle('is-empty', items.length === 0);
+                if (!items.length) { return; }
+
+                var scope = document.getElementById('attachScope');
+                scope.hidden = !attachScopeRow;
+
+                if (attachScopeRow) {
+                    var scoped = items.filter(function(item) {
+                        return item.getAttribute('data-row') === attachScopeRow;
+                    })[0];
+                    var payload = scoped ? document.getElementById('attach-' + scoped.getAttribute('data-aid')) : null;
+                    document.getElementById('attachScopeTest').textContent =
+                        payload ? (payload.getAttribute('data-test') || '') : '';
+                }
+
+                renderAttachmentFilters();
+                filterAttachments();
+            }
+
+            $(document).ready(function() { setTimeout(refreshAttachments, 120); });
         </script>
 
     </body>

@@ -67,6 +67,27 @@ def pytest_addoption(parser):
              "(default: 10000)",
     )
 
+    group.addoption(
+        "--report-attachments",
+        action="store",
+        dest="report_attachments",
+        default=None,
+        choices=("all", "failed", "none"),
+        help="whose attachments - text, json and API calls handed to attach_text(), "
+             "attach_json() or attach_api() - to keep in the report: all (default), "
+             "failed or none",
+    )
+
+    group.addoption(
+        "--report-attachment-limit",
+        action="store",
+        dest="report_attachment_limit",
+        default=None,
+        type=int,
+        help="maximum characters kept per attached payload; 0 keeps everything "
+             "(default: 20000)",
+    )
+
     parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
@@ -95,6 +116,18 @@ def pytest_addoption(parser):
     parser.addini(
         "report_log_limit",
         help="maximum characters of captured output kept per test; 0 keeps everything",
+        default="",
+    )
+
+    parser.addini(
+        "report_attachments",
+        help="whose attachments to keep in the report: all, failed or none",
+        default="",
+    )
+
+    parser.addini(
+        "report_attachment_limit",
+        help="maximum characters kept per attached payload; 0 keeps everything",
         default="",
     )
 

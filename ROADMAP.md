@@ -4,7 +4,7 @@ High-value, low-effort additions to the generated HTML report, ranked by payoff 
 
 Baseline (already shipped, do not re-implement): DataTables search + sort, export buttons
 (copy / CSV / Excel / print / column visibility), Dashboard charts, Trends, Suite Highlights,
-Archives, Screenshots on failure, and rerun support.
+Archives, Screenshots on failure, API Logs (attached calls, JSON and text), and rerun support.
 
 ---
 
@@ -118,10 +118,28 @@ rendered in the header.
 
 ---
 
+### 13. Text and API-call attachments — SHIPPED
+Issue #191: a picture is no use when the thing under test is an API.
+
+*Shipped as:* `pytest_html_reporter/attachments.py` (`attach_text`, `attach_json`, `attach_api`,
+`attach_file`), the four `Attachment*` components, an `API Logs` tab, a `Data` column on Test
+Metrics, and `--report-attachments` / `--report-attachment-limit`. The collection path mirrors
+screenshots (a buffer drained by every record, so nothing leaks to the next test) and the storage
+path mirrors logs (payloads parked outside the table, out of its search index and its exports).
+
+Three decisions worth keeping: response objects are read by **duck typing**, so requests and httpx
+both work with no new dependency and every field stays overridable for clients that resemble
+neither; credentials are **redacted by default**, because a report is a build artifact that gets
+published and pasted around; and a trimmed payload keeps its **head**, the opposite of a trimmed
+log, because a response puts its status and its error field at the top while a log puts the
+interesting lines at the end.
+
+---
+
 ## Suggested next release
 
 **#1, #2, #4, #7.** Together they are roughly one afternoon, need no schema change to
 `output.json`, and address the two most common complaints about HTML reporters: "I can't see the
 logs" and "I can't filter to just the failures."
 
-#1, #2 and #7 have shipped; #4 is what is left of that set.
+#1, #2 and #7 have shipped; #4 is what is left of that set. #13 shipped separately, off issue #191.

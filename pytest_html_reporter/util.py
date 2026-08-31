@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import platform
@@ -76,6 +77,15 @@ def xdist_worker_id(config):
 
 def screenshot(data=None):
     from pytest_html_reporter.html_reporter import HTMLReporter
+
+    # Pillow fails on a string with "cannot identify image file", which says
+    # nothing about the mistake actually made now that the package also has
+    # helpers that do take text.
+    if isinstance(data, str):
+        raise TypeError(
+            "attach() takes the bytes of an image; to attach text use "
+            "attach_text(), attach_json() or attach_api() instead"
+        )
 
     ConfigVars.screen_base = HTMLReporter.base_path
     ConfigVars.screen_img = Image.open(BytesIO(data))
@@ -251,7 +261,8 @@ def generate_environment_info(config):
     rows = ""
     for label, value in entries:
         value = str(value).strip() or "-"
-        rows += str(EnvRow(label=escape(label), value=escape(value), title=escape(value)))
+        rows += str(EnvRow(label=escape_report_text(label), value=escape_report_text(value),
+                           title=escape_report_text(value)))
 
     ConfigVars._environment_rows = rows
 
@@ -279,6 +290,32 @@ def report_log_limit(config):
         limit = int(value)
     except (TypeError, ValueError):
         return LOG_LIMIT_DEFAULT
+
+    return max(limit, 0)
+
+
+ATTACHMENT_MODES = ("all", "failed", "none")
+ATTACHMENT_LIMIT_DEFAULT = 20000
+
+
+def report_attachments_mode(config):
+    """Which tests keep their attachments: 'all', 'failed' or 'none'."""
+    mode = str(config.getoption("report_attachments", None)
+               or _ini(config, "report_attachments") or "all").strip().lower()
+
+    return mode if mode in ATTACHMENT_MODES else "all"
+
+
+def report_attachment_limit(config):
+    """Characters kept per attached part; 0 means no limit."""
+    value = config.getoption("report_attachment_limit", None)
+    if value in (None, ""):
+        value = _ini(config, "report_attachment_limit")
+
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        return ATTACHMENT_LIMIT_DEFAULT
 
     return max(limit, 0)
 
@@ -369,8 +406,8 @@ def format_log_sections(buffer, limit):
     return trim_log_sections(sections, limit)
 
 
-def escape_log_text(value):
-    """HTML-escape captured output for the report page.
+def escape_report_text(value):
+    """HTML-escape text on its way into the report page.
 
     ``%(`` is broken up as well: the page is assembled by substituting
     ``%(name)%`` placeholders, so a log line that happens to look like one
@@ -378,6 +415,23 @@ def escape_log_text(value):
     character it replaces, so nothing changes on screen.
     """
     return escape(str(value)).replace("%(", "%&#40;")
+
+
+def js_literal(value):
+    """Render a value as a literal for the chart scripts inside the page.
+
+    The dashboard charts are handed their labels as source code, so a suite
+    named with an apostrophe used to end the array early and take the rest of
+    that script block down with it - charts blank, and nothing to say why.
+    ``<`` is written as an escape so a name cannot close the script tag either,
+    and ``%(`` is broken up because the page is assembled by substituting
+    ``%(name)%`` placeholders.
+    """
+    return (
+        json.dumps(value)
+        .replace("<", "\\u003c")
+        .replace("%(", "%\\u0028")
+    )
 
 
 def _capture_is_off(config):
@@ -436,7 +490,7 @@ def generate_logs_notice(config):
 
     text = capture_notice(config, report_logs_mode(config))
     if text:
-        ConfigVars._logs_notice = str(LogsNotice(text=escape(text)))
+        ConfigVars._logs_notice = str(LogsNotice(text=escape_report_text(text)))
 
 
 def count_log_lines(sections):
