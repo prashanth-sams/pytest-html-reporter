@@ -620,10 +620,10 @@ any positive integer       Characters per payload
     $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 
 
-coverage
+test coverage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Run with ``pytest-cov`` and the report grows a ``Coverage`` tab: the overall percentage as a ring, the counts beside
+Run with ``pytest-cov`` and the report grows a ``Test Coverage`` tab: the overall percentage as a ring, the counts beside
 it, a row per file with its missing lines, and the percentage plotted across the builds you have kept. A chip on the
 ``Dashboard`` shows the figure and crosses to the tab. Nothing needs configuring - if coverage was measured, it is
 there::
@@ -708,8 +708,8 @@ an empty frame wherever the folder did not travel with it. The link is offered o
    :alt: Test Coverage List
    :width: 800px
 
-the Coverage tab is empty
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+the Test Coverage tab is empty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Work down this list; the first one that applies is the answer:
 

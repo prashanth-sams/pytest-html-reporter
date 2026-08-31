@@ -163,7 +163,7 @@ Issue #203: a percentage on the page, "a cake graph ... or a circle percentage b
 coverage html report embedded or a section of its own. A later comment asked for two things by name:
 custom links in the menu, and the numbers from `pytest-cov`.
 
-*Shipped as:* `pytest_html_reporter/coverage_report.py`, a `Coverage` tab, the `CoverageRow` /
+*Shipped as:* `pytest_html_reporter/coverage_report.py`, a `Test Coverage` tab, the `CoverageRow` /
 `CoverageTile` / `CoverageChip` components, `--report-coverage`, `--report-coverage-file`,
 `--report-coverage-limit`, and `--report-link` for the menu half.
 

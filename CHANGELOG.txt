@@ -8,7 +8,7 @@
 - A build's age is now read from the moment kept in its archive file's name rather than from the file's mtime, so retention still measures the right thing after the reports have been copied into a fresh CI workspace, where every mtime is the moment of the checkout
 - Retention now only ever deletes the plugin's own output_*.json archives, leaving anything else in the folder alone
 - A nonsense --archive-count, --archive-days or --archive-since now fails the run with a usage error, instead of being silently ignored or crashing the reporter once the tests had already finished
-- Added a Coverage tab: the overall percentage as a ring, the counts beside it, a row per file with its missing lines, and the percentage plotted across the retained builds (#203)
+- Added a Test Coverage tab: the overall percentage as a ring, the counts beside it, a row per file with its missing lines, and the percentage plotted across the retained builds (#203)
 - The figure is coverage.py's own, read through its public json_report API, so the tab and the terminal beside it can never print different totals; with --cov-branch on, branch coverage is folded in exactly as pytest-cov folds it in
 - Coverage is read after the run rather than measured: pytest-cov finishes, saves and combines its data - every xdist worker's share included - long before the report is written, so a parallel run reports one combined percentage and no hook ordering had to be declared
 - The Dashboard gained a coverage chip beside Environment, coloured by the percentage and crossing to the tab
@@ -25,6 +25,8 @@
 - Added --report-link / the report_link ini key, adding LABEL=URL entries to the report's side nav - the annotated coverage source, a CI job, anything else worth reaching from here (#203); a scheme other than http, https or mailto is dropped rather than rendered
 - A coverage file that cannot be read is reported in the tab rather than raised: the tests are over by then, and a usage error at that point would turn a green run red over a decoration
 - A run where pytest-cov measured nothing - --cov=src against a project that has no src, the easiest mistake there is - now says so in the tab, naming the flag that was typed, instead of showing a setup guide to somebody who has just followed it
+- The tab's setup guide now writes the package name as a marked placeholder - my_package, not src - so the one value the reader has to swap for their own cannot be pasted in as if it were real
+- Fixed the dashboard's chip row spilling outside its card: space-between over a row that could not wrap put "Time taken" on top of the Trends card at anything under about 1500px once a third chip joined it
 
 0.3.5 (31/08/2026)
 -------------------

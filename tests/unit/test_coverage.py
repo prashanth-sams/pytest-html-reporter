@@ -633,7 +633,7 @@ def test_a_run_without_coverage_says_how_to_get_it(tmp_path):
 
     assert "coverage" not in data
     assert "cov-page is-empty" in page
-    assert "No coverage in this run" in page
+    assert "No test coverage in this run" in page
     # The empty tab is the only moment anyone reads setup instructions.
     assert "pip install pytest-cov" in page
 

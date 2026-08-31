@@ -1128,15 +1128,21 @@
                         gap: 6px 12px;
                         padding: 1rem 1.6rem 1.2rem 1.6rem;
                     }
-                    /* Environment pinned left, run time right. Explicit, so the
-                       pair does not depend on the clock icon's own margins. */
+                    /* Chips pinned left, run time right. Explicit, so the pair
+                       does not depend on the clock icon's own margins.
+
+                       It wraps rather than spilling: space-between over a
+                       nowrap row put the run time outside the card as soon as
+                       a third chip joined it, and nothing said so - the text
+                       simply sat on the trends card next door. */
                     .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper {
                         grid-area: time;
                         margin: 0 !important;
                         display: flex;
                         align-items: center;
-                        justify-content: space-between;
-                        gap: 12px;
+                        flex-wrap: wrap;
+                        justify-content: flex-start;
+                        gap: 6px 12px;
                         text-align: right;
                         padding-right: 4px;
                     }
@@ -1146,6 +1152,10 @@
                     }
                     .dashboard-viewport .dashboard-card .card__content > .time-taken-wrapper > .time__taken {
                         flex: 0 0 auto;
+                        /* Right-hand end of whichever line it lands on, so the
+                           two-chip layout is unchanged and the three-chip one
+                           still reads as "chips left, run time right". */
+                        margin-left: auto;
                     }
                     /* The clock's inline 29% left margin was doing the spacing
                        before; the flex row owns that now. */
@@ -3340,6 +3350,26 @@
                     color: #7a9c54;
                 }
 
+                /* A name the reader is meant to swap for their own. It has to
+                   look different from the flags and paths around it: a
+                   placeholder that reads as a real value is the difference
+                   between a guide and a trap - --cov=src against a project
+                   that has no src measures nothing at all, and the run says so
+                   in a warning that scrolls straight past. */
+                .setup-guide .ph {
+                    padding: 0 4px;
+                    border-radius: 3px;
+                    background-color: #fdf3e3;
+                    border-bottom: 1px dashed #dcab5c;
+                    color: #a76f0d;
+                    font-style: normal;
+                }
+
+                .setup-step__note .ph {
+                    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+                    font-size: 0.86em;
+                }
+
                 .setup-foot {
                     display: flex;
                     align-items: baseline;
@@ -3755,7 +3785,7 @@
                 <i class="fa fa-exchange" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> API Logs
             </a>
             <a class="tablink" href="#coverage" onclick="openPage('coverage', this, 'white', '#565656', 'groove'); executeDataTable('#cov',4,'asc')">
-                <i class="fa fa-shield" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Coverage
+                <i class="fa fa-shield" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Coverage
             </a>
             %(report_links)%
             <a class="sponsor" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="Pickoh &mdash; sponsor of pytest-html-reporter">
@@ -4345,7 +4375,7 @@ CAPTURE = {
             <div class="metrics-page cov-page %(coverage_state)% %(coverage_trend_state)%">
                 <div class="metrics-page__head">
                     <div>
-                        <div class="metrics-page__title"><i class="fa fa-shield"></i>Coverage</div>
+                        <div class="metrics-page__title"><i class="fa fa-shield"></i>Test Coverage</div>
                         <div class="metrics-page__subtitle">How much of the code under test this run actually ran</div>
                     </div>
                 </div>
@@ -4401,7 +4431,7 @@ CAPTURE = {
                 <div class="attach-empty cov-empty">
                     <div class="attach-empty__head">
                         <div class="attach-empty__icon"><i class="fa fa-shield"></i></div>
-                        <div class="attach-empty__title">No coverage in this run</div>
+                        <div class="attach-empty__title">No test coverage in this run</div>
                         <div class="attach-empty__text">
                           Measure it and this tab fills itself in - the percentage, the split by file,
                           and the lines nothing touched - beside the tests that did the measuring.
@@ -4420,7 +4450,12 @@ CAPTURE = {
                             </div>
                             <pre class="setup-step__code">pip install pytest-cov
 
-pytest <b>--cov</b>=src <b>--cov-branch</b></pre>
+pytest <b>--cov</b>=<i class="ph">my_package</i> <b>--cov-branch</b></pre>
+                            <div class="setup-step__note setup-step__note--last">
+                                <i class="ph">my_package</i> is yours to fill in. <b>--cov</b> takes the import name
+                                or the path of the <b>code under test</b> - not the tests, and not a folder that is
+                                not there: point it at one and the run measures nothing at all.
+                            </div>
                         </div>
 
                         <div class="setup-step">
@@ -4441,7 +4476,7 @@ pytest <b>--cov</b>=src <b>--cov-branch</b></pre>
                                 and it is linked from the card above; <b>--report-link</b> does the same for
                                 any page of your own.
                             </div>
-                            <pre class="setup-step__code">pytest <b>--cov</b>=src <b>--cov-report</b>=html
+                            <pre class="setup-step__code">pytest <b>--cov</b>=<i class="ph">my_package</i> <b>--cov-report</b>=html
 
 <span class="c"># anything else worth reaching from the side nav</span>
 pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span></pre>
@@ -4458,7 +4493,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     </div>
 
                     <div class="setup-links">
-                        <a href="https://github.com/prashanth-sams/pytest-html-reporter#coverage" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
+                        <a href="https://github.com/prashanth-sams/pytest-html-reporter#test-coverage" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
                     </div>
                 </div>
             </div>

@@ -401,7 +401,7 @@ def test_coverage_chip():
     assert "cov-trigger--strong" in button["class"]
     assert button["title"] == title
     assert button["onclick"] == "openCoverageTab()"
-    assert button.find("span").text.strip() == "Coverage 91.4%"
+    assert button.find("span").text.strip() == "Test Coverage 91.4%"
 
 
 def test_report_link():
