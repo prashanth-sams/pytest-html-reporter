@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name="pytest-html-reporter",
-    version="0.3.5",
+    version="0.3.6",
     author="Prashanth Sams",
     author_email="sams.prashanth@gmail.com",
     maintainer="Prashanth Sams",
@@ -22,7 +22,7 @@ setup(
     url="https://github.com/prashanth-sams/pytest-html-reporter",
     description="Generates a light-weight static html report based on pytest framework",
     long_description=read("README.rst"),
-    keywords=["pytest", "py.test", "html", "reporter", "report", "pytest-plugin", "html-report", "test-report", "pytest-html", "pytest-html-reporter", "api-testing", "xdist", "playwright", "selenium"],
+    keywords=["pytest", "py.test", "html", "reporter", "report", "pytest-plugin", "html-report", "test-report", "pytest-html", "pytest-html-reporter", "api-testing", "xdist", "playwright", "selenium", "test-coverage", "pytest-cov", "pytest-html-cov", "pytest-html-coverage", "pytest-coverage"],
     packages=find_packages(),
     include_package_data=True,
     package_data={

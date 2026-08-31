@@ -1,5 +1,5 @@
 from pytest_html_reporter.html_reporter import HTMLReporter
-from pytest_html_reporter.util import clean_screenshots, custom_title, report_path
+from pytest_html_reporter.util import archive_count, clean_screenshots, custom_title, report_path
 
 
 def pytest_addoption(parser):
@@ -28,6 +28,26 @@ def pytest_addoption(parser):
         dest="archive_count",
         default="",
         help="set maximum build count to display in the archives section",
+    )
+
+    group.addoption(
+        "--archive-days",
+        action="store",
+        dest="archive_days",
+        default="",
+        metavar="DAYS",
+        help="keep only the builds run in the last DAYS days; older archived "
+             "builds are deleted",
+    )
+
+    group.addoption(
+        "--archive-since",
+        action="store",
+        dest="archive_since",
+        default="",
+        metavar="DATE",
+        help="delete every archived build older than DATE, given as 2026-06-01 "
+             "or '2026-06-01 09:00'",
     )
 
     group.addoption(
@@ -88,10 +108,68 @@ def pytest_addoption(parser):
              "(default: 20000)",
     )
 
+    group.addoption(
+        "--report-coverage",
+        action="store",
+        dest="report_coverage",
+        default=None,
+        choices=("auto", "none"),
+        help="whether to build the Coverage tab from whatever coverage this run "
+             "produced: auto (default) or none",
+    )
+
+    group.addoption(
+        "--report-coverage-file",
+        action="store",
+        dest="report_coverage_file",
+        default=None,
+        metavar="PATH",
+        help="read coverage from this file - a coverage.json, a Cobertura "
+             "coverage.xml or a .coverage data file - instead of looking for one",
+    )
+
+    group.addoption(
+        "--report-coverage-limit",
+        action="store",
+        dest="report_coverage_limit",
+        default=None,
+        type=int,
+        help="maximum files listed on the Coverage tab, least-covered first; "
+             "0 lists every one (default: 500)",
+    )
+
+    group.addoption(
+        "--report-link",
+        action="append",
+        dest="report_link",
+        default=[],
+        metavar="LABEL=URL",
+        help="add a link to the report's side nav, e.g. "
+             "'Coverage=htmlcov/index.html'; repeat for more",
+    )
+
     parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
              "%d, %H, %M, ...) are expanded, e.g. ./reports/%Y%m%d/report_%H%M.html",
+        default="",
+    )
+
+    parser.addini(
+        "archive_count",
+        help="maximum build count to display in the archives section",
+        default="",
+    )
+
+    parser.addini(
+        "archive_days",
+        help="keep only the builds run in the last N days",
+        default="",
+    )
+
+    parser.addini(
+        "archive_since",
+        help="delete every archived build older than this date, e.g. 2026-06-01",
         default="",
     )
 
@@ -120,6 +198,30 @@ def pytest_addoption(parser):
     )
 
     parser.addini(
+        "report_coverage",
+        help="whether to build the Coverage tab: auto or none",
+        default="",
+    )
+
+    parser.addini(
+        "report_coverage_file",
+        help="read coverage from this file instead of looking for one",
+        default="",
+    )
+
+    parser.addini(
+        "report_coverage_limit",
+        help="maximum files listed on the Coverage tab; 0 lists every one",
+        default="",
+    )
+
+    parser.addini(
+        "report_link",
+        type="linelist",
+        help="extra links to show in the report's side nav, one LABEL=URL per line",
+    )
+
+    parser.addini(
         "report_attachments",
         help="whose attachments to keep in the report: all, failed or none",
         default="",
@@ -144,6 +246,4 @@ def pytest_configure(config):
     title = config.getoption("title")
     custom_title(title)
     
-    archive_count = config.getoption("archive_count")
-
-    config.pluginmanager.register(HTMLReporter(path, archive_count, config))
+    config.pluginmanager.register(HTMLReporter(path, archive_count(config), config))

@@ -1,3 +1,34 @@
+0.3.6 (31/08/2026)
+-------------------
+- Added --archive-days / the archive_days ini key, keeping only the builds from the last N days and deleting the rest; a run on a schedule wants a stretch of time, not a build count, and 30 days stays 30 days when the schedule changes (#223)
+- Added --archive-since / the archive_since ini key, taking a date - or a date and a time - for a one-off cut of everything older than it (#223)
+- --archive-count, --archive-days and --archive-since intersect: a build has to satisfy every limit that is set to be kept
+- Added the archive_count ini key, which was the one option with no ini equivalent; retention belongs to the job rather than to one invocation
+- Fixed --archive-count doing nothing at all when --html-report named the html file itself, e.g. ./report/report.html: the folder it pruned was built from the file's own name, so it never existed and every build was kept for ever
+- A build's age is now read from the moment kept in its archive file's name rather than from the file's mtime, so retention still measures the right thing after the reports have been copied into a fresh CI workspace, where every mtime is the moment of the checkout
+- Retention now only ever deletes the plugin's own output_*.json archives, leaving anything else in the folder alone
+- A nonsense --archive-count, --archive-days or --archive-since now fails the run with a usage error, instead of being silently ignored or crashing the reporter once the tests had already finished
+- Added a Test Coverage tab: the overall percentage as a ring, the counts beside it, a row per file with its missing lines, and the percentage plotted across the retained builds (#203)
+- The figure is coverage.py's own, read through its public json_report API, so the tab and the terminal beside it can never print different totals; with --cov-branch on, branch coverage is folded in exactly as pytest-cov folds it in
+- Coverage is read after the run rather than measured: pytest-cov finishes, saves and combines its data - every xdist worker's share included - long before the report is written, so a parallel run reports one combined percentage and no hook ordering had to be declared
+- The Dashboard gained a coverage chip beside Environment, coloured by the percentage and crossing to the tab
+- Files are listed least covered first, which is also how the list is cut when --report-coverage-limit applies: a cap that kept the alphabetical head would hide exactly the files the tab is opened to find
+- The Branches column is dropped when a run measured no branches, rather than filled with a column of dashes that only says --cov-branch was not passed
+- The ring is coloured against --cov-fail-under when the project set one, so the report cannot disagree with the build that just passed or failed on it
+- output.json now carries the coverage percentage alongside the test counts, which is what gives the tab its delta against the last build and its trend line; a build that measured nothing leaves a gap in that line rather than a drop to zero
+- Added --report-coverage-file / the report_coverage_file ini key, reading a coverage.json, a Cobertura coverage.xml or a .coverage data file instead of looking for one - the CI shape, where coverage came from an earlier step; the Cobertura path needs no coverage package installed at all
+- A coverage.json or coverage.xml beside the report or at the project root is found without being named; a .coverage data file is not, because one is usually left over from an earlier run and publishing last Tuesday's number is worse than publishing none
+- The tab says where its numbers came from, and for a file when that file was written, so a stale report cannot pass itself off as a fresh one
+- The coverage html report is linked, never embedded: an iframe over htmlcov would empty itself the moment the report was mailed or published on its own, and would do it silently. The link is offered only when the folder was written by this run
+- Added --report-coverage / the report_coverage ini key (auto or none) to switch the tab off
+- Added --report-coverage-limit / the report_coverage_limit ini key to cap the files listed (default 500, 0 lists every one)
+- Added --report-link / the report_link ini key, adding LABEL=URL entries to the report's side nav - the annotated coverage source, a CI job, anything else worth reaching from here (#203); a scheme other than http, https or mailto is dropped rather than rendered
+- A coverage file that cannot be read is reported in the tab rather than raised: the tests are over by then, and a usage error at that point would turn a green run red over a decoration
+- A run where pytest-cov measured nothing - --cov=src against a project that has no src, the easiest mistake there is - now says so in the tab, naming the flag that was typed, instead of showing a setup guide to somebody who has just followed it
+- The tab's setup guide now writes the package name as a marked placeholder - my_package, not src - so the one value the reader has to swap for their own cannot be pasted in as if it were real
+- Fixed the dashboard's chip row spilling outside its card: space-between over a row that could not wrap put "Time taken" on top of the Trends card at anything under about 1500px once a third chip joined it
+- Fixed the same row breaking raggedly below 1200px, where it laid out as inline boxes: the Environment chip sat alone on the first line with the other two crammed onto the second six pixels apart, because a button aligns on its middle and the run time on its baseline, and the chips' own right margin stopped their right edges lining up. It is now a wrapping flex row packed into the card's corner
+
 0.3.5 (31/08/2026)
 -------------------
 - Fixed report text that looks like markup being written into the page as markup: a parameter id or an assertion message holding angle brackets - `assert <Foo object at 0x7f> == 3` is what an ordinary failure looks like - mangled its own row and swallowed the rows after it, so tests went missing from Test Metrics

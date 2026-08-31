@@ -5,6 +5,7 @@ import platform
 import re
 import shutil
 import sys
+import time
 from collections import Counter
 from datetime import datetime
 from html import escape
@@ -15,6 +16,7 @@ from PIL import Image
 
 from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
+from html_page.report_link import ReportLink
 from pytest_html_reporter.const_vars import ConfigVars
 
 
@@ -230,6 +232,66 @@ def build_info(config):
         pairs.append((key.strip(), value.strip()))
 
     return pairs
+
+
+# A scheme of two characters or more, so a Windows drive letter - C:/reports -
+# is read as the path it is rather than as a scheme this does not know.
+_URL_SCHEME = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]+:")
+
+SAFE_SCHEMES = ("http://", "https://", "mailto:")
+
+
+def safe_link(url):
+    """A url fit to put in the report's nav, or '' when it is not one.
+
+    The nav is assembled out of whatever a command line said, and the report is
+    a build artifact that gets published and passed round. A scheme this does
+    not know - javascript:, data: - is dropped rather than rendered, so a nav
+    entry cannot become a way to run something in whoever opens the page.
+    Relative paths are left alone: linking ./htmlcov/index.html beside the
+    report is the whole point of the option.
+    """
+    url = str(url).strip()
+
+    if not url:
+        return ""
+
+    if _URL_SCHEME.match(url) and not url.lower().startswith(SAFE_SCHEMES):
+        return ""
+
+    return url
+
+
+def report_links(config):
+    """(label, url) pairs from --report-link and the report_link ini key.
+
+    Issue #203 asked for the coverage html report inside this one. The answer
+    to the general form of that - "let me reach my own pages from here" - is a
+    link in the nav rather than a frame in the page: a frame would quietly
+    empty itself the moment the report is mailed or published on its own,
+    while a link that does not resolve at least says so in the address bar.
+    """
+    entries = list(config.getoption("report_link", None) or [])
+    entries += list(_ini(config, "report_link") or [])
+
+    links = []
+    for entry in entries:
+        label, _, url = str(entry).strip().partition("=")
+        label = label.strip()
+        url = safe_link(url)
+
+        if label and url:
+            links.append((label, url))
+
+    return links
+
+
+def generate_report_links(config):
+    ConfigVars._report_links = "".join(
+        str(ReportLink(label=escape_report_text(label), url=escape_report_text(url),
+                       title=escape_report_text(url)))
+        for label, url in report_links(config)
+    )
 
 
 def generate_environment_info(config):
@@ -496,3 +558,152 @@ def generate_logs_notice(config):
 def count_log_lines(sections):
     """Lines of captured output, for the count shown on the row's button."""
     return sum(len(section["text"].splitlines()) for section in sections)
+
+
+# --------------------------------------------------------------------------
+# archive retention
+# --------------------------------------------------------------------------
+
+# Every archived build is named for the moment its run started -
+# output_1788023855.926659.json - which is what makes an age limit possible.
+ARCHIVE_STAMP = re.compile(r"_(\d+(?:\.\d+)?)\.json$")
+
+SINCE_FORMATS = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d")
+
+DAY_SECONDS = 86400.0
+
+
+def archive_count(config):
+    """How many builds to keep, as text; '' when no limit is set.
+
+    Text, not a number, because '' - keep everything - and '0' - keep nothing,
+    not even the Archives section - are different answers, and both are asked
+    about later.
+    """
+    value = config.getoption("archive_count", None)
+    if value is None or str(value).strip() == "":
+        value = _ini(config, "archive_count")
+
+    if value is None:
+        return ""
+
+    value = str(value).strip()
+    if value == "":
+        return ""
+
+    try:
+        count = int(value)
+    except ValueError:
+        raise pytest.UsageError(
+            "--archive-count takes a number of builds to keep, not %r" % value)
+
+    if count < 0:
+        raise pytest.UsageError(
+            "--archive-count cannot be negative, got %r" % value)
+
+    return str(count)
+
+
+def archive_days(config):
+    """Days of history to keep; None when no age limit is set."""
+    value = config.getoption("archive_days", None)
+    if value is None or str(value).strip() == "":
+        value = _ini(config, "archive_days")
+
+    if value is None or str(value).strip() == "":
+        return None
+
+    try:
+        days = float(str(value).strip())
+    except ValueError:
+        raise pytest.UsageError(
+            "--archive-days takes a number of days to keep, not %r" % value)
+
+    if days < 0:
+        raise pytest.UsageError(
+            "--archive-days cannot be negative, got %r" % value)
+
+    return days
+
+
+def archive_since(config):
+    """The oldest moment to keep, as an epoch; None when no date is set.
+
+    Written as a date - 2026-06-01, meaning midnight local time that day - or
+    as a date and a time, for a schedule that runs often enough to care.
+    """
+    value = config.getoption("archive_since", None)
+    if value is None or str(value).strip() == "":
+        value = _ini(config, "archive_since")
+
+    if value is None:
+        return None
+
+    value = str(value).strip()
+    if value == "":
+        return None
+
+    for fmt in SINCE_FORMATS:
+        try:
+            return datetime.strptime(value, fmt).timestamp()
+        except ValueError:
+            continue
+
+    raise pytest.UsageError(
+        "--archive-since takes a date, YYYY-MM-DD or 'YYYY-MM-DD HH:MM', not %r" % value)
+
+
+def archive_cutoff(days=None, since=None, now=None):
+    """The oldest moment kept, or None when neither age limit is set.
+
+    Both set is the stricter of the two, so neither can widen the other.
+    """
+    cutoffs = []
+
+    if days is not None:
+        cutoffs.append((time.time() if now is None else now) - days * DAY_SECONDS)
+
+    if since is not None:
+        cutoffs.append(since)
+
+    return max(cutoffs) if cutoffs else None
+
+
+def archive_timestamp(path):
+    """When the run that produced an archived build started.
+
+    Read from the file's name, so the time survives a checkout into a CI
+    workspace - where every file's mtime is the moment of the clone, and an
+    age limit read from mtimes would keep everything for ever. The mtime is
+    the fallback, for a file named by a version that named them differently.
+    """
+    match = ARCHIVE_STAMP.search(os.path.basename(path))
+
+    if match:
+        try:
+            return float(match.group(1))
+        except ValueError:
+            pass
+
+    return os.path.getmtime(path)
+
+
+def expired_archives(paths, keep=None, cutoff=None):
+    """Which of `paths` the retention limits do not keep, oldest first.
+
+    The limits intersect: an archive has to be no older than `cutoff` *and*
+    among the newest `keep` to survive. `keep` counts files on disk, so the
+    caller subtracts the build being reported now, which is displayed
+    alongside them.
+    """
+    stamped = sorted(((archive_timestamp(path), path) for path in paths),
+                     key=lambda pair: pair[0])
+
+    kept = stamped if cutoff is None else [pair for pair in stamped if pair[0] >= cutoff]
+
+    if keep is not None:
+        kept = kept[-keep:] if keep > 0 else []
+
+    survivors = set(path for _, path in kept)
+
+    return [path for _, path in stamped if path not in survivors]

@@ -38,6 +38,15 @@ from pytest_html_reporter.util import (
     count_log_lines,
     report_attachments_mode,
     report_attachment_limit,
+    archive_days,
+    archive_since,
+    archive_cutoff,
+    expired_archives,
+    generate_report_links,
+)
+from pytest_html_reporter.coverage_report import (
+    collect_coverage,
+    generate_coverage_view,
 )
 from pytest_html_reporter.attachments import (
     attachment_size,
@@ -58,6 +67,19 @@ COLLECT_ERROR_NAME = '(collection error)'
 COLLECT_SKIP_NAME = '(module skipped)'
 
 
+def archived_coverage(data):
+    """One build's coverage percentage out of its output.json, or None.
+
+    Every archived build predating this feature simply has no coverage key,
+    and so does any build that ran without coverage measured - both are "not
+    known", which is a different answer from zero.
+    """
+    try:
+        return float((data.get('coverage') or {})['percent'])
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return None
+
+
 class HTMLReporter(object):
     def __init__(self, path, archive_count, config):
         self.json_data = {'content': {'suites': {}}}
@@ -75,6 +97,13 @@ class HTMLReporter(object):
         self.log_limit = report_log_limit(config)
         self.attachments_mode = report_attachments_mode(config)
         self.attachment_limit = report_attachment_limit(config)
+
+        # Age-based retention, alongside --archive-count. A run on a schedule
+        # wants "the last 30 days": a build count has to be retuned every time
+        # the schedule changes, and says nothing about how far back the report
+        # actually reaches.
+        self.archive_days = archive_days(config)
+        self.archive_since = archive_since(config)
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
@@ -210,20 +239,37 @@ class HTMLReporter(object):
             return os.path.abspath(logfile), 'pytest_html_report.html'
 
     def remove_old_archives(self):
-        archive_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(self.path))) + '/archive'
+        """Apply the retention limits to the builds kept on disk.
 
-        if self.archive_count != '':
-            if int(self.archive_count) == 0:
-                if os.path.isdir(archive_dir):
-                    shutil.rmtree(archive_dir)
-                return
+        --archive-count, --archive-days and --archive-since intersect: a build
+        has to satisfy every limit that is set to survive. Nothing set keeps
+        everything, which is how the report grows until it is slow to open.
 
-            archive_count = int(self.archive_count) - 1
+        The folder is taken from report_path rather than from self.path: the
+        path can name the html file itself - ./report/report.html - and the
+        archive sits beside it, in the folder.
+        """
+        archive_dir = os.path.join(self.report_path[0], 'archive')
+        cutoff = archive_cutoff(days=self.archive_days, since=self.archive_since)
+
+        if self.archive_count == '' and cutoff is None:
+            return
+
+        if self.archive_count == '0':
             if os.path.isdir(archive_dir):
-                archives = os.listdir(archive_dir)
-                archives.sort(key=lambda f: os.path.getmtime(os.path.join(archive_dir, f)))
-                for i in range(0, len(archives) - archive_count):
-                    os.remove(os.path.join(archive_dir, archives[i]))
+                shutil.rmtree(archive_dir)
+            return
+
+        if not os.path.isdir(archive_dir):
+            return
+
+        # The build being reported now is shown alongside the archived ones and
+        # counts against --archive-count, so one fewer is kept on disk.
+        keep = int(self.archive_count) - 1 if self.archive_count != '' else None
+
+        for path in expired_archives(glob.glob(os.path.join(archive_dir, '*.json')),
+                                     keep=keep, cutoff=cutoff):
+            os.remove(path)
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):
@@ -252,6 +298,11 @@ class HTMLReporter(object):
             os.makedirs(base, exist_ok=True)
             self.archive_data(base, self.report_path[1])
 
+            # read whatever coverage this run produced, before the json is
+            # written: output.json carries the percentage, which is what lets
+            # the next build show a delta and the trend read across builds
+            self.collect_coverage_data(base)
+
             # generate json file
             self.generate_json_data(base)
 
@@ -270,6 +321,13 @@ class HTMLReporter(object):
 
             # say why the Logs column is empty, when something is suppressing it
             generate_logs_notice(self.config)
+
+            # build the Coverage tab from what was collected above, now that
+            # update_trends has filled in the archived builds' percentages
+            generate_coverage_view(self.config)
+
+            # extra side-nav entries asked for with --report-link
+            generate_report_links(self.config)
 
             # generate html report
             live_logs_file = open(path, 'w', encoding='utf-8')
@@ -767,6 +825,29 @@ class HTMLReporter(object):
         )
         ConfigVars._total = ConfigVars._executed = len(records)
 
+    def collect_coverage_data(self, base):
+        """Read this run's coverage, and put its headline in output.json.
+
+        Stored alongside the test counts rather than in a file of its own: the
+        archives, the trend chart and Suite Highlights all read output.json
+        already, so a percentage kept there is a percentage every one of them
+        can reach without a second format to keep in step.
+        """
+        summary, notice = collect_coverage(self.config, base, self._sessionstarttime)
+
+        ConfigVars._coverage = summary
+        ConfigVars._coverage_notice = notice
+
+        if summary is None: return
+
+        self.json_data['coverage'] = {
+            'percent': summary['percent'],
+            'statements': summary['statements'],
+            'covered': summary['covered'],
+            'missing': summary['missing'],
+            'branch': summary['branch'],
+        }
+
     def update_test_error(self, msg):
         ConfigVars._current_error = msg
 
@@ -846,7 +927,26 @@ class HTMLReporter(object):
             environment_rows=str(ConfigVars._environment_rows),
             environment=escape_report_text(ConfigVars._environment_label),
             environment_title=escape_report_text(ConfigVars._environment),
-            environment_class=str(ConfigVars._environment_class)
+            environment_class=str(ConfigVars._environment_class),
+            coverage_state=str(ConfigVars._coverage_state),
+            coverage_display=str(ConfigVars._coverage_display),
+            coverage_dash=str(ConfigVars._coverage_dash),
+            coverage_grade=str(ConfigVars._coverage_grade),
+            coverage_tiles=str(ConfigVars._coverage_tiles),
+            coverage_rows=str(ConfigVars._coverage_rows),
+            coverage_meta=str(ConfigVars._coverage_meta),
+            coverage_delta=str(ConfigVars._coverage_delta),
+            coverage_delta_class=str(ConfigVars._coverage_delta_class),
+            coverage_target=str(ConfigVars._coverage_target),
+            coverage_link=str(ConfigVars._coverage_link),
+            coverage_note=str(ConfigVars._coverage_note),
+            coverage_notice=escape_report_text(ConfigVars._coverage_notice),
+            coverage_branch=str(ConfigVars._coverage_branch),
+            coverage_trend_state=str(ConfigVars._coverage_trend_state),
+            coverage_trend_labels=str(ConfigVars._coverage_trend_labels),
+            coverage_trend_values=str(ConfigVars._coverage_trend_values),
+            coverage_chip=str(ConfigVars._coverage_chip),
+            report_links=str(ConfigVars._report_links)
         )
 
         return str(template_text)
@@ -1008,6 +1108,7 @@ class HTMLReporter(object):
             ConfigVars.tpass.append(data['status_list']['pass'])
             ConfigVars.tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
             ConfigVars.tskip.append(data['status_list']['skip'])
+            ConfigVars.tcoverage.append(archived_coverage(data))
 
         f = glob.glob(base + '/archive' + '/*.json')
         f.sort(reverse=True)
@@ -1031,6 +1132,10 @@ class HTMLReporter(object):
                 ConfigVars.tpass.append(data['status_list']['pass'])
                 ConfigVars.tfail.append(int(data['status_list']['fail']) + int(data['status_list']['error']))
                 ConfigVars.tskip.append(data['status_list']['skip'])
+                # None, not 0: a build that ran before coverage was switched on
+                # never measured anything, and drawing it as zero would invent a
+                # cliff in the trend that never happened.
+                ConfigVars.tcoverage.append(archived_coverage(data))
 
                 if i == 4: break
 

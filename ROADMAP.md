@@ -136,10 +136,89 @@ interesting lines at the end.
 
 ---
 
+### 14. Archive retention by age — SHIPPED
+Issue #223: an hourly schedule keeps every build for ever, and two months in, the report is slow to open.
+
+*Shipped as:* `--archive-days` and `--archive-since` beside the existing `--archive-count`, with `archive_count`,
+`archive_days` and `archive_since` ini keys, and the retention logic itself in `util.py`
+(`archive_cutoff`, `archive_timestamp`, `expired_archives`).
+
+The issue asked for a date *range*; the answer is a rolling window instead. Removing a middle slice while keeping
+older builds either side is not a retention policy — it leaves a hole in the trends chart, which reads straight off
+the same files. The limits intersect rather than override, so a count and an age can be set together without either
+one quietly widening the other.
+
+Nothing else needed changing: the archives tab, the trends chart and Suite Highlights all glob the same
+`archive/*.json`, so pruning the folder shrinks the page for free. At roughly 5KB of page per retained build, that is
+the whole of the load-time complaint.
+
+Two bugs surfaced on the way. `--archive-count` computed its folder from `self.path`, so it silently did nothing
+whenever `--html-report` named the `.html` file itself; and retention sorted on mtime, which in CI is the moment of
+the checkout rather than the moment of the run — the run's real start time was in the file name all along.
+
+---
+
+### 15. Test coverage — SHIPPED
+Issue #203: a percentage on the page, "a cake graph ... or a circle percentage bar", and either the
+coverage html report embedded or a section of its own. A later comment asked for two things by name:
+custom links in the menu, and the numbers from `pytest-cov`.
+
+*Shipped as:* `pytest_html_reporter/coverage_report.py`, a `Test Coverage` tab, the `CoverageRow` /
+`CoverageTile` / `CoverageChip` components, `--report-coverage`, `--report-coverage-file`,
+`--report-coverage-limit`, and `--report-link` for the menu half.
+
+**The embed was the wrong half of the ask.** An iframe over `htmlcov/` breaks the one property the
+whole reporter is built on — a single file you can mail, publish as a CI artifact, or open off a
+stick — and it breaks it *silently*, showing an empty frame wherever the folder did not travel with
+the page. So the numbers are read and drawn natively, and `htmlcov` is **linked**, which is the only
+part of it a summary genuinely cannot replace. The link is offered only when the folder's `index.html`
+was written after this run started: coverage.py names that folder whether or not `--cov-report=html`
+was asked for, so a stale one sits there looking exactly like a fresh one.
+
+**Read, not measured, and no hook to order.** pytest-cov calls `cov_controller.finish()` from
+`pytest_runtestloop` — stopping, saving and combining every xdist worker's data — which is long over
+by the time this report is written from `pytest_terminal_summary`. So the `Coverage` object is simply
+read off `config.pluginmanager.getplugin('_cov')`, and nothing had to be declared `trylast` to race it.
+
+**The number is coverage.py's own.** Taken through the public `json_report()` API — to a temp file,
+because it writes to a path rather than a file object — rather than summed out of `analysis2()` or
+lifted from `coverage.jsonreport`. That round trip buys the one guarantee worth having: with
+`--cov-branch` on, `percent_covered` already folds branches in the way pytest-cov folds them in, so
+the tab and the terminal beside it cannot print different totals. A report that disagrees with the
+terminal it was generated next to is a bug report waiting to be filed. The same reasoning gave the ring
+its colour: `--cov-fail-under`, when set, is the line the colour is drawn at, because the project has
+already said where its own bar is.
+
+Three sources, in that order of trust: the live plugin, then a `coverage.json` or Cobertura
+`coverage.xml` found beside the report, then a file named outright. The xml path needs no `coverage`
+package installed at all, which is what makes it the useful one when the reporting job is not the job
+that ran the tests. A `.coverage` data file is read only when named — one is usually left over from a
+run days ago, and quietly publishing last Tuesday's number is worse than publishing none. Every source
+is stated in the tab, with the file's own timestamp when it has one.
+
+`output.json` gained a `coverage` block beside the test counts rather than a file of its own: the
+archives, the trend chart and Suite Highlights all read that file already, so one percentage kept there
+is a percentage every one of them can reach. That is where the `+0.8 since the last build` and the
+trend line come from, at no new cost. A build that measured nothing is `None`, not `0` — a gap in the
+line rather than a cliff it never fell off.
+
+Two smaller decisions worth keeping. Files are sorted **least covered first**, which is both the useful
+default and the only defensible way to cut the list when `--report-coverage-limit` bites: a cap that
+kept the alphabetical head would hide exactly the files the tab is opened to find. And the `Branches`
+column is **dropped** when a run measured no branches, rather than filled with a column of dashes whose
+only message is that `--cov-branch` was not passed.
+
+The dashboard got a chip, not the ring. Same finding as #1: the dashboard is a fixed-height flex column
+at >=1200px, and a third row compresses both chart rows. The chip states the figure and crosses to the
+tab, where the ring, the per-file split and the trend all have room.
+
+---
+
 ## Suggested next release
 
 **#1, #2, #4, #7.** Together they are roughly one afternoon, need no schema change to
 `output.json`, and address the two most common complaints about HTML reporters: "I can't see the
 logs" and "I can't filter to just the failures."
 
-#1, #2 and #7 have shipped; #4 is what is left of that set. #13 shipped separately, off issue #191.
+#1, #2 and #7 have shipped; #4 is what is left of that set. #13 shipped separately, off issue #191,
+#14 off #223 and #15 off #203.
