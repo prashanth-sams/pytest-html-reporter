@@ -1,4 +1,13 @@
+"""The plain-pytest flavour of screenshot-on-failure.
+
+Needs ``pip install selenium`` and a local Chrome; Selenium Manager
+resolves the matching chromedriver itself.
+"""
+
 import pytest
+
+pytest.importorskip("selenium")
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By

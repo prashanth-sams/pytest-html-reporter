@@ -36,7 +36,7 @@ Features
   - Suite Highlights
   - Test suite details
 * Archives / History
-* Screenshots on failure
+* Screenshots on failure - works with Selenium, Playwright, or anything else that can produce a PNG
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
@@ -266,12 +266,14 @@ ini value; ``--build-info`` entries are added to the ones set in the ini file ra
 screenshots on failure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Import ``attach`` from the library and call it with the selenium command as given below::
+Import ``attach`` from the library and hand it the PNG bytes of a screenshot. It takes the image itself rather than a
+browser, so it works with Selenium, Playwright, or anything else that can produce a PNG::
 
     from pytest_html_reporter import attach
 
-    ...
-    attach(data=self.driver.get_screenshot_as_png())
+    attach(data=self.driver.get_screenshot_as_png())   # Selenium
+    attach(data=page.screenshot())                     # Playwright
+    attach(data=await page.screenshot())               # Playwright, async API
 
 **Note:** call ``attach`` while the test is still running - from the test body, from a ``unittest`` ``tearDown``, or
 from a ``pytest_runtest_makereport`` hook for the call phase. A pytest fixture's teardown runs after the reporter has
@@ -290,6 +292,15 @@ already recorded the test, so a screenshot attached there never reaches the repo
             driver = item.funcargs.get("driver")
             if driver is not None:
                 attach(data=driver.get_screenshot_as_png())
+
+The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page`` fixture instead::
+
+    page = item.funcargs.get("page")
+    if page is not None:
+        attach(data=page.screenshot())
+
+**Note:** the hook is synchronous, so Playwright's async API cannot be photographed from it - there is nowhere to
+``await``. With ``async`` tests, call ``attach`` from the test body instead.
 
 .. image:: https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white
    :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b
