@@ -275,9 +275,29 @@ browser, so it works with Selenium, Playwright, or anything else that can produc
     attach(data=page.screenshot())                     # Playwright
     attach(data=await page.screenshot())               # Playwright, async API
 
-**Note:** call ``attach`` while the test is still running - from the test body, from a ``unittest`` ``tearDown``, or
-from a ``pytest_runtest_makereport`` hook for the call phase. A pytest fixture's teardown runs after the reporter has
-already recorded the test, so a screenshot attached there never reaches the report::
+**Note:** screenshots are kept for tests that **fail**. Attaching from a test that passes is a no-op - the image is
+discarded and the run warns once to say so.
+
+``attach`` can be called from anywhere in the test's lifecycle: the test body, a ``unittest`` ``tearDown``, a pytest
+fixture's teardown, or a ``pytest_runtest_makereport`` hook. The fixture flavour is the one most people write::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach
+
+    @pytest.fixture(autouse=True)
+    def screenshot_on_failure(page, request):
+        yield
+        if request.node.rep_call.failed:
+            attach(data=page.screenshot())
+
+    @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        rep = outcome.get_result()
+        setattr(item, "rep_" + rep.when, rep)
+
+Or skip the fixture and attach straight from the hook, which already has the browser in ``item.funcargs``::
 
     # conftest.py
     import pytest
@@ -286,12 +306,15 @@ already recorded the test, so a screenshot attached there never reaches the repo
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_makereport(item, call):
         outcome = yield
-        report = outcome.get_result()
+        rep = outcome.get_result()
 
-        if report.when == "call" and report.failed:
+        if rep.when == "call" and rep.failed:
             driver = item.funcargs.get("driver")
             if driver is not None:
                 attach(data=driver.get_screenshot_as_png())
+
+**Note:** hooks have to live in ``conftest.py``. pytest only registers conftest files as plugins, so a
+``pytest_runtest_makereport`` written at the top of a test module is silently never called.
 
 The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page`` fixture instead::
 

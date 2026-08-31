@@ -14,11 +14,9 @@ from pytest_html_reporter import attach
 class TestClass(unittest.TestCase):
     """The ``unittest`` flavour of screenshot-on-failure.
 
-    ``tearDown`` is the right hook here, and only here: unittest runs it as
-    part of the test call itself, which is early enough for the reporter to
-    still be building this test's record. A pytest fixture's teardown runs
-    later than that and the screenshot would be dropped - see conftest.py,
-    which is how the plain-pytest tests capture theirs instead.
+    ``tearDown`` is where a unittest suite attaches: unittest runs it as part
+    of the test call itself, so the driver is still open. The plain-pytest
+    tests capture theirs from a hook instead - see conftest.py.
 
     Has to be run through pytest: ``attach`` writes relative to a base path
     that only exists once the reporter plugin has been configured.
