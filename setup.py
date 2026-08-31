@@ -22,7 +22,7 @@ setup(
     url="https://github.com/prashanth-sams/pytest-html-reporter",
     description="Generates a light-weight static html report based on pytest framework",
     long_description=read("README.rst"),
-    keywords=["pytest", "py.test", "html", "reporter", "report"],
+    keywords=["pytest", "py.test", "html", "reporter", "report", "pytest-plugin", "html-report", "test-report", "pytest-html", "pytest-html-reporter", "api-testing", "xdist", "playwright", "selenium"],
     packages=find_packages(),
     include_package_data=True,
     package_data={

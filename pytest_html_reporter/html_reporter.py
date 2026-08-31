@@ -52,6 +52,10 @@ from pytest_html_reporter.const_vars import ConfigVars
 # What fits the caption strip under a gallery tile.
 SCREENSHOT_NAME_MAX = 19
 
+# Stand-ins for the test name of a file that never produced a test at all.
+COLLECT_ERROR_NAME = '(collection error)'
+COLLECT_SKIP_NAME = '(module skipped)'
+
 
 class HTMLReporter(object):
     def __init__(self, path, archive_count, config):
@@ -79,6 +83,10 @@ class HTMLReporter(object):
         # Where each test's record sits in that list, so a retry can replace the
         # attempt it superseded instead of being reported as another test.
         self._record_slots = {}
+
+        # Which collectors have already been recorded as failed or skipped, so
+        # a broken file seen by several processes is reported once.
+        self._collect_slots = set()
         self._collected = {}
         self.worker_id = xdist_worker_id(config)
 
@@ -100,6 +108,45 @@ class HTMLReporter(object):
         # lets the controller put the workers' results back in collection
         # order, whatever order they actually ran in.
         self._collected = {item.nodeid: index for index, item in enumerate(items)}
+
+    def pytest_collectreport(self, report):
+        """Keep a file that never produced a test, so it cannot vanish silently.
+
+        A module that fails to import - or one skipped at module level - yields
+        no items at all, so nothing reaches pytest_runtest_teardown and the
+        whole file, every test in it and the error itself were missing from the
+        report while pytest printed them. A broken import is exactly the case
+        where the report is read to find out what happened, and it was the one
+        case the report did not cover.
+        """
+        if report.passed: return
+        if not report.nodeid: return  # the session collector itself
+
+        # A skipped collector's longrepr is a (path, lineno, reason) tuple, and
+        # rendering it as text would put the tuple's repr in the report.
+        if report.skipped and isinstance(report.longrepr, tuple):
+            message = str(report.longrepr[2])
+        else:
+            message = str(report.longreprtext or '')
+
+        self.store_collect_record({
+            'suite_name': str(report.nodeid),
+            'test_name': COLLECT_SKIP_NAME if report.skipped else COLLECT_ERROR_NAME,
+            'nodeid': str(report.nodeid),
+            'status': 'SKIP' if report.skipped else 'ERROR',
+            'message': message,
+            'duration': 0,
+            'rerun': 0,
+            # Collection runs before any test does, and before collection order
+            # is even known, so these sort ahead of the run itself: a file that
+            # never loaded is the first thing worth seeing.
+            'index': -1,
+            'worker': self.worker_id,
+            'screenshot': None,
+            'logs': [],
+            'attachments': [],
+            'collect': True,
+        })
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_teardown(self, item, nextitem):
@@ -134,7 +181,7 @@ class HTMLReporter(object):
         payload = getattr(node, 'workeroutput', {}).get('pytest_html_reporter')
         if payload:
             for record in payload['records']:
-                self.store_test_record(record)
+                self.store_record(record)
 
     def archive_data(self, base, filename):
         path = os.path.join(base, filename)
@@ -242,13 +289,6 @@ class HTMLReporter(object):
         if self.logs_mode != 'none':
             merge_log_sections(self._log_sections, rep.sections)
 
-            # A record is built from the teardown hook, which runs before
-            # pytest has finished capturing that phase. Folding the last
-            # sections in here is what puts fixture teardown output - the
-            # output of the code that cleans up after a failure - in the
-            # report at all.
-            if rep.when == 'teardown': self.refresh_record_logs(rep.nodeid)
-
         # Only the outcome of this one test is tracked here. Suite grouping and
         # every total are worked out at the end, from the merged records, so
         # that tests arriving interleaved from several workers still add up.
@@ -300,6 +340,37 @@ class HTMLReporter(object):
                         longerr += line + "\n"
                     self.update_test_error(longerr)
 
+        # The record was built from the teardown hook, which runs before pytest
+        # has finished reporting that phase, so whatever the teardown itself
+        # said has to be folded into the stored record here.
+        if rep.when == 'teardown': self.refresh_record(rep.nodeid)
+
+    def refresh_record(self, nodeid):
+        """Fold the teardown phase into the record already stored for a test.
+
+        A fixture that blows up while cleaning up left the test standing in the
+        report as a plain pass: pytest counted it as an error, the report did
+        not, and a failing run could read as green. Captured output is re-read
+        at the same time - after the status, so a test that only failed in its
+        teardown keeps its output under --report-logs failed - which is what
+        puts fixture teardown output, the output of the code that cleans up
+        after a failure, in the report at all.
+        """
+        slot = self._record_slots.get(str(nodeid))
+        if slot is None: return
+
+        record = self._records[slot]
+
+        # A test that already failed keeps the failure it was reported with:
+        # that is the headline, and pytest lists it the same way, as a failure
+        # with an error beside it rather than as an error.
+        if (ConfigVars._test_status == 'ERROR') and (record['status'] not in ('FAIL', 'ERROR')):
+            record['status'] = 'ERROR'
+            record['message'] = str(ConfigVars._current_error)
+
+        if self.logs_mode != 'none':
+            record['logs'] = self.collect_logs(record['status'])
+
     def append_test_record(self, item):
         """Store one finished test as a plain dict.
 
@@ -332,14 +403,6 @@ class HTMLReporter(object):
 
         self.store_test_record(record)
 
-    def refresh_record_logs(self, nodeid):
-        """Re-read the captured output of the record already stored for a test."""
-        slot = self._record_slots.get(str(nodeid))
-        if slot is None: return
-
-        record = self._records[slot]
-        record['logs'] = self.collect_logs(record['status'])
-
     def collect_logs(self, status):
         """What pytest captured while this test ran, ready to be rendered.
 
@@ -371,6 +434,25 @@ class HTMLReporter(object):
             collected.append(attachment)
 
         return collected
+
+    def store_record(self, record):
+        """Store a record of either kind - a test that ran, or a file that did not."""
+        if record.get('collect'):
+            self.store_collect_record(record)
+        else:
+            self.store_test_record(record)
+
+    def store_collect_record(self, record):
+        """Keep one record per collector that failed, however many saw it fail.
+
+        Every xdist worker collects the whole suite, and the controller is sent
+        their collect reports as well, so the same unimportable file arrives
+        here once per process. Only the first is kept.
+        """
+        if record['nodeid'] in self._collect_slots: return
+
+        self._collect_slots.add(record['nodeid'])
+        self._records.append(record)
 
     def store_test_record(self, record):
         """Keep one record per test, however many times it was attempted.

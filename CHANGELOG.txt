@@ -1,5 +1,10 @@
 0.3.5 (31/08/2026)
 -------------------
+- Fixed a file that fails to import being missing from the report entirely: pytest printed it as an error, but it produced no test items, so the file, every test in it and the import error itself were silently dropped
+- A collection error is now a row of its own, and an interrupted collection writes a report instead of no file at all; a module skipped with allow_module_level=True is reported with its reason
+- Under xdist a broken file is reported once rather than once per worker
+- Fixed a test whose fixture raised while cleaning up being reported as a plain pass: pytest counted it as an error and the report did not, so a failing run could read as green
+- A test that had already failed keeps its own failure rather than being relabelled by its teardown, and a teardown-only failure now keeps its captured output under --report-logs failed
 - Added text attachments: attach_text(), attach_json(), attach_api() and attach_file() keep a payload against the test that produced it, alongside the screenshots attach() already took (#191)
 - The API Logs tab guides you when a run attaches nothing: what to call, and the recipe worth copying - attach from a fixture teardown only when the response failed, rather than on every call
 - The Screenshots tab guides you the same way when a run captures nothing: attaching a PNG from Selenium, Playwright or its async API, the one conftest hook that covers both drivers on failure only, and the unittest and async variants
