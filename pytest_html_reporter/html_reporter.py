@@ -38,6 +38,10 @@ from pytest_html_reporter.util import (
     count_log_lines,
     report_attachments_mode,
     report_attachment_limit,
+    archive_days,
+    archive_since,
+    archive_cutoff,
+    expired_archives,
 )
 from pytest_html_reporter.attachments import (
     attachment_size,
@@ -75,6 +79,13 @@ class HTMLReporter(object):
         self.log_limit = report_log_limit(config)
         self.attachments_mode = report_attachments_mode(config)
         self.attachment_limit = report_attachment_limit(config)
+
+        # Age-based retention, alongside --archive-count. A run on a schedule
+        # wants "the last 30 days": a build count has to be retuned every time
+        # the schedule changes, and says nothing about how far back the report
+        # actually reaches.
+        self.archive_days = archive_days(config)
+        self.archive_since = archive_since(config)
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
@@ -210,20 +221,37 @@ class HTMLReporter(object):
             return os.path.abspath(logfile), 'pytest_html_report.html'
 
     def remove_old_archives(self):
-        archive_dir = os.path.abspath(os.path.expanduser(os.path.expandvars(self.path))) + '/archive'
+        """Apply the retention limits to the builds kept on disk.
 
-        if self.archive_count != '':
-            if int(self.archive_count) == 0:
-                if os.path.isdir(archive_dir):
-                    shutil.rmtree(archive_dir)
-                return
+        --archive-count, --archive-days and --archive-since intersect: a build
+        has to satisfy every limit that is set to survive. Nothing set keeps
+        everything, which is how the report grows until it is slow to open.
 
-            archive_count = int(self.archive_count) - 1
+        The folder is taken from report_path rather than from self.path: the
+        path can name the html file itself - ./report/report.html - and the
+        archive sits beside it, in the folder.
+        """
+        archive_dir = os.path.join(self.report_path[0], 'archive')
+        cutoff = archive_cutoff(days=self.archive_days, since=self.archive_since)
+
+        if self.archive_count == '' and cutoff is None:
+            return
+
+        if self.archive_count == '0':
             if os.path.isdir(archive_dir):
-                archives = os.listdir(archive_dir)
-                archives.sort(key=lambda f: os.path.getmtime(os.path.join(archive_dir, f)))
-                for i in range(0, len(archives) - archive_count):
-                    os.remove(os.path.join(archive_dir, archives[i]))
+                shutil.rmtree(archive_dir)
+            return
+
+        if not os.path.isdir(archive_dir):
+            return
+
+        # The build being reported now is shown alongside the archived ones and
+        # counts against --archive-count, so one fewer is kept on disk.
+        keep = int(self.archive_count) - 1 if self.archive_count != '' else None
+
+        for path in expired_archives(glob.glob(os.path.join(archive_dir, '*.json')),
+                                     keep=keep, cutoff=cutoff):
+            os.remove(path)
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_terminal_summary(self, terminalreporter, exitstatus, config):

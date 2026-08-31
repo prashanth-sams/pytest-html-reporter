@@ -136,6 +136,28 @@ interesting lines at the end.
 
 ---
 
+### 14. Archive retention by age — SHIPPED
+Issue #223: an hourly schedule keeps every build for ever, and two months in, the report is slow to open.
+
+*Shipped as:* `--archive-days` and `--archive-since` beside the existing `--archive-count`, with `archive_count`,
+`archive_days` and `archive_since` ini keys, and the retention logic itself in `util.py`
+(`archive_cutoff`, `archive_timestamp`, `expired_archives`).
+
+The issue asked for a date *range*; the answer is a rolling window instead. Removing a middle slice while keeping
+older builds either side is not a retention policy — it leaves a hole in the trends chart, which reads straight off
+the same files. The limits intersect rather than override, so a count and an age can be set together without either
+one quietly widening the other.
+
+Nothing else needed changing: the archives tab, the trends chart and Suite Highlights all glob the same
+`archive/*.json`, so pruning the folder shrinks the page for free. At roughly 5KB of page per retained build, that is
+the whole of the load-time complaint.
+
+Two bugs surfaced on the way. `--archive-count` computed its folder from `self.path`, so it silently did nothing
+whenever `--html-report` named the `.html` file itself; and retention sorted on mtime, which in CI is the moment of
+the checkout rather than the moment of the run — the run's real start time was in the file name all along.
+
+---
+
 ## Suggested next release
 
 **#1, #2, #4, #7.** Together they are roughly one afternoon, need no schema change to

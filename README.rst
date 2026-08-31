@@ -87,6 +87,24 @@ Add ``--archive-count`` tag followed by an integer to limit showing the number o
     $ pytest tests/ --archive-count 7
     $ pytest tests/ --html-report=./report --archive-count 7
 
+A run on a schedule usually wants a stretch of time rather than a build count. ``--archive-days`` keeps only the
+builds from the last N days and deletes the rest, and needs no retuning when the schedule changes::
+
+    $ pytest tests/ --archive-days 30
+    $ pytest tests/ --archive-days 0.5
+
+``--archive-since`` takes a date instead - or a date and a time - for a one-off cut; everything older than it goes::
+
+    $ pytest tests/ --archive-since 2026-06-01
+    $ pytest tests/ --archive-since '2026-06-01 09:00'
+
+The three limits intersect: a build has to satisfy every one you set to be kept. Set none of them and every build is
+kept for ever, which is what eventually makes a report slow to open - a retained build costs roughly 5KB of the page,
+so an hourly run reaches a multi-megabyte report inside a couple of months.
+
+A build is dated by the moment its run started, which is kept in the name of its archive file, so an age limit still
+measures the right thing after the reports have been copied into a fresh CI workspace.
+
 ..
 
         Environment and build details
@@ -245,10 +263,14 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     [pytest]
     addopts = -v -rf --capture=tee-sys --title='PYTEST REPORT'
     html_report = ./reports/%Y%m%d/report_%H%M.html
+    archive_count = 7
+    archive_days = 30
     environment = staging
     build_info =
         branch=main
         team=payments
+        commit=$GITHUB_SHA
+        ci=$GITHUB_RUN_ID
     report_logs = all
     report_log_limit = 10000
     report_attachments = all
@@ -261,10 +283,14 @@ the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). `
 ``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
 location without going through ``addopts``.
 
+``archive_count``, ``archive_days`` and ``archive_since`` mirror ``--archive-count``, ``--archive-days`` and
+``--archive-since``. Retention is a property of the job rather than of one run, so the ini file is usually the better
+place for it: set it once and every invocation, however it is started, keeps the same window.
+
 **Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
-``--report-logs``, ``--report-log-limit``, ``--report-attachments`` and ``--report-attachment-limit`` override their
-ini values
+``--archive-count``, ``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``,
+``--report-attachments`` and ``--report-attachment-limit`` override their ini values
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 

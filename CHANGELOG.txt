@@ -1,3 +1,14 @@
+0.3.6 (31/08/2026)
+-------------------
+- Added --archive-days / the archive_days ini key, keeping only the builds from the last N days and deleting the rest; a run on a schedule wants a stretch of time, not a build count, and 30 days stays 30 days when the schedule changes (#223)
+- Added --archive-since / the archive_since ini key, taking a date - or a date and a time - for a one-off cut of everything older than it (#223)
+- --archive-count, --archive-days and --archive-since intersect: a build has to satisfy every limit that is set to be kept
+- Added the archive_count ini key, which was the one option with no ini equivalent; retention belongs to the job rather than to one invocation
+- Fixed --archive-count doing nothing at all when --html-report named the html file itself, e.g. ./report/report.html: the folder it pruned was built from the file's own name, so it never existed and every build was kept for ever
+- A build's age is now read from the moment kept in its archive file's name rather than from the file's mtime, so retention still measures the right thing after the reports have been copied into a fresh CI workspace, where every mtime is the moment of the checkout
+- Retention now only ever deletes the plugin's own output_*.json archives, leaving anything else in the folder alone
+- A nonsense --archive-count, --archive-days or --archive-since now fails the run with a usage error, instead of being silently ignored or crashing the reporter once the tests had already finished
+
 0.3.5 (31/08/2026)
 -------------------
 - Fixed report text that looks like markup being written into the page as markup: a parameter id or an assertion message holding angle brackets - `assert <Foo object at 0x7f> == 3` is what an ordinary failure looks like - mangled its own row and swallowed the rows after it, so tests went missing from Test Metrics

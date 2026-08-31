@@ -1,5 +1,5 @@
 from pytest_html_reporter.html_reporter import HTMLReporter
-from pytest_html_reporter.util import clean_screenshots, custom_title, report_path
+from pytest_html_reporter.util import archive_count, clean_screenshots, custom_title, report_path
 
 
 def pytest_addoption(parser):
@@ -28,6 +28,26 @@ def pytest_addoption(parser):
         dest="archive_count",
         default="",
         help="set maximum build count to display in the archives section",
+    )
+
+    group.addoption(
+        "--archive-days",
+        action="store",
+        dest="archive_days",
+        default="",
+        metavar="DAYS",
+        help="keep only the builds run in the last DAYS days; older archived "
+             "builds are deleted",
+    )
+
+    group.addoption(
+        "--archive-since",
+        action="store",
+        dest="archive_since",
+        default="",
+        metavar="DATE",
+        help="delete every archived build older than DATE, given as 2026-06-01 "
+             "or '2026-06-01 09:00'",
     )
 
     group.addoption(
@@ -96,6 +116,24 @@ def pytest_addoption(parser):
     )
 
     parser.addini(
+        "archive_count",
+        help="maximum build count to display in the archives section",
+        default="",
+    )
+
+    parser.addini(
+        "archive_days",
+        help="keep only the builds run in the last N days",
+        default="",
+    )
+
+    parser.addini(
+        "archive_since",
+        help="delete every archived build older than this date, e.g. 2026-06-01",
+        default="",
+    )
+
+    parser.addini(
         "environment",
         help="name the environment under test, e.g. staging or prod",
         default="",
@@ -144,6 +182,4 @@ def pytest_configure(config):
     title = config.getoption("title")
     custom_title(title)
     
-    archive_count = config.getoption("archive_count")
-
-    config.pluginmanager.register(HTMLReporter(path, archive_count, config))
+    config.pluginmanager.register(HTMLReporter(path, archive_count(config), config))
