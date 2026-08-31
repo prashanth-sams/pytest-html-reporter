@@ -397,6 +397,9 @@ For example, attaching the JSON response body
 
     attach_json(requests.get("https://reqres.in/api/users/2").json())
 
+.. image:: images/api_logs.png
+   :alt: Screenshot
+   :width: 800px
 
 api calls
 """""""""""""""""""""""""""
