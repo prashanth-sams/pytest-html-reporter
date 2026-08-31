@@ -1364,11 +1364,27 @@
                         align-self: start;
                         min-width: 0;
                     }
+                    /* Packed into the top-right corner of the card rather
+                       than left to wrap as inline boxes. As inline content the
+                       three chips broke raggedly - the Environment chip alone
+                       on the first line, the other two crammed onto the second
+                       six pixels apart vertically, because a button aligns on
+                       its middle and the run time on its baseline - and the
+                       chips' own right margin stopped their right edges lining
+                       up with the run time's. */
                     .card__content > .time-taken-wrapper {
                         grid-area: meta;
                         align-self: start;
                         margin: 0 !important;
                         text-align: right;
+                        display: flex;
+                        flex-wrap: wrap;
+                        align-items: center;
+                        justify-content: flex-end;
+                        gap: 6px 10px;
+                    }
+                    .card__content > .time-taken-wrapper > .env-trigger {
+                        margin-right: 0;
                     }
                     .card__content > .time-taken-wrapper svg {
                         width: 15px !important;

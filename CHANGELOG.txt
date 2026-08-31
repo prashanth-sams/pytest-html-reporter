@@ -27,6 +27,7 @@
 - A run where pytest-cov measured nothing - --cov=src against a project that has no src, the easiest mistake there is - now says so in the tab, naming the flag that was typed, instead of showing a setup guide to somebody who has just followed it
 - The tab's setup guide now writes the package name as a marked placeholder - my_package, not src - so the one value the reader has to swap for their own cannot be pasted in as if it were real
 - Fixed the dashboard's chip row spilling outside its card: space-between over a row that could not wrap put "Time taken" on top of the Trends card at anything under about 1500px once a third chip joined it
+- Fixed the same row breaking raggedly below 1200px, where it laid out as inline boxes: the Environment chip sat alone on the first line with the other two crammed onto the second six pixels apart, because a button aligns on its middle and the run time on its baseline, and the chips' own right margin stopped their right edges lining up. It is now a wrapping flex row packed into the card's corner
 
 0.3.5 (31/08/2026)
 -------------------
