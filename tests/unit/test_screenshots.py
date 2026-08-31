@@ -58,6 +58,11 @@ def _captions(page):
     return re.findall(r'data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
 
 
+def _tile_captions(page):
+    """The line each gallery tile prints under the suite name."""
+    return re.findall(r'<strong>.*?</strong><br />\n\s*(.*?)\n\s*</p>', page, re.S)
+
+
 def _images(tmp_path):
     directory = tmp_path / "report" / "pytest_screenshots"
     return sorted(os.listdir(str(directory))) if directory.is_dir() else []
@@ -121,60 +126,57 @@ def test_a_screenshot_attached_from_the_makereport_hook_still_reaches_the_report
     assert _captions(page) == ["test_fails"]
 
 
-def test_a_passing_test_does_not_lend_its_screenshot_to_the_next_failure(tmp_path):
-    """An image nobody can claim is dropped rather than left in the global.
+def test_a_passing_test_keeps_its_screenshot(tmp_path):
+    """An attached image is kept whatever the test did, not only on failure."""
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
 
-    Kept, it would be handed to the next failing test - which would then be
-    illustrated by a screenshot of a test it never ran.
+
+        def test_passes():
+            attach(data=PNG)
+    ''')
+
+    assert _captions(page) == ["test_passes"]
+    assert len(_images(tmp_path)) == 1
+
+
+def test_a_tile_with_no_error_says_how_the_test_ended(tmp_path):
+    """A passing tile would otherwise carry a blank caption.
+
+    The status has to be read out of the tile itself: the word "PASS" is all
+    over the page already, in the totals and in every row of the table.
     """
     page, _ = _run(tmp_path, PNG + '''
         from pytest_html_reporter import attach
 
 
-        def test_passes_and_attaches():
+        def test_passes():
+            attach(data=PNG)
+    ''')
+
+    assert _tile_captions(page) == ["PASS"]
+
+
+def test_a_screenshot_is_not_lent_to_the_next_test(tmp_path):
+    """Each image belongs to the test that attached it, and to no other.
+
+    The failing test here attaches nothing, so it must show nothing - rather
+    than being illustrated with the passing test's picture.
+    """
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_shoots():
             attach(data=PNG)
 
 
-        def test_fails_and_attaches_nothing():
+        def test_quiet_fail():
             assert False
     ''')
 
-    assert _captions(page) == []
-    assert _images(tmp_path) == []
-
-
-def test_dropping_a_screenshot_says_so(tmp_path):
-    """Silence is what sent people looking for the bug in their own code."""
-    _, output = _run(tmp_path, PNG + '''
-        from pytest_html_reporter import attach
-
-
-        def test_passes_and_attaches():
-            attach(data=PNG)
-    ''')
-
-    assert "attached a screenshot but did not fail" in output
-
-
-def test_the_drop_warning_is_raised_once(tmp_path):
-    """A suite that attaches unconditionally must not drown in warnings."""
-    _, output = _run(tmp_path, PNG + '''
-        from pytest_html_reporter import attach
-
-
-        def test_one():
-            attach(data=PNG)
-
-
-        def test_two():
-            attach(data=PNG)
-
-
-        def test_three():
-            attach(data=PNG)
-    ''')
-
-    assert output.count("attached a screenshot but did not fail") == 1
+    assert _captions(page) == ["test_shoots"]
+    assert len(_images(tmp_path)) == 1
 
 
 def test_each_failure_keeps_its_own_screenshot(tmp_path):
@@ -197,17 +199,17 @@ def test_each_failure_keeps_its_own_screenshot(tmp_path):
     assert len(_images(tmp_path)) == 2
 
 
-def test_a_failure_that_attached_nothing_gets_no_screenshot(tmp_path):
-    """The failing test attaches nothing; the passing one before it did."""
+def test_a_test_that_attached_nothing_gets_no_screenshot(tmp_path):
+    """Only the tests that actually attached appear in the gallery."""
     page, _ = _run(tmp_path, PNG + '''
         from pytest_html_reporter import attach
 
 
-        def test_passes_and_attaches():
-            attach(data=PNG)
+        def test_quiet_pass():
+            assert True
 
 
-        def test_fails_quietly():
+        def test_quiet_fail():
             assert False
 
 
@@ -217,3 +219,4 @@ def test_a_failure_that_attached_nothing_gets_no_screenshot(tmp_path):
     ''')
 
     assert _captions(page) == ["test_shot"]
+    assert len(_images(tmp_path)) == 1

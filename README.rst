@@ -36,7 +36,7 @@ Features
   - Suite Highlights
   - Test suite details
 * Archives / History
-* Screenshots on failure - works with Selenium, Playwright, or anything else that can produce a PNG
+* Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
@@ -263,7 +263,7 @@ ini value; ``--build-info`` entries are added to the ones set in the ini file ra
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
-screenshots on failure
+screenshots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Import ``attach`` from the library and hand it the PNG bytes of a screenshot. It takes the image itself rather than a
@@ -275,11 +275,13 @@ browser, so it works with Selenium, Playwright, or anything else that can produc
     attach(data=page.screenshot())                     # Playwright
     attach(data=await page.screenshot())               # Playwright, async API
 
-**Note:** screenshots are kept for tests that **fail**. Attaching from a test that passes is a no-op - the image is
-discarded and the run warns once to say so.
+**Note:** every image you attach is kept, whatever the test did - a screenshot of a pass is a baseline worth having.
+Only the tests that actually called ``attach`` appear in the gallery, so capturing on failure alone is a matter of
+deciding when to call it.
 
 ``attach`` can be called from anywhere in the test's lifecycle: the test body, a ``unittest`` ``tearDown``, a pytest
-fixture's teardown, or a ``pytest_runtest_makereport`` hook. The fixture flavour is the one most people write::
+fixture's teardown, or a ``pytest_runtest_makereport`` hook. Capturing on failure only - the usual want - is the
+``rep_call.failed`` test in the fixture below; drop it to photograph every test::
 
     # conftest.py
     import pytest

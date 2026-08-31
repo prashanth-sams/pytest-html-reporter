@@ -3,7 +3,6 @@ import json
 import os
 import time
 import shutil
-import warnings
 from collections import OrderedDict
 from datetime import date, datetime
 from os.path import isfile, join
@@ -63,9 +62,6 @@ class HTMLReporter(object):
         self._record_slots = {}
         self._collected = {}
         self.worker_id = xdist_worker_id(config)
-
-        # discard_screenshot() warns once, not once per passing test.
-        self._screenshot_drop_warned = False
 
         # attach() needs somewhere to write long before the report is built,
         # and each xdist worker saves its own screenshots.
@@ -306,34 +302,15 @@ class HTMLReporter(object):
             'logs': self.collect_logs(str(ConfigVars._test_status)),
         }
 
-        if (record['status'] in ('FAIL', 'ERROR')) and (ConfigVars.screen_img is not None):
+        # Whatever the test did. A screenshot of a pass is a baseline, and one
+        # of a skip says why it was skipped; keeping only the failures threw
+        # away images that had been deliberately attached. Every record claims
+        # the pending image, so none is left behind for a later test to pick up
+        # and present as its own.
+        if ConfigVars.screen_img is not None:
             record['screenshot'] = self.generate_screenshot_data()
-        elif ConfigVars.screen_img is not None:
-            self.discard_screenshot(record['test_name'])
 
         self.store_test_record(record)
-
-    def discard_screenshot(self, test_name):
-        """Drop an image attached by a test that did not fail.
-
-        The report's gallery is a gallery of failures, so the image has nowhere
-        to go. Clearing it is the part that matters: left in the global, it
-        would be picked up by the next test that does fail, which would then be
-        illustrated with a screenshot of a test it never ran.
-
-        The warning is raised once. A suite that attaches unconditionally would
-        otherwise carry one per passing test, which is noise rather than news.
-        """
-        ConfigVars.screen_img = None
-
-        if self._screenshot_drop_warned: return
-        self._screenshot_drop_warned = True
-
-        warnings.warn(
-            "pytest-html-reporter: %s attached a screenshot but did not fail, so the image "
-            "was discarded - the report keeps screenshots for failed tests only. Further "
-            "occurrences are not reported." % test_name
-        )
 
     def refresh_record_logs(self, nodeid):
         """Re-read the captured output of the record already stored for a test."""
@@ -498,7 +475,9 @@ class HTMLReporter(object):
             'name': _screenshot_name,
             'suite': _screenshot_suite_name,
             'test': _screenshot_test_name,
-            'error': ConfigVars._current_error,
+            # Blank for anything that passed, so the tile says how the test
+            # ended rather than showing an empty caption.
+            'error': ConfigVars._current_error or str(ConfigVars._test_status),
         }
 
     def append_suite_metrics_row(self, suite_index, name, records):

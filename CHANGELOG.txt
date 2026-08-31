@@ -1,4 +1,3 @@
-Change Log
 0.3.4 (30/08/2026)
 -------------------
 - Added the html_report ini key, so the report location can be set in pytest.ini without going through addopts (#228)
@@ -7,6 +6,8 @@ Change Log
 - Documented that attach() works with Playwright as well as Selenium - it takes PNG bytes, not a browser - and added a Playwright screenshot-on-failure test alongside the Selenium one
 - Fixed a screenshot attached from a fixture's teardown never reaching the report: the record is now built after the fixture finalizers have run, so the recipe that captures on failure from an autouse fixture works
 - Fixed a screenshot attached by a test that did not fail being handed to the next test that did, which was then illustrated with a picture of a test it never ran; the image is now discarded, and the run warns once that screenshots are kept for failures only
+- Screenshots are no longer limited to failures: every image passed to attach() is kept and shown in the gallery, whatever the test did, so a passing baseline or a skipped test's last frame can be captured too
+- A gallery tile for a test that did not fail is captioned with the test's outcome rather than the blank space where a failure message would be
 
 0.3.3 (30/08/2026)
 -------------------
