@@ -49,6 +49,10 @@ from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
 
 
+# What fits the caption strip under a gallery tile.
+SCREENSHOT_NAME_MAX = 19
+
+
 class HTMLReporter(object):
     def __init__(self, path, archive_count, config):
         self.json_data = {'content': {'suites': {}}}
@@ -575,8 +579,12 @@ class HTMLReporter(object):
         if self.worker_id: _screenshot_name += '-' + self.worker_id
 
         _screenshot_suite_name = ConfigVars._suite_name.split('/')[-1:][0].replace('.py', '')
+        # The head of the name, not its tail. Keeping the last 17 characters
+        # turned test_login_page_renders into "ogin_page_renders", which names
+        # nothing and reads as a bug in the report.
         _screenshot_test_name = ConfigVars._test_name
-        if len(ConfigVars._test_name) >= 19: _screenshot_test_name = ConfigVars._test_name[-17:]
+        if len(_screenshot_test_name) > SCREENSHOT_NAME_MAX:
+            _screenshot_test_name = _screenshot_test_name[:SCREENSHOT_NAME_MAX - 2] + '..'
 
         ConfigVars.screen_img.save(
             ConfigVars.screen_base + '/pytest_screenshots/' + _screenshot_name + '.png'
@@ -946,7 +954,5 @@ class HTMLReporter(object):
             tc=str(test_case),
             te=str(test_error)
         )
-
-        if len(test_case) == 17: test_case = '..' + test_case
 
         ConfigVars._attach_screenshot_details += str(_screenshot_details)

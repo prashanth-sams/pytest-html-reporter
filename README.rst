@@ -304,7 +304,37 @@ fixture's teardown, or a ``pytest_runtest_makereport`` hook. Capturing on failur
         rep = outcome.get_result()
         setattr(item, "rep_" + rep.when, rep)
 
-Or skip the fixture and attach straight from the hook, which already has the browser in ``item.funcargs``::
+**Running Selenium and Playwright side by side?** The browser is already in ``item.funcargs``, so one hook covers
+both at once - no fixture of its own, and nothing to remember in each test. Add a fixture name to the table and that
+framework is covered too::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach
+
+    CAPTURE = {
+        "driver": lambda driver: driver.get_screenshot_as_png(),  # Selenium
+        "page":   lambda page: page.screenshot(),                 # Playwright
+    }
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        report = outcome.get_result()
+
+        if report.when != "call" or not report.failed:
+            return
+
+        for name, capture in CAPTURE.items():
+            handle = item.funcargs.get(name)
+            if handle is not None:
+                attach(data=capture(handle))
+                return
+
+This is what ``tests/functional/conftest.py`` in this repository does. Drop the ``report.failed`` check to photograph
+every test. The same guidance is printed on the ``Screenshots`` tab itself whenever a run captures nothing.
+
+Or attach straight from a hook of your own, which already has the browser in ``item.funcargs``::
 
     # conftest.py
     import pytest

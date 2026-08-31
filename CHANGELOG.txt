@@ -2,6 +2,9 @@
 -------------------
 - Added text attachments: attach_text(), attach_json(), attach_api() and attach_file() keep a payload against the test that produced it, alongside the screenshots attach() already took (#191)
 - The API Logs tab guides you when a run attaches nothing: what to call, and the recipe worth copying - attach from a fixture teardown only when the response failed, rather than on every call
+- The Screenshots tab guides you the same way when a run captures nothing: attaching a PNG from Selenium, Playwright or its async API, the one conftest hook that covers both drivers on failure only, and the unittest and async variants
+- The Screenshots tab gained the heading every other tab already had
+- Fixed a gallery caption keeping the last 17 characters of a long test name, so test_login_page_renders was captioned "ogin_page_renders"; the name is now cut from its tail, and dead code that tried to mark the cut after the markup was already built is gone
 - Added an API Logs tab: a rail of everything the run attached with the payload open beside it, filterable by kind, searchable by test, title, URL or status code, with Copy and Download per payload
 - attach_api() takes a response object apart into the response body, the request body, both sets of headers and the curl command that repeats the call; the entry shows the method, path, status code and duration
 - Response objects are read by duck typing, so requests and httpx both work with no new dependency, and every field can be passed directly instead - a client neither library resembles, or a call rebuilt from a log, makes the same attachment

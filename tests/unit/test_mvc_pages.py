@@ -524,7 +524,9 @@ def test_template():
     archive_body_content_label = soup.find("div", id="archives").findAll("div")[-1]
     assert archive_body_content_label.text.strip() == archive_body_content
 
-    attach_screenshot_details_label = soup.find("div", id="main-content").find("div").find("div")
+    # By class, not by position: the gallery is no longer the first child of
+    # #main-content now that the tab has a heading above it.
+    attach_screenshot_details_label = soup.find("div", class_="bg-highlight").find("div", class_="row")
     assert attach_screenshot_details_label.text.strip() == attach_screenshot_details
 
     environment_grid = soup.find("div", class_="env-grid")

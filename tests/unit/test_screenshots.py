@@ -220,3 +220,16 @@ def test_a_test_that_attached_nothing_gets_no_screenshot(tmp_path):
 
     assert _captions(page) == ["test_shot"]
     assert len(_images(tmp_path)) == 1
+
+
+def test_a_long_test_name_is_cut_from_its_tail(tmp_path):
+    """Keeping the last characters turned test_login_page_renders into
+    "ogin_page_renders", which names nothing and reads as a broken report."""
+    page, _ = _run(tmp_path, PNG + """
+        from pytest_html_reporter import attach
+
+        def test_a_name_far_too_long_for_the_caption_strip():
+            attach(data=PNG)
+    """)
+
+    assert _captions(page) == ["test_a_name_far_t.."]

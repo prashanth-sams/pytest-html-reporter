@@ -746,7 +746,10 @@
                     background-color: #ffffff;
                     border-radius: 6px;
                     box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
-                    padding: 58px 24px 62px 24px;
+                    padding: 52px 24px 44px 24px;
+                }
+
+                .screenshot-empty__head {
                     text-align: center;
                 }
 
@@ -793,25 +796,6 @@
                     line-height: 1.55;
                 }
 
-                .screenshot-empty__snippet {
-                    display: inline-block;
-                    margin-top: 20px;
-                    padding: 9px 14px;
-                    background-color: #fafbfc;
-                    border: 1px solid #eef1f5;
-                    border-radius: 5px;
-                    font-family: Menlo, Consolas, monospace;
-                    font-size: 11.5px;
-                    color: #7c8593;
-                    white-space: nowrap;
-                    overflow-x: auto;
-                    max-width: 100%;
-                }
-
-                .screenshot-empty__snippet b {
-                    font-weight: 600;
-                    color: #3571a3;
-                }
                 .modal p {
                     word-wrap: break-word;
                 }
@@ -3184,6 +3168,12 @@
                     word-break: break-word;
                 }
 
+                /* The gallery sits in its own container, so the heading takes
+                   the page padding the metrics tabs get from .metrics-page. */
+                .screenshot-head {
+                    margin: 0.4rem 0.2rem 1rem 0.2rem;
+                }
+
                 /* ---- API Logs tab with nothing attached ----
                    An empty tab is the only moment anyone reads setup
                    instructions, so this one carries them rather than an
@@ -3247,19 +3237,19 @@
                 }
 
                 /* ---- The setup guide ---- */
-                .attach-guide {
+                .setup-guide {
                     max-width: 760px;
                     margin: 34px auto 0 auto;
                     text-align: left;
                 }
 
-                .attach-step + .attach-step {
+                .setup-step + .setup-step {
                     margin-top: 26px;
                     padding-top: 26px;
                     border-top: 1px solid #f2f5f8;
                 }
 
-                .attach-step__head {
+                .setup-step__head {
                     display: flex;
                     align-items: center;
                     gap: 10px;
@@ -3269,7 +3259,7 @@
                     color: #48505c;
                 }
 
-                .attach-step__num {
+                .setup-step__num {
                     flex: 0 0 auto;
                     width: 22px;
                     height: 22px;
@@ -3283,7 +3273,7 @@
                     justify-content: center;
                 }
 
-                .attach-step__badge {
+                .setup-step__badge {
                     margin-left: 2px;
                     border-radius: 999px;
                     padding: 2px 9px;
@@ -3295,7 +3285,7 @@
                     text-transform: uppercase;
                 }
 
-                .attach-step__note {
+                .setup-step__note {
                     font-family: sans-serif;
                     font-size: 0.85rem;
                     line-height: 1.65;
@@ -3303,16 +3293,16 @@
                     margin: 8px 0 12px 32px;
                 }
 
-                .attach-step__note b {
+                .setup-step__note b {
                     font-weight: 600;
                     color: #7b838f;
                 }
 
-                .attach-step__note--last {
+                .setup-step__note--last {
                     margin: 12px 0 0 32px;
                 }
 
-                .attach-step__code {
+                .setup-step__code {
                     margin: 0 0 0 32px;
                     padding: 14px 16px;
                     background-color: #fbfcfd;
@@ -3329,63 +3319,78 @@
                 /* The names you are meant to type stand out; keywords and
                    comments step back, so the block reads as a shape rather
                    than as a wall of identical grey. */
-                .attach-step__code b {
+                .setup-step__code b {
                     font-weight: 600;
                     color: #3571a3;
                 }
 
-                .attach-step__code .c {
+                .setup-step__code .c {
                     color: #a9b0ba;
                 }
 
-                .attach-step__code .s {
+                .setup-step__code .s {
                     color: #7a9c54;
                 }
 
-                .attach-empty__foot {
+                .setup-foot {
                     display: flex;
                     align-items: baseline;
                     gap: 10px;
                     max-width: 760px;
                     margin: 34px auto 0 auto;
                     padding: 12px 16px;
-                    border: 1px solid #eaf0e4;
+                    border: 1px solid #edf0f4;
                     border-radius: 7px;
-                    background-color: #fafcf7;
+                    background-color: #fbfcfd;
                     font-family: sans-serif;
                     font-size: 0.82rem;
                     line-height: 1.6;
-                    color: #7d8a6c;
+                    color: #8a929e;
                     text-align: left;
                 }
 
-                .attach-empty__foot .fa {
+                .setup-foot .fa {
+                    color: #b4bbc5;
+                }
+
+                .setup-foot b {
+                    font-weight: 600;
+                    color: #6f7783;
+                }
+
+                /* The credential note is the one worth colouring. */
+                .setup-foot--secure {
+                    border-color: #eaf0e4;
+                    background-color: #fafcf7;
+                    color: #7d8a6c;
+                }
+
+                .setup-foot--secure .fa {
                     color: #9cb37f;
                 }
 
-                .attach-empty__foot b {
-                    font-weight: 600;
+                .setup-foot--secure b {
                     color: #64735a;
                 }
 
-                .attach-empty__links {
+                .setup-links {
                     max-width: 760px;
                     margin: 16px auto 0 auto;
                     text-align: right;
                 }
 
-                .attach-empty__links a {
+                .setup-links a {
                     font-family: sans-serif;
                     font-size: 0.82rem;
                     color: #8b939f;
                     text-decoration: none;
                 }
 
-                .attach-empty__links a:hover {
+                .setup-links a:hover {
                     color: #3571a3;
                 }
 
-                .attach-empty__links .fa {
+                .setup-links .fa {
                     font-size: 10px;
                     margin-left: 6px;
                 }
@@ -3419,8 +3424,8 @@
                         max-width: 100%;
                     }
 
-                    .attach-step__note,
-                    .attach-step__code {
+                    .setup-step__note,
+                    .setup-step__code {
                         margin-left: 0;
                     }
                 }
@@ -3785,24 +3790,115 @@
               <div class="fold-main">
                 <div class="container-fluid">
                   <div id="main-content">
+                    <!-- Outside .bg-highlight, so the empty-state toggle on that
+                         wrapper cannot take the heading down with the gallery. -->
+                    <div class="metrics-page__head screenshot-head">
+                        <div>
+                            <div class="metrics-page__title"><i class="fa fa-camera"></i>Screenshots</div>
+                            <div class="metrics-page__subtitle">Images attached while the tests ran, beside the suite and the error they belong to</div>
+                        </div>
+                    </div>
                     <div class="bg-highlight p-4 mt-3">
                       <div class="row">
                         %(attach_screenshot_details)%
                         <div class="below-desc"></div>
                       </div>
                       <div class="screenshot-empty">
-                        <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
-                        <div class="screenshot-empty__title">No screenshots in this run</div>
-                        <div class="screenshot-empty__text">
-                          Nothing was captured while the tests ran. Attach one from a test and it
-                          shows up here, next to the suite and the error it belongs to.
+                        <div class="screenshot-empty__head">
+                          <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
+                          <div class="screenshot-empty__title">No screenshots in this run</div>
+                          <div class="screenshot-empty__text">
+                            Hand <b>attach</b> the PNG bytes of a screenshot and it is kept against the
+                            test that took it, with the suite and the error it belongs to beside it.
+                          </div>
                         </div>
-                        <div class="screenshot-empty__snippet">
-                          from pytest_html_reporter import <b>attach</b><br />
-                          <b>attach</b>(data=self.driver.get_screenshot_as_png())
+
+                        <div class="setup-guide">
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Attach an image</div>
+                            <div class="setup-step__note">
+                              <b>attach</b> takes the picture, not the browser, so every framework goes
+                              through the same call - Selenium, Playwright, or anything else that can
+                              produce a PNG.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach</b>
+
+<b>attach</b>(data=driver.get_screenshot_as_png())   <span class="c"># Selenium</span>
+<b>attach</b>(data=page.screenshot())                <span class="c"># Playwright</span>
+<b>attach</b>(data=<span class="c">await</span> page.screenshot())          <span class="c"># Playwright, async API</span></pre>
+                          </div>
+
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Better: one hook, both drivers, failures only<span class="setup-step__badge">recommended</span></div>
+                            <div class="setup-step__note">
+                              The browser is already in <b>item.funcargs</b>, so a single hook covers
+                              Selenium and Playwright at once - no fixture of its own, and nothing to
+                              remember in each test. Running both? Add the fixture name to the table and
+                              that framework is covered too.
+                            </div>
+                            <pre class="setup-step__code"><span class="c"># conftest.py</span>
+<span class="c">import</span> pytest
+<span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach</b>
+
+CAPTURE = {
+    <span class="s">"driver"</span>: <span class="c">lambda</span> driver: driver.get_screenshot_as_png(),  <span class="c"># Selenium</span>
+    <span class="s">"page"</span>:   <span class="c">lambda</span> page: page.screenshot(),                 <span class="c"># Playwright</span>
+}
+
+<span class="c">@pytest.hookimpl</span>(hookwrapper=True)
+<span class="c">def</span> pytest_runtest_makereport(item, call):
+    outcome = <span class="c">yield</span>
+    report = outcome.get_result()
+
+    <span class="c">if</span> report.when != <span class="s">"call"</span> <span class="c">or not</span> report.failed:
+        <span class="c">return</span>
+
+    <span class="c">for</span> name, capture <span class="c">in</span> CAPTURE.items():
+        handle = item.funcargs.get(name)
+        <span class="c">if</span> handle <span class="c">is not None</span>:
+            <b>attach</b>(data=capture(handle))
+            <span class="c">return</span></pre>
+                            <div class="setup-step__note setup-step__note--last">
+                              Put the hook in <b>conftest.py</b>. pytest picks one up from a test module
+                              too, but only for that module's own tests - a conftest covers every test
+                              under it. Drop the <b>report.failed</b> check to photograph every test.
+                            </div>
+                          </div>
+
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Async tests, and unittest</div>
+                            <div class="setup-step__note">
+                              The hook above is synchronous, so an <b>async</b> Playwright test has nowhere
+                              to await - attach from the body instead. A <b>unittest</b> suite attaches
+                              from <b>tearDown</b>, which still runs while the driver is open.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">async def</span> test_home(page):                <span class="c"># Playwright, async API</span>
+    <span class="c">try</span>:
+        <span class="c">assert await</span> page.title() == <span class="s">"Example Domain"</span>
+    <span class="c">except</span> AssertionError:
+        <b>attach</b>(data=<span class="c">await</span> page.screenshot())
+        <span class="c">raise</span>
+
+<span class="c">def</span> tearDown(self):                          <span class="c"># unittest</span>
+    <b>attach</b>(data=self.driver.get_screenshot_as_png())
+    self.driver.quit()                        <span class="c"># after, never before</span></pre>
+                          </div>
+                        </div>
+
+                        <div class="setup-foot">
+                          <i class="fa fa-info-circle" aria-hidden="true"></i>
+                          <span>
+                            Every image you attach is kept, whatever the test did - a screenshot of a pass
+                            is a baseline worth having. Only the tests that called <b>attach</b> show up
+                            here, so capturing failures alone is a matter of when you call it.
+                          </span>
+                        </div>
+
+                        <div class="setup-links">
+                          <a href="https://github.com/prashanth-sams/pytest-html-reporter#screenshots" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
                         </div>
                       </div>
-                    </div>
+                                        </div>
                   </div>
                 </div>
               </div>
@@ -3864,14 +3960,14 @@
                         </div>
                     </div>
 
-                    <div class="attach-guide">
-                        <div class="attach-step">
-                            <div class="attach-step__head"><span class="attach-step__num">1</span>Attach a call</div>
-                            <div class="attach-step__note">
+                    <div class="setup-guide">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Attach a call</div>
+                            <div class="setup-step__note">
                                 <b>attach_api</b> reads the response object, so <b>requests</b> and <b>httpx</b>
                                 both work as they are - nothing else to install.
                             </div>
-                            <pre class="attach-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach_api</b>
+                            <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach_api</b>
 
 <span class="c">def</span> test_creates_an_order():
     response = requests.post(url, json=payload)
@@ -3880,16 +3976,16 @@
     <span class="c">assert</span> response.status_code == 201</pre>
                         </div>
 
-                        <div class="attach-step attach-step--tip">
-                            <div class="attach-step__head"><span class="attach-step__num">2</span>Better: only when the response fails<span class="attach-step__badge">recommended</span></div>
-                            <div class="attach-step__note">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Better: only when the response fails<span class="setup-step__badge">recommended</span></div>
+                            <div class="setup-step__note">
                                 Attaching every call buries the one that matters and grows the report for
                                 no reason. The payload worth keeping is the one behind a <b>failure</b>, so
                                 attach from a fixture's teardown and let the outcome decide. The reporter
                                 builds a test's record after the finalizers have run, which is what makes
                                 this work.
                             </div>
-                            <pre class="attach-step__code"><span class="c"># conftest.py</span>
+                            <pre class="setup-step__code"><span class="c"># conftest.py</span>
 <span class="c">import</span> pytest
 <span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach_api</b>
 
@@ -3906,26 +4002,26 @@
 <span class="c">def</span> pytest_runtest_makereport(item, call):
     outcome = <span class="c">yield</span>
     setattr(item, <span class="s">"rep_"</span> + outcome.get_result().when, outcome.get_result())</pre>
-                            <div class="attach-step__note attach-step__note--last">
+                            <div class="setup-step__note setup-step__note--last">
                                 Put the hook in <b>conftest.py</b>. pytest picks one up from a test module
                                 too, but only for that module's own tests - a conftest covers every test
                                 under it.
                             </div>
                         </div>
 
-                        <div class="attach-step">
-                            <div class="attach-step__head"><span class="attach-step__num">3</span>Not only API calls</div>
-                            <div class="attach-step__note">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Not only API calls</div>
+                            <div class="setup-step__note">
                                 Anything you would otherwise dig out of a terminal can go here beside the
                                 call it belongs to.
                             </div>
-                            <pre class="attach-step__code"><b>attach_json</b>({<span class="s">"expected"</span>: order, <span class="s">"got"</span>: body}, name=<span class="s">"Diff"</span>)
+                            <pre class="setup-step__code"><b>attach_json</b>({<span class="s">"expected"</span>: order, <span class="s">"got"</span>: body}, name=<span class="s">"Diff"</span>)
 <b>attach_text</b>(query, name=<span class="s">"Query"</span>, format=<span class="s">"sql"</span>)
 <b>attach_file</b>(<span class="s">"payloads/order.json"</span>)</pre>
                         </div>
                     </div>
 
-                    <div class="attach-empty__foot">
+                    <div class="setup-foot setup-foot--secure">
                         <i class="fa fa-lock" aria-hidden="true"></i>
                         <span>
                             Credentials are blanked out before anything is written - in headers, in a
@@ -3934,7 +4030,7 @@
                         </span>
                     </div>
 
-                    <div class="attach-empty__links">
+                    <div class="setup-links">
                         <a href="https://github.com/prashanth-sams/pytest-html-reporter#attachments" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
                     </div>
                 </div>
