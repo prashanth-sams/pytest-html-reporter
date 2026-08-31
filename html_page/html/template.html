@@ -691,11 +691,19 @@
                      background-position: center center;
                      background-size: cover;
                 }
-                 .video:hover .video-hover-desc {
+                 /* Tabbing to a tile must not box it in the browser's blue
+                    focus ring; keyboard focus still shows, as the hover
+                    treatment the tile already has. */
+                 .video:focus {
+                     outline: none;
+                }
+                 .video:hover .video-hover-desc,
+                 .video:focus-visible .video-hover-desc {
                      margin-top: -170px;
                      height: 170px;
                 }
-                 .video:hover .video-hover-desc:before {
+                 .video:hover .video-hover-desc:before,
+                 .video:focus-visible .video-hover-desc:before {
                      background: linear-gradient(to top,rgba(35,72,133,0.82),rgba(35,72,133,0));
                      transition: .3s;
                 }
