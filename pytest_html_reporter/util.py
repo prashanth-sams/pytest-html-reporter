@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import platform
@@ -260,7 +261,8 @@ def generate_environment_info(config):
     rows = ""
     for label, value in entries:
         value = str(value).strip() or "-"
-        rows += str(EnvRow(label=escape(label), value=escape(value), title=escape(value)))
+        rows += str(EnvRow(label=escape_report_text(label), value=escape_report_text(value),
+                           title=escape_report_text(value)))
 
     ConfigVars._environment_rows = rows
 
@@ -415,6 +417,23 @@ def escape_report_text(value):
     return escape(str(value)).replace("%(", "%&#40;")
 
 
+def js_literal(value):
+    """Render a value as a literal for the chart scripts inside the page.
+
+    The dashboard charts are handed their labels as source code, so a suite
+    named with an apostrophe used to end the array early and take the rest of
+    that script block down with it - charts blank, and nothing to say why.
+    ``<`` is written as an escape so a name cannot close the script tag either,
+    and ``%(`` is broken up because the page is assembled by substituting
+    ``%(name)%`` placeholders.
+    """
+    return (
+        json.dumps(value)
+        .replace("<", "\\u003c")
+        .replace("%(", "%\\u0028")
+    )
+
+
 def _capture_is_off(config):
     """True when pytest is running with -s / --capture=no.
 
@@ -471,7 +490,7 @@ def generate_logs_notice(config):
 
     text = capture_notice(config, report_logs_mode(config))
     if text:
-        ConfigVars._logs_notice = str(LogsNotice(text=escape(text)))
+        ConfigVars._logs_notice = str(LogsNotice(text=escape_report_text(text)))
 
 
 def count_log_lines(sections):

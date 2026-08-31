@@ -1,5 +1,9 @@
 0.3.5 (31/08/2026)
 -------------------
+- Fixed report text that looks like markup being written into the page as markup: a parameter id or an assertion message holding angle brackets - `assert <Foo object at 0x7f> == 3` is what an ordinary failure looks like - mangled its own row and swallowed the rows after it, so tests went missing from Test Metrics
+- Suite names, test names, failure messages, screenshot captions, the report title and the environment badge are now escaped on their way into the page, so a name like `<script>...` is shown rather than run
+- The dashboard chart labels are now written as a JSON literal, so a suite named with an apostrophe no longer ends the array early and blanks the charts
+- output.json still carries the text unescaped: escaping belongs to the page, and the archive and trend views read that file back
 - Fixed a file that fails to import being missing from the report entirely: pytest printed it as an error, but it produced no test items, so the file, every test in it and the import error itself were silently dropped
 - A collection error is now a row of its own, and an interrupted collection writes a report instead of no file at all; a module skipped with allow_module_level=True is reported with its reason
 - Under xdist a broken file is reported once rather than once per worker

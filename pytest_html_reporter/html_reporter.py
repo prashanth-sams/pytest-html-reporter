@@ -34,6 +34,7 @@ from pytest_html_reporter.util import (
     merge_log_sections,
     format_log_sections,
     escape_report_text,
+    js_literal,
     count_log_lines,
     report_attachments_mode,
     report_attachment_limit,
@@ -515,24 +516,29 @@ class HTMLReporter(object):
         self.update_counts(records)
 
     def append_test_metrics_row(self, record, row_id):
+        # Escaped here rather than in the record: output.json carries the same
+        # text and wants it raw. The message is cut to length first, so the cut
+        # cannot land in the middle of an entity and leave "&a" on the page.
         test_row_text = TestRow(
-            sname=str(record['suite_name']),
-            name=str(record['test_name']),
+            sname=escape_report_text(record['suite_name']),
+            name=escape_report_text(record['test_name']),
             stat=str(record['status']),
             dur=str(record['duration']),
-            msg=str(record['message'][:50]),
+            msg=escape_report_text(record['message'][:50]),
             runt=row_id,
             log_count=str(self.attach_test_logs(record, row_id)),
             attach_count=str(self.attach_test_data(record, row_id))
         )
 
+        # The raw length, not the escaped one: this asks whether the message was
+        # cut short, and escaping it first would make a message full of angle
+        # brackets look long enough to need a modal it does not need.
         if len(record['message']) < 49:
             test_row_text.floating_error_text = ''
         else:
             test_row_text.floating_error_text = str(
-                FloatingError(full_msg=str(record['message']), runt=row_id)
+                FloatingError(full_msg=escape_report_text(record['message']), runt=row_id)
             )
-            test_row_text.full_msg = str(record['message'])
 
         ConfigVars._test_metrics_content += str(test_row_text)
 
@@ -725,7 +731,7 @@ class HTMLReporter(object):
         }
 
         suite_row_text = SuiteRow(
-            sname=str(name),
+            sname=escape_report_text(name),
             spass=str(_status['total_pass']),
             sfail=str(_status['total_fail']),
             sskip=str(_status['total_skip']),
@@ -795,8 +801,8 @@ class HTMLReporter(object):
         template_text = HtmlTemplate(
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
-            title=ConfigVars._title,
-            title_full=str(ConfigVars._title_full),
+            title=escape_report_text(ConfigVars._title),
+            title_full=escape_report_text(ConfigVars._title_full),
             title_class=str(ConfigVars._title_class),
             total=str(
                 ConfigVars._aspass + ConfigVars._asfail + ConfigVars._asskip + ConfigVars._aserror + ConfigVars._asxpass + ConfigVars._asxfail),
@@ -811,7 +817,7 @@ class HTMLReporter(object):
             suite_metrics_row=str(ConfigVars._suite_metrics_content),
             test_metrics_row=str(ConfigVars._test_metrics_content),
             date=str(self._date()),
-            test_suites=str(ConfigVars._test_suite_name),
+            test_suites=js_literal(ConfigVars._test_suite_name),
             test_suite_length=str(len(ConfigVars._test_suite_name)),
             test_suite_pass=str(ConfigVars._test_pass_list),
             test_suites_fail=str(ConfigVars._test_fail_list),
@@ -823,7 +829,7 @@ class HTMLReporter(object):
             archive_body_content=str(ConfigVars._archive_body_content),
             archive_count=str(ConfigVars._archive_count),
             archives=str(ConfigVars.archives),
-            max_failure_suite_name_final=str(ConfigVars.max_failure_suite_name_final),
+            max_failure_suite_name_final=escape_report_text(ConfigVars.max_failure_suite_name_final),
             max_failure_suite_count=str(ConfigVars.max_failure_suite_count),
             similar_max_failure_suite_count=str(ConfigVars.similar_max_failure_suite_count),
             max_failure_total_tests=str(ConfigVars.max_failure_total_tests),
@@ -838,8 +844,8 @@ class HTMLReporter(object):
             attachment_store=str(ConfigVars._attachment_store),
             logs_notice=str(ConfigVars._logs_notice),
             environment_rows=str(ConfigVars._environment_rows),
-            environment=str(ConfigVars._environment_label),
-            environment_title=str(ConfigVars._environment),
+            environment=escape_report_text(ConfigVars._environment_label),
+            environment_title=escape_report_text(ConfigVars._environment),
             environment_class=str(ConfigVars._environment_class)
         )
 
@@ -1030,11 +1036,13 @@ class HTMLReporter(object):
 
     def attach_screenshots(self, screen_name, test_suite, test_case, test_error):
 
+        # The suite and test names land in a data-caption attribute as well as
+        # in the tile's text, so they are escaped for both.
         _screenshot_details = ScreenshotDetails(
-            screen_name=str(screen_name),
-            ts=str(test_suite),
-            tc=str(test_case),
-            te=str(test_error)
+            screen_name=escape_report_text(screen_name),
+            ts=escape_report_text(test_suite),
+            tc=escape_report_text(test_case),
+            te=escape_report_text(test_error)
         )
 
         ConfigVars._attach_screenshot_details += str(_screenshot_details)
