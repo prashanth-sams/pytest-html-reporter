@@ -1,27 +1,42 @@
-import time as t
-from selenium import webdriver
+"""The plain-pytest flavour of screenshot-on-failure.
+
+Needs ``pip install selenium`` and a local Chrome; Selenium Manager
+resolves the matching chromedriver itself.
+"""
+
 import pytest
+
+pytest.importorskip("selenium")
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 
 
 @pytest.fixture
-def background():
+def driver():
+    """A headless Chrome parked on a page the assertions below can read.
 
-    global driver
+    Selenium Manager resolves the matching chromedriver itself, so this needs
+    nothing installed beyond Chrome.
+    """
+    options = Options()
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1280,800")
 
-    driver = webdriver.Remote(
-        command_executor="https://0.0.0.0:8080/wd/hub",
-        desired_capabilities={"browserName": "chrome", "javascriptEnabled": True},
-    )
-    driver.get("https://google.ae")
-    yield
-    driver.close()
+    driver = webdriver.Chrome(options=options)
+    driver.get("https://example.com")
+
+    yield driver
+
     driver.quit()
 
 
-@pytest.mark.usefixtures("background")
 class TestClass:
-    def test_demo(self):
-        driver.find_element_by_css_selector('[aria-label="Search"]').send_keys(
-            "Jesus is coming soon!"
-        )
-        t.sleep(5)
+    def test_heading(self, driver):
+        assert driver.find_element(By.CSS_SELECTOR, "h1").text == "Example Domain"
+
+    def test_heading_mismatch(self, driver):
+        # Fails on purpose. Screenshots are only captured for failures, so this
+        # is the test that puts one in the report - see conftest.py.
+        assert driver.find_element(By.CSS_SELECTOR, "h1").text == "Not the heading"

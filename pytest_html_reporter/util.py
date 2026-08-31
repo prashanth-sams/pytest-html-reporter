@@ -1,6 +1,7 @@
 import logging
 import os
 import platform
+import re
 import shutil
 import sys
 from collections import Counter
@@ -137,6 +138,61 @@ def _ini(config, name):
         return config.getini(name)
     except (AttributeError, ValueError, KeyError):
         return None
+
+
+REPORT_PATH_DEFAULT = "."
+
+
+def report_path(config):
+    """Where the report is written. --html-report wins over the html_report ini key.
+
+    The value is run through strftime, so date and time placeholders (%Y, %m,
+    %d, %H, %M, ...) can name a folder or a file per run:
+
+        --html-report=./reports/%Y%m%d/report_%H%M.html
+
+    They are expanded once, while the run is being configured, so every process
+    of an xdist run - and a run that crosses a minute boundary - writes to the
+    same place.
+    """
+    path = str(config.getoption("path", None) or "").strip()
+
+    if not path:
+        path = str(_ini(config, "html_report") or "").strip()
+
+    return expand_time(path or REPORT_PATH_DEFAULT)
+
+
+# The directives strftime is documented to understand. Anything else after a
+# % is left alone, so a path that simply happens to hold one - "100% pass" -
+# survives being expanded.
+TIME_DIRECTIVES = "aAbBcdfGHIjmMpSuUVwWxXyYzZ"
+
+_DIRECTIVE = re.compile("%(.)", re.DOTALL)
+
+
+def expand_time(path):
+    """strftime `path` against now, leaving text that is not a directive alone.
+
+    %% is the way to write a literal percent that sits in front of a letter.
+    """
+    if "%" not in path:
+        return path
+
+    now = datetime.now()
+
+    def expand(match):
+        directive = match.group(1)
+
+        if directive == "%":
+            return "%"
+
+        if directive not in TIME_DIRECTIVES:
+            return match.group(0)
+
+        return now.strftime("%" + directive)
+
+    return _DIRECTIVE.sub(expand, path)
 
 
 def environment_name(config):

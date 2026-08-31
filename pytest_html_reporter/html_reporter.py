@@ -82,11 +82,20 @@ class HTMLReporter(object):
         # order, whatever order they actually ran in.
         self._collected = {item.nodeid: index for index, item in enumerate(items)}
 
+    @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_teardown(self, item, nextitem):
         ConfigVars._test_name = item.name
 
         _test_end_time = time.time()
         ConfigVars._duration = _test_end_time - ConfigVars._start_execution_time
+
+        # A test's fixtures are finalized by the implementations this wraps, so
+        # the record is built after them. That is what lets a screenshot
+        # attached from a fixture's teardown - the recipe most people reach for
+        # first - reach the report at all: built any earlier, there would be no
+        # record left for the image to be attached to. The duration is read
+        # before yielding, so time spent cleaning up is not billed to the test.
+        yield
 
         self.append_test_record(item)
 
@@ -293,7 +302,12 @@ class HTMLReporter(object):
             'logs': self.collect_logs(str(ConfigVars._test_status)),
         }
 
-        if (record['status'] in ('FAIL', 'ERROR')) and (ConfigVars.screen_img is not None):
+        # Whatever the test did. A screenshot of a pass is a baseline, and one
+        # of a skip says why it was skipped; keeping only the failures threw
+        # away images that had been deliberately attached. Every record claims
+        # the pending image, so none is left behind for a later test to pick up
+        # and present as its own.
+        if ConfigVars.screen_img is not None:
             record['screenshot'] = self.generate_screenshot_data()
 
         self.store_test_record(record)
@@ -461,7 +475,9 @@ class HTMLReporter(object):
             'name': _screenshot_name,
             'suite': _screenshot_suite_name,
             'test': _screenshot_test_name,
-            'error': ConfigVars._current_error,
+            # Blank for anything that passed, so the tile says how the test
+            # ended rather than showing an empty caption.
+            'error': ConfigVars._current_error or str(ConfigVars._test_status),
         }
 
     def append_suite_metrics_row(self, suite_index, name, records):

@@ -11,6 +11,7 @@ tests/__pycache__/
 dist/
 test_draft/
 report/
+reports/
 __pycache__/
 .coverage
 archive

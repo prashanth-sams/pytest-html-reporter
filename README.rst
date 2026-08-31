@@ -36,7 +36,7 @@ Features
   - Suite Highlights
   - Test suite details
 * Archives / History
-* Screenshots on failure
+* Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
@@ -66,6 +66,15 @@ Add ``--html-report`` tag followed by path location and filename to customize th
 
     $ pytest tests/ --html-report=./report
     $ pytest tests/ --html-report=./report/report.html
+
+The path is run through ``strftime``, so date and time placeholders (``%Y``, ``%m``, ``%d``, ``%H``, ``%M``, ...) give
+each run a folder or a filename of its own::
+
+    $ pytest tests/ --html-report=./reports/%Y%m%d/report_%H%M.html
+
+They are expanded once, when the run starts, so a parallel run and a run that crosses a minute boundary still write a
+single report. Write ``%%`` for a literal percent sign in front of a letter; a ``%`` that is not a placeholder, as in
+``100% pass``, is left as it is.
 
 Add ``--title`` tag followed by the report title; it is capped at 20 characters and the cut tail fades out, with the
 full title kept as the heading's tooltip::
@@ -233,7 +242,8 @@ The ``Environment`` panel states what the run kept and from which log level - e.
 Alternate option is to add this snippet in the ``pytest.ini`` file::
 
     [pytest]
-    addopts = -v -rf --capture=tee-sys --html-report=./report --title='PYTEST REPORT'
+    addopts = -v -rf --capture=tee-sys --title='PYTEST REPORT'
+    html_report = ./reports/%Y%m%d/report_%H%M.html
     environment = staging
     build_info =
         branch=main
@@ -244,20 +254,78 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 ``report_logs`` takes the same values as ``--report-logs`` (``all`` / ``failed`` / ``none``) and ``report_log_limit``
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit).
 
-**Note:** ``--environment`` overrides the ``environment`` ini value; ``--build-info`` entries are added to the ones
-set in the ini file rather than replacing them; ``--report-logs`` and ``--report-log-limit`` override their ini values
+``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
+location without going through ``addopts``.
+
+**Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
+ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
+``--report-logs`` and ``--report-log-limit`` override their ini values
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
-screenshots on failure
+screenshots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Import ``attach`` from the library and call it with the selenium command as given below::
+Import ``attach`` from the library and hand it the PNG bytes of a screenshot. It takes the image itself rather than a
+browser, so it works with Selenium, Playwright, or anything else that can produce a PNG::
 
     from pytest_html_reporter import attach
 
-    ...
-    attach(data=self.driver.get_screenshot_as_png())
+    attach(data=self.driver.get_screenshot_as_png())   # Selenium
+    attach(data=page.screenshot())                     # Playwright
+    attach(data=await page.screenshot())               # Playwright, async API
+
+**Note:** every image you attach is kept, whatever the test did - a screenshot of a pass is a baseline worth having.
+Only the tests that actually called ``attach`` appear in the gallery, so capturing on failure alone is a matter of
+deciding when to call it.
+
+``attach`` can be called from anywhere in the test's lifecycle: the test body, a ``unittest`` ``tearDown``, a pytest
+fixture's teardown, or a ``pytest_runtest_makereport`` hook. Capturing on failure only - the usual want - is the
+``rep_call.failed`` test in the fixture below; drop it to photograph every test::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach
+
+    @pytest.fixture(autouse=True)
+    def screenshot_on_failure(page, request):
+        yield
+        if request.node.rep_call.failed:
+            attach(data=page.screenshot())
+
+    @pytest.hookimpl(tryfirst=True, hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        rep = outcome.get_result()
+        setattr(item, "rep_" + rep.when, rep)
+
+Or skip the fixture and attach straight from the hook, which already has the browser in ``item.funcargs``::
+
+    # conftest.py
+    import pytest
+    from pytest_html_reporter import attach
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_makereport(item, call):
+        outcome = yield
+        rep = outcome.get_result()
+
+        if rep.when == "call" and rep.failed:
+            driver = item.funcargs.get("driver")
+            if driver is not None:
+                attach(data=driver.get_screenshot_as_png())
+
+**Note:** hooks have to live in ``conftest.py``. pytest only registers conftest files as plugins, so a
+``pytest_runtest_makereport`` written at the top of a test module is silently never called.
+
+The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page`` fixture instead::
+
+    page = item.funcargs.get("page")
+    if page is not None:
+        attach(data=page.screenshot())
+
+**Note:** the hook is synchronous, so Playwright's async API cannot be photographed from it - there is nowhere to
+``await``. With ``async`` tests, call ``attach`` from the test body instead.
 
 .. image:: https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white
    :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b
