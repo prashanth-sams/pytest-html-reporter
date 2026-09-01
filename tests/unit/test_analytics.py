@@ -12,6 +12,7 @@ history be a few lines instead of five subprocess runs.
 """
 
 import json
+import re
 
 from pytest_html_reporter.analytics import (
     duration_buckets,
@@ -425,6 +426,25 @@ def test_the_worst_behaved_tests_are_at_the_top(tmp_path):
     rows = ConfigVars._analytics_rows
 
     assert rows.index("down") < rows.index("flips") < rows.index("fine")
+
+
+def test_the_history_strip_carries_a_sort_value(tmp_path):
+    """The strip is markup with no text in it, so without an explicit order
+    every row ties and clicking the History header does nothing."""
+    _generate(tmp_path,
+              _build(1000.0, [("fine", "PASS", 0, 0.1), ("down", "FAIL", 0, 0.1),
+                              ("gone", "SKIP", 0, 0.1)]),
+              _build(1001.0, [("fine", "PASS", 0, 0.1), ("down", "FAIL", 0, 0.1),
+                              ("gone", "SKIP", 0, 0.1)]))
+
+    pairs = re.findall(r'an-name__test">(\w+)<.*?an-spark" data-order="([-\d.]+)"',
+                       ConfigVars._analytics_rows, re.S)
+    order = {name: float(value) for name, value in pairs}
+
+    assert order["down"] < order["fine"]
+
+    # A strip of nothing but skips has decided nothing, so it sits below both.
+    assert order["gone"] < order["down"]
 
 
 def test_a_run_with_nothing_on_disk_is_left_alone(tmp_path):

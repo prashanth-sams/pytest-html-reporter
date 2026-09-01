@@ -1,6 +1,10 @@
 <tr>
-    <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(sname)%</td>
-    <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(name)%</td>
+    <td class="jump-cell" data-jump="suite" data-target="%(sindex)%" tabindex="0" role="link"
+        title="Open this suite in Test Steps"
+        style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(sname)%</td>
+    <td class="jump-cell" data-jump="test" data-target="%(runt)%" tabindex="0" role="link"
+        title="Open this test in Test Steps"
+        style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(name)%</td>
     <td>%(stat)%</td>
     <td>%(dur)%</td>
     <td class="metric-num metric-rerun"><span class="metric-pill">%(rerun)%</span></td>
@@ -17,6 +21,12 @@
     <td class="log-cell" data-logs="%(attach_count)%">
         <button type="button" class="log-btn" onclick="showAttachmentsFor('%(runt)%')" title="View API logs and attachments">
             <i class="fa fa-exchange" aria-hidden="true"></i>%(attach_count)%
+        </button>
+        <span class="log-none">&mdash;</span>
+    </td>
+    <td class="log-cell" data-logs="%(step_count)%">
+        <button type="button" class="log-btn" onclick="showStepsFor('%(runt)%')" title="View this test step by step">
+            <i class="fa fa-list-ol" aria-hidden="true"></i>%(step_count)%
         </button>
         <span class="log-none">&mdash;</span>
     </td>

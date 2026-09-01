@@ -382,6 +382,41 @@ def report_attachment_limit(config):
     return max(limit, 0)
 
 
+STEP_MODES = ("all", "failed", "none")
+STEP_LIMIT_DEFAULT = 500
+
+
+def report_steps_mode(config):
+    """Which tests keep their steps: 'all', 'failed' or 'none'.
+
+    'all' rather than 'failed', unlike a log: the steps of a test that passed
+    are what a later failure is read against, and they cost a line each.
+    """
+    mode = str(config.getoption("report_steps", None)
+               or _ini(config, "report_steps") or "all").strip().lower()
+
+    return mode if mode in STEP_MODES else "all"
+
+
+def report_step_limit(config):
+    """Steps kept per test; 0 means no limit.
+
+    A test that loops a step over ten thousand rows would otherwise write ten
+    thousand lines into the page, and the tree stops being readable long before
+    it stops being generated.
+    """
+    value = config.getoption("report_step_limit", None)
+    if value in (None, ""):
+        value = _ini(config, "report_step_limit")
+
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        return STEP_LIMIT_DEFAULT
+
+    return max(limit, 0)
+
+
 def _log_section_rank(title):
     """Sort key that replays a test's output in the order it was produced.
 

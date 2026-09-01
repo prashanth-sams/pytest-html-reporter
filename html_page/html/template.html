@@ -2640,6 +2640,7 @@
                 }
 
                 .metrics-card .dataTables_filter input,
+                .metrics-card .step-search input,
                 .metrics-card .attach-search input {
                     margin: 0;
                     width: 250px;
@@ -2658,11 +2659,13 @@
                 }
 
                 .metrics-card .dataTables_filter input::placeholder,
+                .metrics-card .step-search input::placeholder,
                 .metrics-card .attach-search input::placeholder {
                     color: #a9b0ba;
                 }
 
                 .metrics-card .dataTables_filter input:focus,
+                .metrics-card .step-search input:focus,
                 .metrics-card .attach-search input:focus {
                     outline: none;
                     border-color: #8fb8dd;
@@ -2804,6 +2807,31 @@
                 .metrics-card td.suite-cell .suite-file {
                     font-weight: 600;
                     color: #39404d;
+                }
+
+                /* ---- Names that cross into the Test Steps tree ---- */
+                /* A suite or a test name is the same question as the Steps
+                   button at the end of the row - "what did this actually do?"
+                   - so the name itself answers it rather than only the icon
+                   twelve columns away. Drawn as a link only under the pointer:
+                   a table of permanently blue cells reads as a form. */
+                .metrics-card td.jump-cell {
+                    cursor: pointer;
+                }
+
+                .metrics-card td.jump-cell:hover,
+                .metrics-card td.jump-cell:focus {
+                    color: #3571a3;
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    outline: none;
+                }
+
+                .metrics-card td.jump-cell:hover .suite-dir,
+                .metrics-card td.jump-cell:focus .suite-dir,
+                .metrics-card td.jump-cell:hover .suite-file,
+                .metrics-card td.jump-cell:focus .suite-file {
+                    color: #3571a3;
                 }
 
                 /* ---- Counts as pills in the dashboard's status colours ---- */
@@ -2987,6 +3015,7 @@
                         width: 100%;
                     }
                     .metrics-card .dataTables_filter input,
+                    .metrics-card .step-search input,
                     .metrics-card .attach-search input {
                         width: 100%;
                     }
@@ -3111,13 +3140,23 @@
                     outline: none;
                 }
 
+                /* A cap rather than a fixed height, so a rail of one payload
+                   gets a short card while a long one still runs down to the
+                   footer. The figure is what sits above the card plus the
+                   footer under it. */
                 .attach-body {
                     display: flex;
                     align-items: stretch;
-                    min-height: 0;
-                    height: calc(100vh - 268px);
-                    min-height: 430px;
+                    max-height: calc(100vh - 216px);
+                    min-height: 340px;
                 }
+
+                /* The fifty pixels between the card and the footer were the
+                   page's own bottom padding and the footer's top margin rather
+                   than anything this tab put there. */
+                #attachments .metrics-page { padding-bottom: 0.4rem; }
+
+                body[data-tab="attachments"] .main > .page-footer { margin-top: 10px; }
 
                 /* ---- Left: the rail ---- */
                 .attach-rail {
@@ -3160,9 +3199,9 @@
                     flex: 0 0 auto;
                     margin-top: 1px;
                     border-radius: 4px;
-                    padding: 2px 6px;
+                    padding: 2px 7px;
                     font-family: sans-serif;
-                    font-size: 8.5px;
+                    font-size: 9.5px;
                     font-weight: 700;
                     letter-spacing: 0.07em;
                     text-transform: uppercase;
@@ -3195,7 +3234,7 @@
 
                 .attach-item__title {
                     font-family: sans-serif;
-                    font-size: 12.5px;
+                    font-size: 13.5px;
                     font-weight: 600;
                     color: #39404d;
                     overflow: hidden;
@@ -3205,7 +3244,7 @@
 
                 .attach-item__test {
                     font-family: sans-serif;
-                    font-size: 10.5px;
+                    font-size: 11.5px;
                     color: #a9b0ba;
                     overflow: hidden;
                     text-overflow: ellipsis;
@@ -3230,9 +3269,9 @@
 
                 .attach-code {
                     border-radius: 999px;
-                    padding: 2px 8px;
+                    padding: 2px 9px;
                     font-family: sans-serif;
-                    font-size: 10px;
+                    font-size: 11px;
                     font-weight: 700;
                     background-color: rgba(170, 170, 170, 0.16);
                     color: #6f747c;
@@ -3266,7 +3305,7 @@
 
                 .attach-item__detail {
                     font-family: sans-serif;
-                    font-size: 10px;
+                    font-size: 11.5px;
                     color: #a9b0ba;
                     white-space: nowrap;
                 }
@@ -3274,7 +3313,7 @@
                 .attach-rail__empty {
                     padding: 26px 18px;
                     font-family: sans-serif;
-                    font-size: 12px;
+                    font-size: 12.5px;
                     color: #a9b0ba;
                     text-align: center;
                 }
@@ -3305,7 +3344,7 @@
 
                 .attach-view__title {
                     font-family: sans-serif;
-                    font-size: 1.02rem;
+                    font-size: 1.3rem;
                     font-weight: 600;
                     color: #39404d;
                     overflow: hidden;
@@ -3315,7 +3354,7 @@
 
                 .attach-view__test {
                     font-family: sans-serif;
-                    font-size: 11.5px;
+                    font-size: 12px;
                     color: #a9b0ba;
                     overflow: hidden;
                     text-overflow: ellipsis;
@@ -3341,7 +3380,7 @@
                     background: #f7fafd;
                     color: #6b7381;
                     padding: 4px 12px;
-                    font-size: 11px;
+                    font-size: 12px;
                     font-weight: 700;
                     letter-spacing: 0.06em;
                     text-transform: uppercase;
@@ -3374,7 +3413,7 @@
                 .attach-meta__item em {
                     font-family: sans-serif;
                     font-style: normal;
-                    font-size: 8.5px;
+                    font-size: 10.5px;
                     font-weight: 700;
                     letter-spacing: 0.09em;
                     text-transform: uppercase;
@@ -3383,7 +3422,7 @@
 
                 .attach-meta__value {
                     font-family: Menlo, Consolas, "Liberation Mono", monospace;
-                    font-size: 11.5px;
+                    font-size: 12.5px;
                     color: #4a5160;
                     max-width: 430px;
                     overflow: hidden;
@@ -3419,7 +3458,7 @@
                     border: 1px solid #eef1f5;
                     border-radius: 6px;
                     font-family: Menlo, Consolas, "Liberation Mono", monospace;
-                    font-size: 12px;
+                    font-size: 12.5px;
                     line-height: 1.6;
                     color: #4a5160;
                     white-space: pre-wrap;
@@ -3492,6 +3531,623 @@
                     margin: 9px auto 0 auto;
                     max-width: 460px;
                     line-height: 1.55;
+                }
+
+                /* ---- Test Steps: suite -> test -> step ---- */
+                .step-shell {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .step-toolbar {
+                    justify-content: space-between;
+                }
+
+                .step-filters {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .step-tree-actions {
+                    display: flex;
+                    gap: 6px;
+                    padding-left: 10px;
+                    margin-left: 10px;
+                    border-left: 1px solid #e6ecf3;
+                }
+
+                .step-search {
+                    margin-left: auto;
+                }
+
+                /* A cap rather than a fixed height, so the two cases both come
+                   out right: a long rail fills the space down to the footer,
+                   and a short step tree still gets a short card instead of
+                   sitting in three hundred pixels of white. The figure is what
+                   is above the card plus the footer under it. */
+                .step-body {
+                    display: flex;
+                    align-items: stretch;
+                    max-height: calc(100vh - 216px);
+                    min-height: 340px;
+                }
+
+                /* The card was stopping a long way short of the footer, and the
+                   fifty pixels between them were the page's own bottom padding
+                   and the footer's top margin rather than anything the tab had
+                   put there. This tab is a full-height pane, so it takes that
+                   space back and gives it to the rail. */
+                #testSteps .metrics-page { padding-bottom: 0.4rem; }
+
+                body[data-tab="testSteps"] .main > .page-footer { margin-top: 10px; }
+
+                /* ---- Left: the suite tree ---- */
+                .step-rail {
+                    flex: 0 0 326px;
+                    max-width: 326px;
+                    overflow-y: auto;
+                    border-right: 1px solid #eef1f5;
+                    background: #fcfcfd;
+                }
+
+                /* The suite is the container and the tests are inside it, so
+                   it is drawn as a band across the rail rather than as another
+                   row: same weight as the rows underneath and they stop being
+                   tellable apart, which is what made this hard to scan. */
+                .step-suite__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    width: 100%;
+                    padding: 12px 14px;
+                    border: none;
+                    border-top: 1px solid #e6ecf3;
+                    border-bottom: 1px solid #e6ecf3;
+                    background: #eef3f9;
+                    text-align: left;
+                    cursor: pointer;
+                    font-family: sans-serif;
+                    color: #556070;
+                }
+
+                .step-suite:first-child .step-suite__head { border-top: none; }
+
+                .step-suite__file {
+                    flex: none;
+                    font-size: 13px;
+                    color: #8a97a8;
+                }
+
+                .step-suite__head:hover { background: #eff5fb; }
+                .step-suite__head:focus { outline: none; }
+
+                .step-suite__caret {
+                    flex: none;
+                    font-size: 12px;
+                    color: #8a97a8;
+                    transition: transform 0.15s ease;
+                }
+
+                .step-suite.is-shut .step-suite__caret { transform: rotate(-90deg); }
+                .step-suite.is-shut .step-suite__tests { display: none; }
+
+                .step-suite__name {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    color: #38414f;
+                }
+
+                .step-suite__count {
+                    flex: none;
+                    border-radius: 999px;
+                    padding: 2px 9px;
+                    background: #ffffff;
+                    border: 1px solid #dbe3ed;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #6b7381;
+                }
+
+                .step-test {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    width: 100%;
+                    padding: 11px 14px 11px 34px;
+                    border: none;
+                    border-bottom: 1px solid #f4f6fa;
+                    border-left: 3px solid transparent;
+                    background: none;
+                    text-align: left;
+                    cursor: pointer;
+                    position: relative;
+                    transition: background-color 0.12s ease;
+                }
+
+                /* The rule the tests hang off, so a row is visibly a child of
+                   the suite above it rather than a sibling of it. */
+                .step-test::before {
+                    content: "";
+                    position: absolute;
+                    left: 20px;
+                    top: 0;
+                    bottom: 0;
+                    width: 1px;
+                    background: #e6ecf3;
+                }
+
+                .step-test:hover { background: #f3f7fb; }
+                .step-test:focus { outline: none; }
+
+                .step-test.is-active {
+                    background: #ffffff;
+                    border-left-color: #565656;
+                }
+
+                /* Arriving from a table row, the tree has just been rebuilt
+                   around one entry; the flash says which one, then gets out of
+                   the way. Without it the eye has to re-find the row it just
+                   clicked in a list of a hundred names. */
+                .step-suite__head.is-target,
+                .step-test.is-target {
+                    animation: stepTargetFlash 1.9s ease-out 1;
+                }
+
+                @keyframes stepTargetFlash {
+                    0%, 45% {
+                        background-color: #fdf3d8;
+                        box-shadow: inset 3px 0 0 #e0a300;
+                    }
+                    100% {
+                        background-color: transparent;
+                        box-shadow: inset 3px 0 0 rgba(224, 163, 0, 0);
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .step-suite__head.is-target,
+                    .step-test.is-target { animation: none; background-color: #fdf3d8; }
+                }
+
+                /* The status is a dot rather than a word: it repeats down every
+                   row of the rail, and the test name is what tells them apart. */
+                .step-test__dot {
+                    flex: none;
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 50%;
+                    background-color: #aaaaaa;
+                }
+
+                .step-test__dot--PASS  { background-color: #98cc64; }
+                .step-test__dot--FAIL  { background-color: #fc6766; }
+                .step-test__dot--ERROR { background-color: #b13635; }
+                .step-test__dot--SKIP  { background-color: #ffd050; }
+                .step-test__dot--xPASS { background-color: #aaaaaa; }
+                .step-test__dot--xFAIL { background-color: #d35fbf; }
+
+                .step-test__main {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    flex: 1 1 auto;
+                    min-width: 0;
+                }
+
+                .step-test__name {
+                    font-family: sans-serif;
+                    font-size: 13.5px;
+                    font-weight: 500;
+                    color: #39404d;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .step-test__note {
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    color: #98a1ad;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .step-test__ms {
+                    flex: none;
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    color: #98a1ad;
+                }
+
+                .step-rail__empty {
+                    padding: 26px 18px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #a9b0ba;
+                    text-align: center;
+                }
+
+                /* ---- Right: the step tree ---- */
+                .step-view {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    overflow-y: auto;
+                }
+
+                .step-view__head {
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 14px;
+                    padding: 15px 20px 13px 20px;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                .step-view__title {
+                    display: block;
+                    font-family: sans-serif;
+                    font-size: 1.3rem;
+                    font-weight: 600;
+                    color: #2f3742;
+                    word-break: break-word;
+                    line-height: 1.25;
+                }
+
+                .step-view__suite {
+                    display: block;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #98a1ad;
+                    margin-top: 5px;
+                }
+
+                .step-status {
+                    flex: none;
+                    border-radius: 999px;
+                    padding: 5px 15px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    background-color: rgba(170, 170, 170, 0.16);
+                    color: #6f747c;
+                }
+
+                .step-status--PASS  { background-color: rgba(152, 204, 100, 0.18); color: #5c8f2e; }
+                .step-status--FAIL  { background-color: rgba(252, 103, 102, 0.16); color: #c9403f; }
+                .step-status--ERROR { background-color: rgba(177, 54, 53, 0.16);  color: #a1302f; }
+                .step-status--SKIP  { background-color: rgba(255, 208, 80, 0.22);  color: #a5791a; }
+                .step-status--xFAIL { background-color: rgba(211, 95, 191, 0.16); color: #a4408f; }
+
+                .step-view__body { padding: 0 20px 22px 20px; }
+
+                /* ---- A BDD test says where it came from ---- */
+                .step-scenario {
+                    display: flex;
+                    align-items: baseline;
+                    flex-wrap: wrap;
+                    gap: 9px;
+                    margin: 15px 0 0 0;
+                    padding: 10px 14px;
+                    border-radius: 6px;
+                    background: #f4f8fc;
+                    border: 1px solid #e6eef6;
+                    font-family: sans-serif;
+                }
+
+                .step-scenario__badge {
+                    border-radius: 4px;
+                    padding: 2px 7px;
+                    background-color: rgba(53, 113, 163, 0.13);
+                    color: #3571a3;
+                    font-size: 8.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                }
+
+                .step-scenario__feature { font-size: 14px; font-weight: 600; color: #39404d; }
+                .step-scenario__name    { font-size: 13px; color: #6b7381; }
+                .step-scenario__file    { margin-left: auto; font-size: 11.5px; color: #98a1ad; }
+
+                /* ---- What the test says about itself ---- */
+                .step-detail {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 9px;
+                    margin: 15px 0 4px 0;
+                }
+
+                .step-fact {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 12px;
+                }
+
+                .step-fact__label {
+                    flex: 0 0 112px;
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    color: #98a1ad;
+                    text-align: right;
+                }
+
+                .step-fact__value {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    font-family: sans-serif;
+                    font-size: 13px;
+                    color: #4a5160;
+                    line-height: 1.55;
+                }
+
+                .step-badge {
+                    border-radius: 5px;
+                    padding: 3px 10px;
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    font-weight: 600;
+                    background-color: rgba(107, 115, 129, 0.1);
+                    color: #6b7381;
+                }
+
+                /* A marker pytest itself acts on changes how the test runs; a
+                   marker someone invented only names it. They are not the same
+                   kind of fact, so they are not the same colour. */
+                .step-badge--builtin { background-color: rgba(230, 168, 0, 0.16); color: #8a6400; }
+                .step-badge--user    { background-color: rgba(53, 113, 163, 0.12); color: #3571a3; }
+                .step-badge--param   { background-color: rgba(122, 88, 161, 0.13); color: #7a58a1; }
+                .step-badge--fixture { background-color: rgba(36, 190, 170, 0.16); color: #2f8f86; }
+                .step-badge--gherkin {
+                    background-color: rgba(53, 113, 163, 0.13);
+                    color: #3571a3;
+                    text-transform: uppercase;
+                    font-size: 9.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    margin-right: 8px;
+                }
+
+                /* ---- The phases, and the steps under them ---- */
+                .step-phase {
+                    margin-top: 16px;
+                    border: 1px solid #eef1f5;
+                    border-radius: 6px;
+                    overflow: hidden;
+                }
+
+                .step-phase__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 11px 16px;
+                    background: #f7f9fc;
+                    border-bottom: 1px solid #eef1f5;
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: #5d6775;
+                }
+
+                .step-phase__ms { color: #8a929e; letter-spacing: 0; font-size: 12px; }
+
+                .step-phase__none {
+                    display: none;
+                    padding: 13px 16px;
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                    color: #b4bbc5;
+                }
+
+                .step-phase--bare .step-phase__none { display: block; }
+
+                .step-line {
+                    display: flex;
+                    align-items: center;
+                    gap: 11px;
+                    flex-wrap: wrap;
+                    position: relative;
+                    padding: 11px 16px 11px 0;
+                    border-bottom: 1px solid #f4f7fa;
+                    /* The tree is drawn by indentation rather than by nesting
+                       the markup: a flat list of rows is what lets one step be
+                       filtered, measured and compared against its siblings. */
+                    padding-left: calc(16px + var(--step-depth, 0) * 22px);
+                }
+
+                /* A rule down the indent, so a nested step is visibly held by
+                   the one above it instead of just starting further right. */
+                .step-line[style*="--step-depth: 1"]::before,
+                .step-line[style*="--step-depth: 2"]::before,
+                .step-line[style*="--step-depth: 3"]::before,
+                .step-line[style*="--step-depth: 4"]::before {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: calc(21px + (var(--step-depth, 1) - 1) * 22px);
+                    width: 1px;
+                    background: #e4eaf1;
+                }
+
+                .step-line:last-child { border-bottom: none; }
+
+                .step-line__rail {
+                    display: none;
+                }
+
+                .step-line__mark {
+                    flex: none;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background-color: #cfd6e0;
+                }
+
+                .step-line--PASS .step-line__mark { background-color: #98cc64; }
+                .step-line--FAIL .step-line__mark { background-color: #fc6766; }
+                .step-line--SKIP .step-line__mark { background-color: #ffd050; }
+
+                /* A failed step is the reason the tab was opened. */
+                .step-line--FAIL { background: #fff7f7; }
+
+                .step-line__main {
+                    flex: 1 1 240px;
+                    min-width: 0;
+                    display: flex;
+                    align-items: baseline;
+                    flex-wrap: wrap;
+                    gap: 4px 8px;
+                }
+
+                .step-line__title {
+                    font-family: sans-serif;
+                    font-size: 13.5px;
+                    color: #39404d;
+                    word-break: break-word;
+                }
+
+                .step-line--FAIL .step-line__title { font-weight: 600; color: #c9403f; }
+
+                .step-line__params {
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    color: #98a1ad;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    max-width: 340px;
+                }
+
+                .step-line__attach {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    border-radius: 4px;
+                    padding: 1px 6px;
+                    background-color: rgba(36, 190, 170, 0.16);
+                    color: #2f8f86;
+                    font-family: sans-serif;
+                    font-size: 9.5px;
+                    font-weight: 700;
+                }
+
+                /* The bar is scaled within the test, so it answers "which part
+                   of this test was slow" rather than "which test was slow". */
+                .step-line__bar {
+                    flex: 0 0 96px;
+                    height: 4px;
+                    border-radius: 999px;
+                    background: #f0f3f7;
+                    overflow: hidden;
+                }
+
+                .step-line__bar i {
+                    display: block;
+                    height: 100%;
+                    border-radius: 999px;
+                    background: #cbd5e1;
+                }
+
+                .step-line--FAIL .step-line__bar i { background: #fca5a4; }
+
+                .step-line__ms {
+                    flex: 0 0 68px;
+                    text-align: right;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #5d6775;
+                }
+
+                .step-line__error {
+                    flex: 1 1 100%;
+                    margin: 8px 0 2px 0;
+                    padding: 11px 13px;
+                    border-radius: 5px;
+                    background: #fff1f1;
+                    border: 1px solid #f8dcdc;
+                    font-size: 12.5px;
+                    line-height: 1.5;
+                    color: #a1302f;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    max-height: 190px;
+                    overflow: auto;
+                }
+
+                .step-head__tail {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+
+                .step-help-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    border: 1px solid #e9edf3;
+                    border-radius: 0.5rem;
+                    background: #ffffff;
+                    padding: 7px 14px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #5d6775;
+                    cursor: pointer;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.06);
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .step-help-btn i { color: #8a97a8; }
+
+                .step-help-btn:hover {
+                    border-color: #cfd7e3;
+                    box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
+                }
+
+                .step-help-btn:focus { outline: none; }
+
+                /* Inside the popup the sheet is already on a panel of its own,
+                   so it drops the outer margin it needs on the page. */
+                #stepHelpBody .setup-guide { margin-top: 4px; }
+                #stepHelpBody .setup-foot { margin-bottom: 4px; }
+
+                /* ---- The teaching panel, only while nobody has named one ---- */
+                .step-guide { display: none; }
+                .step-page.is-bare .step-guide { display: block; margin-top: 26px; }
+
+                .step-page.is-empty .step-shell,
+                .step-page.is-empty .metrics-summary { display: none; }
+                .step-page.is-empty .step-guide { display: block; }
+
+                @media screen and (max-width: 1100px) {
+                    .step-body { flex-direction: column; max-height: none; }
+                    .step-rail {
+                        flex: 1 1 auto;
+                        max-width: none;
+                        max-height: 260px;
+                        border-right: none;
+                        border-bottom: 1px solid #eef1f5;
+                    }
+                    .step-line__bar { display: none; }
                 }
 
                 /* ---- The setup guide ---- */
@@ -3678,7 +4334,10 @@
                 @media (max-width: 900px) {
                     .attach-body {
                         flex-direction: column;
-                        height: auto;
+                        /* max-height, not height, is what bounds the card now -
+                           so that is what the stacked layout has to lift, or
+                           the panes spill out from under it. */
+                        max-height: none;
                     }
 
                     .attach-rail {
@@ -4317,6 +4976,9 @@
             <a class="tablink" href="#test-metrics" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics
             </a>
+            <a class="tablink" href="#test-steps" onclick="openPage('testSteps', this, 'white', '#565656', 'groove'); refreshSteps();">
+                <i class="fa fa-list-ol" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Steps
+            </a>
             <a class="tablink" href="#archives" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives
             </a>
@@ -4821,6 +5483,7 @@
                                 <th class="th-left">Error Message</th>
                                 <th>Logs</th>
                                 <th>Data</th>
+                                <th>Steps</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -4832,6 +5495,131 @@
                      it would be searched, sorted and exported along with the
                      rest of the table. -->
                 <div id="logStore" hidden>%(test_logs)%</div>
+            </div>
+        </div>
+        <div class="tabcontent" id="testSteps">
+            <div class="metrics-page step-page %(step_state)%" id="stepPage">
+                <div class="metrics-page__head">
+                    <div>
+                        <div class="metrics-page__title"><i class="fa fa-list-ol"></i>Test Steps</div>
+                        <div class="metrics-page__subtitle">What each test did, step by step, and where its time went</div>
+                    </div>
+                    <div class="step-head__tail">
+                        <div class="metrics-summary" id="stepSummary"></div>
+                        <button type="button" class="step-help-btn" onclick="toggleStepHelp(true)">
+                            <i class="fa fa-info-circle" aria-hidden="true"></i>How it works
+                        </button>
+                    </div>
+                </div>
+
+                <div class="metrics-card step-shell">
+                    <div class="metrics-toolbar step-toolbar">
+                        <div class="step-filters" id="stepFilters"></div>
+                        <div class="step-tree-actions">
+                            <button type="button" class="attach-pill" onclick="toggleAllStepSuites(true)">Expand all</button>
+                            <button type="button" class="attach-pill" onclick="toggleAllStepSuites(false)">Collapse all</button>
+                        </div>
+                        <div class="step-search">
+                            <input type="search" id="stepSearch" autocomplete="off" spellcheck="false"
+                                   placeholder="Search by test, step, marker or feature" oninput="filterSteps()" />
+                        </div>
+                    </div>
+                    <div class="step-body">
+                        <div class="step-rail" id="stepRail">
+                            %(step_tree)%
+                            <div class="step-rail__empty" id="stepRailEmpty" hidden>Nothing matches that search.</div>
+                        </div>
+                        <div class="step-view" id="stepView">
+                            <div class="step-view__head">
+                                <div class="step-view__heading">
+                                    <span class="step-view__title" id="stepViewTitle"></span>
+                                    <span class="step-view__suite" id="stepViewSuite"></span>
+                                </div>
+                                <div class="step-view__status" id="stepViewStatus"></div>
+                            </div>
+                            <div class="step-view__body" id="stepViewBody"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Only while nobody has named a step. The tree above is real
+                     either way - every test has three phases and its markers. -->
+                <div class="step-guide">
+                    <div class="attach-empty__head step-guide__intro">
+                        <div class="attach-empty__icon"><i class="fa fa-list-ol"></i></div>
+                        <div class="attach-empty__title">No test named a step in this run</div>
+                        <div class="attach-empty__text">
+                          The tree above still works &mdash; every test has a set up, a body and a
+                          tear down, and each is timed. Naming the pieces inside them is what turns
+                          &ldquo;this test failed after 4 seconds&rdquo; into &ldquo;it failed
+                          charging the card, 3.2 seconds in&rdquo;.
+                        </div>
+                    </div>
+
+                    <div class="step-guide__sheet">
+                    <div class="setup-guide">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Name a step</div>
+                            <div class="setup-step__note">
+                                <b>step</b> is a <b>with</b> block or a decorator, and steps nest by
+                                being called from inside one another &mdash; nothing is passed between them.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>step</b>
+
+<span class="c">def</span> test_checkout():
+    <span class="c">with</span> <b>step</b>(<span class="s">"Add to cart"</span>, sku=<span class="s">"A-12"</span>):
+        cart.add(<span class="s">"A-12"</span>)
+
+    <span class="c">with</span> <b>step</b>(<span class="s">"Charge the card"</span>):
+        <span class="c">assert</span> gateway.charge(cart).ok</pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Or decorate the helper<span class="setup-step__badge">recommended</span></div>
+                            <div class="setup-step__note">
+                                A page object&rsquo;s methods are already the steps of the test. Decorating
+                                them once names every test that calls them, and the arguments of the call
+                                fill in the <b>{placeholders}</b> of the title.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">@step</span>(<span class="s">"Log in as {user}"</span>)
+<span class="c">def</span> login(user, password):
+    page.fill(<span class="s">"#user"</span>, user)
+    page.click(<span class="s">"#submit"</span>)</pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Already writing Gherkin?</div>
+                            <div class="setup-step__note">
+                                Nothing to do. A <b>pytest-bdd</b> scenario is already a list of steps, so
+                                its Given / When / Then land here on their own &mdash; each timed, each
+                                carrying what it was called with.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">Scenario:</span> Add items to the cart
+    <span class="c">Given</span> a logged in user
+    <span class="c">When</span> I add 2 items to the cart
+    <span class="c">Then</span> the cart shows 2 items</pre>
+                        </div>
+                    </div>
+
+                    <div class="setup-foot">
+                        <i class="fa fa-paperclip" aria-hidden="true"></i>
+                        <span>
+                            Anything attached while a step is open is filed under that step &mdash;
+                            <b>attach_json</b>, <b>attach_api</b> and the rest need no extra argument
+                            to say which one they belong to.
+                        </span>
+                    </div>
+
+                    <div class="setup-links">
+                        <a href="https://github.com/prashanth-sams/pytest-html-reporter#test-steps" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- The trees live here rather than in the rail: the rail is
+                     filtered and redrawn, and every test's step tree has no
+                     business being moved around with it. -->
+                <div id="stepStore" hidden>%(step_store)%</div>
             </div>
         </div>
         <div class="tabcontent" id="archives">
@@ -5241,6 +6029,25 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     </span>
                 </div>
                 <div class="log-overlay__body" id="logOverlayBody"></div>
+            </div>
+        </div>
+
+        <!-- The cheatsheet is written once, in the tab. This shows the same
+             markup, so the guide someone reads on an empty run and the one
+             they open from the button can never drift apart. -->
+        <div class="log-overlay" id="stepHelp" hidden>
+            <div class="log-overlay__backdrop" onclick="toggleStepHelp(false)"></div>
+            <div class="log-overlay__panel" role="dialog" aria-modal="true" aria-label="How test steps work">
+                <div class="log-overlay__head">
+                    <span class="log-overlay__title">
+                        <i class="fa fa-list-ol" aria-hidden="true"></i>
+                        <span>How test steps work</span>
+                    </span>
+                    <span class="log-overlay__actions">
+                        <button type="button" class="log-overlay__close" aria-label="Close" onclick="toggleStepHelp(false)">&times;</button>
+                    </span>
+                </div>
+                <div class="log-overlay__body" id="stepHelpBody"></div>
             </div>
         </div>
 
@@ -5722,6 +6529,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         'analytics': 'analytics',
                         'suites': 'suiteMetrics',
                         'test-metrics': 'testMetrics',
+                        'test-steps': 'testSteps',
                         'archives': 'archives',
                         'screenshots': 'screenshots',
                         'coverage': 'coverage',
@@ -7170,6 +7978,390 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 renderAttachmentFilters();
                 filterAttachments();
             }
+
+            // ---- Test Steps -------------------------------------------------
+            var stepSelected = '';
+            var stepKind = 'all';
+
+            var STEP_KINDS = [['all', 'All'], ['failed', 'Failed'], ['bdd', 'Scenarios'], ['plain', 'Tests']];
+
+            function stepItems() {
+                return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-test'));
+            }
+
+            function stepSuites() {
+                return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-suite'));
+            }
+
+            // Every suite at once. A run of six hundred tests opens with the
+            // rail shut, so the first thing it shows is the shape of the suite
+            // rather than nine screens of test names.
+            function toggleAllStepSuites(open) {
+                stepSuites().forEach(function(suite) { suite.classList.toggle('is-shut', !open); });
+            }
+
+            function revealStepSuite(sid) {
+                var item = document.getElementById('step-test-' + sid);
+                var suite = item && item.closest ? item.closest('.step-suite') : null;
+
+                if (suite) { suite.classList.remove('is-shut'); }
+            }
+
+            function stepVisibleItems() {
+                return stepItems().filter(function(item) { return !item.hidden; });
+            }
+
+            function stepMatchesKind(item) {
+                if (stepKind === 'all') { return true; }
+                if (stepKind === 'failed') {
+                    var status = item.getAttribute('data-status');
+                    return status === 'FAIL' || status === 'ERROR';
+                }
+                return item.getAttribute('data-kind') === stepKind;
+            }
+
+            function toggleStepSuite(head) {
+                head.parentNode.classList.toggle('is-shut');
+            }
+
+            function renderStepFilters() {
+                var target = document.getElementById('stepFilters');
+                if (!target) { return; }
+
+                var counts = {};
+                stepItems().forEach(function(item) {
+                    var status = item.getAttribute('data-status');
+                    counts.all = (counts.all || 0) + 1;
+                    if (status === 'FAIL' || status === 'ERROR') { counts.failed = (counts.failed || 0) + 1; }
+                    var kind = item.getAttribute('data-kind');
+                    counts[kind] = (counts[kind] || 0) + 1;
+                });
+
+                // A filter that would empty the rail is not offered, and one
+                // that was selected before it stopped existing is let go.
+                if (!counts[stepKind]) { stepKind = 'all'; }
+
+                target.innerHTML = '';
+                STEP_KINDS.forEach(function(kind) {
+                    if (!counts[kind[0]]) { return; }
+                    // "Tests" beside nothing else is the whole rail, so it is
+                    // not a choice worth drawing.
+                    if (kind[0] === 'plain' && !counts.bdd) { return; }
+
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (stepKind === kind[0] ? ' is-active' : '');
+                    button.textContent = kind[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = counts[kind[0]];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        stepKind = kind[0];
+                        renderStepFilters();
+                        filterSteps();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            function renderStepSummary() {
+                var items = stepVisibleItems();
+                var failed = 0, scenarios = 0, steps = 0;
+
+                items.forEach(function(item) {
+                    var status = item.getAttribute('data-status');
+                    if (status === 'FAIL' || status === 'ERROR') { failed += 1; }
+                    if (item.getAttribute('data-kind') === 'bdd') { scenarios += 1; }
+
+                    var payload = document.getElementById('step-' + item.getAttribute('data-sid'));
+                    if (payload) { steps += payload.querySelectorAll('.step-line').length; }
+                });
+
+                // Suites the rail is actually showing, not every suite in the
+                // run - the same contract the counts under them keep, so the
+                // numbers can never disagree with the list.
+                var suites = stepSuites().filter(function(suite) { return !suite.hidden; }).length;
+
+                var chips = [{ color: '#8a97a8', value: suites,
+                               label: suites === 1 ? 'suite' : 'suites' },
+                             { color: '#565656', value: items.length,
+                               label: items.length === 1 ? 'test' : 'tests' }];
+
+                if (steps) { chips.push({ color: '#3571a3', value: steps, label: steps === 1 ? 'step' : 'steps' }); }
+                if (scenarios) { chips.push({ color: '#7a58a1', value: scenarios, label: 'scenarios' }); }
+                if (failed) { chips.push({ color: METRICS_COLORS.fail, value: failed, label: 'failed' }); }
+
+                renderMetricsChips($('#stepSummary'), chips);
+            }
+
+            function filterSteps() {
+                var box = document.getElementById('stepSearch');
+                var needle = box ? box.value.trim().toLowerCase() : '';
+                var shown = 0;
+                var stillVisible = false;
+
+                stepItems().forEach(function(item) {
+                    var matches = stepMatchesKind(item) &&
+                        (!needle || (item.getAttribute('data-search') || '').indexOf(needle) !== -1);
+
+                    item.hidden = !matches;
+                    if (matches) {
+                        shown += 1;
+                        if (item.getAttribute('data-sid') === stepSelected) { stillVisible = true; }
+                    }
+                });
+
+                // A suite whose every test was filtered away is not a heading
+                // over nothing; it goes with them.
+                Array.prototype.forEach.call(document.querySelectorAll('#stepRail .step-suite'), function(suite) {
+                    var left = suite.querySelectorAll('.step-test:not([hidden])').length;
+                    suite.hidden = left === 0;
+                });
+
+                // A match inside a shut suite is a match nobody can see, so a
+                // search opens the groups that hold one. Clearing the box
+                // leaves them as they are rather than shutting a group the
+                // reader opened by hand.
+                if (needle || stepKind !== 'all') {
+                    stepSuites().forEach(function(suite) {
+                        if (suite.querySelector('.step-test:not([hidden])')) { suite.classList.remove('is-shut'); }
+                    });
+                }
+
+                var empty = document.getElementById('stepRailEmpty');
+                if (empty) { empty.hidden = shown !== 0; }
+
+                document.getElementById('stepView').hidden = shown === 0;
+
+                if (shown && !stillVisible) { showStep(stepPickDefault()); }
+
+                renderStepSummary();
+            }
+
+            // What to open when nothing is chosen yet. The first row in
+            // collection order is almost always a test that named no steps, so
+            // the tab introduced itself with three empty phases; a failure with
+            // a tree is the row somebody came here to read.
+            function stepPickDefault() {
+                return stepPickFrom(stepVisibleItems());
+            }
+
+            // The same choice made over any subset of the rail - the whole of
+            // it by default, or the one suite somebody crossed to.
+            function stepPickFrom(items) {
+                var withSteps = items.filter(function(item) {
+                    var payload = document.getElementById('step-' + item.getAttribute('data-sid'));
+                    return payload && payload.querySelector('.step-line');
+                });
+
+                var failed = withSteps.filter(function(item) {
+                    var status = item.getAttribute('data-status');
+                    return status === 'FAIL' || status === 'ERROR';
+                });
+
+                var pick = failed[0] || withSteps[0] || items[0];
+
+                return pick ? pick.getAttribute('data-sid') : '';
+            }
+
+            function showStep(sid) {
+                var source = document.getElementById('step-' + sid);
+                if (!source) { return; }
+
+                stepSelected = sid;
+
+                document.getElementById('stepViewTitle').textContent = source.getAttribute('data-test') || '';
+                document.getElementById('stepViewSuite').textContent = source.getAttribute('data-suite') || '';
+
+                var status = source.getAttribute('data-status') || '';
+                var pill = document.getElementById('stepViewStatus');
+                pill.innerHTML = '';
+
+                var badge = document.createElement('span');
+                badge.className = 'step-status step-status--' + status;
+                badge.textContent = status + ' · ' + (source.getAttribute('data-duration') || '');
+                pill.appendChild(badge);
+
+                var body = document.getElementById('stepViewBody');
+                body.innerHTML = '';
+                Array.prototype.forEach.call(source.childNodes, function(node) {
+                    body.appendChild(node.cloneNode(true));
+                });
+
+                stepItems().forEach(function(item) {
+                    item.classList.toggle('is-active', item.getAttribute('data-sid') === sid);
+                });
+
+                revealStepSuite(sid);
+
+                document.getElementById('stepView').hidden = false;
+            }
+
+            // ---- Crossing into the tree from a table row --------------------
+            // Three doors lead here: the list icon at the end of a Test Metrics
+            // row, the test name beside it, and a suite name on either table.
+            // All of them mean "show me what this did", so they land the reader
+            // on the thing they clicked rather than on the top of the tree.
+            function openStepsTab() {
+                var link = tabLinkFor('testSteps');
+                if (!link) { return false; }
+
+                openPage('testSteps', link, 'white', '#565656', 'groove');
+
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', link.getAttribute('href'));
+                }
+
+                return true;
+            }
+
+            // A filter or a half-typed search left behind on an earlier visit
+            // would hide the very row that was just asked for.
+            function clearStepFilters() {
+                stepKind = 'all';
+
+                var search = document.getElementById('stepSearch');
+                if (search) { search.value = ''; }
+            }
+
+            // Everything else shut. The rail is a hundred names long on a real
+            // run, and leaving the other groups open buries the one that was
+            // asked for among them.
+            function isolateStepSuite(suite) {
+                if (!suite) { return; }
+
+                stepSuites().forEach(function(other) {
+                    other.classList.toggle('is-shut', other !== suite);
+                });
+            }
+
+            // Which row the eye should land on, said in a way that fades. The
+            // mark is dropped from wherever it was first, so two crossings in a
+            // row cannot leave two rows claiming to be the target.
+            function markStepTarget(node) {
+                Array.prototype.forEach.call(
+                    document.querySelectorAll('#stepRail .is-target'),
+                    function(old) { old.classList.remove('is-target'); }
+                );
+
+                if (!node) { return; }
+
+                // Restarting the animation on a node that still carries the
+                // class needs the browser to see it leave and come back.
+                void node.offsetWidth;
+                node.classList.add('is-target');
+
+                if (node.scrollIntoView) { node.scrollIntoView({ block: 'nearest' }); }
+
+                window.setTimeout(function() { node.classList.remove('is-target'); }, 2400);
+            }
+
+            function showStepsFor(runt) {
+                var item = document.getElementById('step-test-' + runt);
+                if (!item || !openStepsTab()) { return; }
+
+                clearStepFilters();
+                refreshSteps();
+
+                isolateStepSuite(item.closest ? item.closest('.step-suite') : null);
+                showStep(String(runt));
+                markStepTarget(item);
+            }
+
+            // A suite name: open that group and nothing else, and put its own
+            // first failure in the reading pane - whatever was open before is
+            // likely to belong to a suite that has just been shut.
+            function showStepsForSuite(sindex) {
+                var suite = document.getElementById('step-suite-' + sindex);
+                if (!suite || !openStepsTab()) { return; }
+
+                clearStepFilters();
+                refreshSteps();
+
+                isolateStepSuite(suite);
+
+                var inside = Array.prototype.slice.call(suite.querySelectorAll('.step-test'))
+                                  .filter(function(item) { return !item.hidden; });
+
+                var pick = stepPickFrom(inside);
+                if (pick) { showStep(pick); }
+
+                markStepTarget(suite.querySelector('.step-suite__head'));
+            }
+
+            // Delegated: DataTables rebuilds the table on every sort, page and
+            // search, so the cells cannot carry handlers of their own.
+            $(document).on('click', 'td.jump-cell', function() {
+                jumpIntoSteps(this);
+            });
+
+            $(document).on('keydown', 'td.jump-cell', function(event) {
+                if (event.key !== 'Enter' && event.key !== ' ') { return; }
+
+                event.preventDefault();
+                jumpIntoSteps(this);
+            });
+
+            function jumpIntoSteps(cell) {
+                var target = cell.getAttribute('data-target');
+                if (!target) { return; }
+
+                if (cell.getAttribute('data-jump') === 'suite') {
+                    showStepsForSuite(target);
+                } else {
+                    showStepsFor(target);
+                }
+            }
+
+            var stepRailStarted = false;
+
+            function refreshSteps() {
+                var page = document.getElementById('stepPage');
+                if (!page) { return; }
+
+                var items = stepItems();
+                page.classList.toggle('is-empty', items.length === 0);
+                if (!items.length) { return; }
+
+                // Once, on the first visit. Doing it on every refresh would
+                // shut a group the reader had just opened.
+                if (!stepRailStarted) {
+                    stepRailStarted = true;
+                    toggleAllStepSuites(false);
+                }
+
+                renderStepFilters();
+                filterSteps();
+            }
+
+            function toggleStepHelp(open) {
+                var overlay = document.getElementById('stepHelp');
+                if (!overlay) { return; }
+
+                if (open) {
+                    var sheet = document.querySelector('.step-guide__sheet');
+                    var body = document.getElementById('stepHelpBody');
+                    // Filled on open rather than duplicated into the markup, so
+                    // there is one cheatsheet and it cannot drift out of step
+                    // with the one the empty state shows.
+                    if (sheet && !body.childNodes.length) { body.innerHTML = sheet.innerHTML; }
+                }
+
+                overlay.hidden = !open;
+                document.body.style.overflow = open ? 'hidden' : '';
+
+                if (open) { overlay.querySelector('.log-overlay__close').focus(); }
+            }
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') { toggleStepHelp(false); }
+            });
+
+            $(document).ready(function() { setTimeout(refreshSteps, 140); });
 
             $(document).ready(function() { setTimeout(refreshAttachments, 120); });
         </script>

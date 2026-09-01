@@ -109,6 +109,26 @@ def pytest_addoption(parser):
     )
 
     group.addoption(
+        "--report-steps",
+        action="store",
+        dest="report_steps",
+        default=None,
+        choices=("all", "failed", "none"),
+        help="whose test steps - the pieces named with step(), and the "
+             "Given/When/Then of a pytest-bdd scenario - to keep in the "
+             "report: all (default), failed or none",
+    )
+
+    group.addoption(
+        "--report-step-limit",
+        action="store",
+        dest="report_step_limit",
+        default=None,
+        type=int,
+        help="maximum steps kept per test; 0 keeps every one (default: 500)",
+    )
+
+    group.addoption(
         "--report-coverage",
         action="store",
         dest="report_coverage",
@@ -234,6 +254,18 @@ def pytest_addoption(parser):
     parser.addini(
         "report_open",
         help="whether to open the finished report in a browser: auto, always or none",
+        default="",
+    )
+
+    parser.addini(
+        "report_steps",
+        help="whose test steps to keep in the report: all, failed or none",
+        default="",
+    )
+
+    parser.addini(
+        "report_step_limit",
+        help="maximum steps kept per test; 0 keeps every one",
         default="",
     )
 
