@@ -1,8 +1,11 @@
 0.3.7 (31/08/2026)
 -------------------
-- The Dashboard's summary card now says which way the suite is moving: "+3 failures since last build" under the total count, red when there are more failures than last time and green when there are fewer
-- The delta is read off the same per-build list the Trends chart is drawn from, so the number under the total count and the red line beside it cannot disagree; failures there means failures and errors together, exactly as the chart's Failed series plots them
+- The Dashboard's Highlights card now says which way the suite is moving: a "▲ +3 failures" tile over a "SINCE LAST BUILD" caption, red when there are more failures than last time and green with a "▼" when there are fewer
+- The delta is read off the same per-build list the chart under it is drawn from, so the two cannot disagree; failures there means failures and errors together, exactly as the chart's Failed series plots them
 - A first build shows no delta at all rather than "no change", which would claim a previous build that does not exist
+- That card is now titled Highlights rather than Suite Highlights: it holds two kinds of finding about the run, and only one of them is about a suite
+- No change is written "±0 failures", not "0 failures", which beside SINCE LAST BUILD would say the opposite of what it means - no failures at all, rather than no change in them
+- A first build leaves the whole entry out, caption included, rather than showing "no change" against a build that does not exist
 - The line's tooltip gives the two counts behind it - "12 failures this build, 9 in the build before it" - because "+3" reads very differently against 3 than against 300
 
 0.3.6 (31/08/2026)

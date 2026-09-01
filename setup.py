@@ -13,14 +13,20 @@ def read(fname):
 
 setup(
     name="pytest-html-reporter",
-    version="0.3.6",
+    version="0.3.7",
     author="Prashanth Sams",
     author_email="sams.prashanth@gmail.com",
     maintainer="Prashanth Sams",
     maintainer_email="sams.prashanth@gmail.com",
     license="MIT",
-    url="https://github.com/prashanth-sams/pytest-html-reporter",
-    description="Generates a light-weight static html report based on pytest framework",
+    project_urls={
+        "Homepage": "https://github.com/prashanth-sams/pytest-html-reporter",        
+        "Source": "https://github.com/prashanth-sams/pytest-html-reporter",
+        "Issues": "https://github.com/prashanth-sams/pytest-html-reporter/issues",
+        "Changelog": "https://github.com/prashanth-sams/pytest-html-reporter/blob/master/CHANGELOG.txt",
+        "Roadmap": "https://github.com/prashanth-sams/pytest-html-reporter/blob/master/ROADMAP.md",
+    },
+    description="A pytest plugin for generating lightweight HTML test reports with screenshots, logs, coverage, archives, and xdist support",
     long_description=read("README.rst"),
     keywords=["pytest", "py.test", "html", "reporter", "report", "pytest-plugin", "html-report", "test-report", "pytest-html", "pytest-html-reporter", "api-testing", "xdist", "playwright", "selenium", "test-coverage", "pytest-cov", "pytest-html-cov", "pytest-html-coverage", "pytest-coverage"],
     packages=find_packages(),
@@ -28,11 +34,13 @@ setup(
     package_data={
         "html_page": ["html/*.html"],
     },
+    long_description_content_type="text/x-rst",
     python_requires=">=3.5",
     install_requires=["pytest", "Pillow"],
     classifiers=[
         "Framework :: Pytest",
         "Topic :: Software Development :: Testing",
+        "Topic :: Software Development :: Quality Assurance",
         "Programming Language :: Python",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: MIT License",

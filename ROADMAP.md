@@ -110,14 +110,33 @@ that is already loaded.
 *Why:* direction of travel matters more than the absolute count.
 *Effort:* ~20 lines.
 *Shipped as:* `run_delta` / `format_run_delta` / `run_delta_class` / `run_delta_title` and
-`generate_run_delta` in `util.py`, rendered as a `.run-delta` line under the total count on the
-summary card.
+`run_delta_figure` / `run_delta_unit` / `generate_run_delta` in `util.py`, rendered as a
+`.delta-highlight` tile - arrow, signed figure, unit, right-pinned caption - as the second entry in
+the Highlights card, which lost its "Suite" prefix in the process because it now holds two kinds of
+thing.
 
 Read off `ConfigVars.tfail` rather than re-reading the archive folder: `update_trends` has already
 built the per-build list - this run first, then the archived builds newest first - and taking the
-headline from the same list the Trends chart is drawn from means the number under the total count
-and the red line beside it cannot disagree. That also settles what a "failure" is here: failures
-and errors together, which is what the chart's Failed series plots.
+headline from the same list the Trends chart is drawn from means the two cannot disagree. That also
+settles what a "failure" is here: failures and errors together, which is what the chart's Failed
+series plots - and it is why the line ended up on the Trends card rather than the summary card,
+where it read as a fourth statistic about this build instead of the headline for the chart it
+describes.
+
+The Trends card was tried first and given up: as a subtitle it pushed the chart down, and
+`.dashboard__headers`' own `-4%` bottom margin - tuned for a heading of one line - then pulled the
+chart back up over it; absolutely positioned in the card's corner it cleared the chart but needed
+two separately scoped offsets, one to dodge the `position: fixed` download icon and one for the
+width below which it and the centred heading stop fitting on a row. The Highlights card takes it
+with none of that: the card is a list of findings about the run, so a second entry is what it is
+already shaped for.
+
+Three decisions worth keeping. No change is written **`±0`**, not `0`: beside `SINCE LAST BUILD` a
+bare `0 failures` says the opposite of what it means. The arrow is a **plain character**, not an
+icon font - it inherits colour and size for free and cannot render as a missing glyph in a report
+opened somewhere the font never loaded. And a first build hides the **whole tile, caption
+included**, via `is-empty` on the wrapper rather than `:empty` on the text: a lone
+`SINCE LAST BUILD` over blank space reads as a bug.
 
 Two decisions worth keeping: a **first build shows nothing at all** rather than "no change", which
 would claim a previous build that does not exist - the placeholder fills in empty and `:empty`

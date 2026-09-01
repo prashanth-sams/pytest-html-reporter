@@ -12,7 +12,9 @@ from pytest_html_reporter.util import (
     generate_run_delta,
     run_delta,
     run_delta_class,
+    run_delta_figure,
     run_delta_title,
+    run_delta_unit,
 )
 
 
@@ -71,7 +73,34 @@ def test_more_failures_than_last_time_is_the_bad_direction():
     assert run_delta_class(3) == "is-worse"
     assert run_delta_class(-3) == "is-better"
     assert run_delta_class(0) == "is-level"
-    assert run_delta_class(None) == ""
+
+
+def test_no_delta_hides_the_whole_tile():
+    """Caption included - a lone "SINCE LAST BUILD" over nothing reads as a bug."""
+    assert run_delta_class(None) == "is-empty"
+
+
+def test_figure_carries_its_sign():
+    assert run_delta_figure(3) == "+3"
+    assert run_delta_figure(-1) == "-1"
+
+
+def test_figure_signs_no_change_too():
+    """A bare "0 failures" beside "SINCE LAST BUILD" says the opposite of what
+    it means - no failures at all, rather than no change in them."""
+    assert run_delta_figure(0) == "\u00b10"
+
+
+def test_unit_agrees_with_the_figure():
+    assert run_delta_unit(3) == "failures"
+    assert run_delta_unit(1) == "failure"
+    assert run_delta_unit(-1) == "failure"
+    assert run_delta_unit(0) == "failures"
+
+
+def test_no_figure_or_unit_without_a_delta():
+    assert run_delta_figure(None) == ""
+    assert run_delta_unit(None) == ""
 
 
 def test_tooltip_gives_the_two_counts_behind_the_delta():
@@ -89,19 +118,23 @@ def test_generate_fills_in_the_placeholders(monkeypatch):
     monkeypatch.setattr(ConfigVars, "tfail", [12, 9, 4], raising=False)
     generate_run_delta()
 
-    assert ConfigVars._failure_delta == "+3 failures since last build"
     assert ConfigVars._failure_delta_class == "is-worse"
+    assert ConfigVars._failure_delta_figure == "+3"
+    assert ConfigVars._failure_delta_unit == "failures"
+    assert ConfigVars._failure_delta == "+3 failures since last build"
     assert ConfigVars._failure_delta_title == (
         "12 failures this build, 9 in the build before it")
 
 
 def test_generate_leaves_a_first_build_blank(monkeypatch):
-    """The span collapses on empty, so a first build shows no chip at all."""
+    """is-empty hides the tile, and nothing is left over from a previous run."""
     monkeypatch.setattr(ConfigVars, "_failure_delta", "stale", raising=False)
-    monkeypatch.setattr(ConfigVars, "_failure_delta_class", "is-worse", raising=False)
+    monkeypatch.setattr(ConfigVars, "_failure_delta_figure", "+9", raising=False)
     monkeypatch.setattr(ConfigVars, "tfail", [12], raising=False)
     generate_run_delta()
 
+    assert ConfigVars._failure_delta_class == "is-empty"
+    assert ConfigVars._failure_delta_figure == ""
+    assert ConfigVars._failure_delta_unit == ""
     assert ConfigVars._failure_delta == ""
-    assert ConfigVars._failure_delta_class == ""
     assert ConfigVars._failure_delta_title == ""

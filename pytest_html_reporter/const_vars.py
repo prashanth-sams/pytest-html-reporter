@@ -98,6 +98,8 @@ class ConfigVars:
     _failure_delta = ''
     _failure_delta_class = ''
     _failure_delta_title = ''
+    _failure_delta_figure = ''
+    _failure_delta_unit = ''
     _report_links = ''
     _title = 'PYTEST REPORT'
     _title_full = 'PYTEST REPORT'

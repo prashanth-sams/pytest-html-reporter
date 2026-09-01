@@ -954,6 +954,8 @@ class HTMLReporter(object):
             failure_delta=str(ConfigVars._failure_delta),
             failure_delta_class=str(ConfigVars._failure_delta_class),
             failure_delta_title=str(ConfigVars._failure_delta_title),
+            failure_delta_figure=str(ConfigVars._failure_delta_figure),
+            failure_delta_unit=str(ConfigVars._failure_delta_unit),
             report_links=str(ConfigVars._report_links)
         )
 

@@ -603,14 +603,39 @@ def format_run_delta(delta, noun="failure"):
 
 
 def run_delta_class(delta):
-    """Which direction is the good one. Fewer failures than last time is better."""
+    """Which direction is the good one. Fewer failures than last time is better.
+
+    A first build has no delta and gets is-empty, which hides the whole tile:
+    caption included, so there is no stray "SINCE LAST BUILD" over nothing.
+    """
     if delta is None:
-        return ""
+        return "is-empty"
 
     if delta > 0:
         return "is-worse"
 
     return "is-better" if delta < 0 else "is-level"
+
+
+def run_delta_figure(delta):
+    """The number on the tile: '+3', '-1', or the no-change '\u00b10'.
+
+    Written with its sign even at zero. The tile is read as a delta, and a bare
+    "0 failures" beside "SINCE LAST BUILD" says the opposite of what it means -
+    no failures at all, rather than no change in them.
+    """
+    if delta is None:
+        return ""
+
+    return "\u00b10" if delta == 0 else "%+d" % delta
+
+
+def run_delta_unit(delta, noun="failure"):
+    """The word under the figure, agreeing with it."""
+    if delta is None:
+        return ""
+
+    return noun if abs(delta) == 1 else noun + "s"
 
 
 def run_delta_title(counts, noun="failure"):
@@ -634,16 +659,16 @@ def generate_run_delta():
     Failures here are what the Trends chart calls Failed - failures and errors
     together - because the two sit inches apart on the same page.
     """
-    ConfigVars._failure_delta = ""
-    ConfigVars._failure_delta_class = ""
-    ConfigVars._failure_delta_title = ""
-
     delta = run_delta(ConfigVars.tfail)
-    if delta is None:
-        return
 
-    ConfigVars._failure_delta = escape_report_text(format_run_delta(delta))
     ConfigVars._failure_delta_class = run_delta_class(delta)
+    ConfigVars._failure_delta_figure = escape_report_text(run_delta_figure(delta))
+    ConfigVars._failure_delta_unit = escape_report_text(run_delta_unit(delta))
+
+    # The whole sentence, for the tile's tooltip alongside the two raw counts:
+    # the tile itself is three fragments, and one of them read aloud on its own
+    # says very little.
+    ConfigVars._failure_delta = escape_report_text(format_run_delta(delta))
     ConfigVars._failure_delta_title = escape_report_text(
         run_delta_title(ConfigVars.tfail))
 

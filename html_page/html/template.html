@@ -380,31 +380,6 @@
                   color: darkgray;
                 }
 
-                /* Direction of travel since the last build. Note the colours
-                   run the opposite way to the coverage chip's: there, up is
-                   the good direction; here, more failures than last time is
-                   the bad one. */
-                .run-delta {
-                  margin-top: 0.5rem;
-                  font-size: 0.9rem;
-                  font-family: sans-serif;
-                  font-weight: 600;
-                  max-width: 100%;
-                  text-align: center;
-                  color: slategrey;
-                }
-
-                /* A first build has no previous build to compare against, and
-                   the placeholder is filled in empty. Collapse it rather than
-                   leaving a gap under the label. */
-                .run-delta:empty {
-                  display: none;
-                }
-
-                .run-delta.is-worse { color: #d64b4a; }
-                .run-delta.is-better { color: #6aa63b; }
-                .run-delta.is-level { color: slategrey; }
-
                 /* The badge keeps its size; the title gives way first, so the
                    two always share one line however narrow the column gets.
                    A cut tail fades out rather than ending in an ellipsis --
@@ -846,6 +821,75 @@
                     color: darkgrey;
                     margin-bottom: -4%;
                 }
+
+                /* Second tile in the Highlights card, under the most-failed
+                   suite: which way the failure count moved since the last
+                   build. Built to the same rhythm as the block above it - a
+                   figure, then a small caption pinned right - so the card
+                   reads as two entries of one kind rather than a stat and a
+                   sentence.
+
+                   `clear: both` gets it below that block's floated caption,
+                   and the border is what separates the two without spending
+                   the vertical room a heading would. */
+                .delta-highlight {
+                    clear: both;
+                    padding-top: 1.4rem;
+                    margin-top: 0.6rem;
+                    border-top: 1px solid #ececec;
+                    display: flow-root;
+                }
+
+                /* A first build has nothing to compare against. Hide the whole
+                   tile, caption included - a lone "SINCE LAST BUILD" over an
+                   empty space reads as a bug. */
+                .delta-highlight.is-empty {
+                    display: none;
+                }
+
+                .delta-highlight__value {
+                    margin: 0;
+                    float: left;
+                    padding-left: 3%;
+                    font-family: sans-serif;
+                    line-height: 1.1;
+                }
+
+                /* The arrow says the direction at a glance and the colour says
+                   whether that direction is good news. Note both run the
+                   opposite way to the coverage chip's: there, up is the good
+                   direction; here, more failures than last time is the bad one
+                   - hence is-worse / is-better rather than reusing is-up /
+                   is-down with the meanings quietly swapped. A plain character
+                   rather than an icon font: it inherits the colour and the
+                   size for free, and cannot come out as a missing glyph if the
+                   report is opened where the font never loaded. */
+                .delta-highlight__figure {
+                    font-size: 2.1rem;
+                    font-weight: 600;
+                    letter-spacing: -0.01em;
+                }
+
+                .delta-highlight__figure::before {
+                    font-size: 0.62em;
+                    padding-right: 0.28em;
+                    vertical-align: 0.12em;
+                }
+
+                .delta-highlight.is-worse .delta-highlight__figure { color: #d64b4a; }
+                .delta-highlight.is-worse .delta-highlight__figure::before { content: "\25b2"; }
+
+                .delta-highlight.is-better .delta-highlight__figure { color: #6aa63b; }
+                .delta-highlight.is-better .delta-highlight__figure::before { content: "\25bc"; }
+
+                .delta-highlight.is-level .delta-highlight__figure { color: slategrey; }
+
+                .delta-highlight__unit {
+                    padding-left: 0.4rem;
+                    font-size: 0.95rem;
+                    color: dimgrey;
+                }
+
                 .outer_my_chart {
                     margin-left: 50%;
                     margin-top: -40%;
@@ -1242,10 +1286,6 @@
                         font-size: 1.15rem;
                         margin-top: 0.15rem;
                     }
-                    .dashboard-viewport .dashboard-card .run-delta {
-                        font-size: 0.85rem;
-                        margin-top: 0.4rem;
-                    }
 
                     /* Keep the doughnut circular and sensibly sized (never oversized) */
                     .dashboard-viewport .dashboard-card .outer_my_chart {
@@ -1464,10 +1504,6 @@
                         font-size: 1rem;
                         padding: 0 !important;
                     }
-                    .run-delta {
-                        font-size: 0.8rem;
-                        margin-top: 0.35rem;
-                    }
 
                     /* Chart.js sizes the doughnut from this box, so keep it
                        square and free of the desktop negative margins. */
@@ -1553,7 +1589,7 @@
                         font-size: 1.4rem !important;
                     }
 
-                    /* Suite Highlights */
+                    /* Highlights */
                     .suite-highlight-inner {
                         padding-bottom: 14px;
                     }
@@ -3874,7 +3910,6 @@
                               <div class="total-count-block">
                                 <span class="total__count">%(total)%</span>
                                 <span class="total_count__label">TEST CASES</span>
-                                <span class="run-delta %(failure_delta_class)%" title="%(failure_delta_title)%">%(failure_delta)%</span>
                               </div>
                           </div>
                           <div class="summary-chart">
@@ -3955,7 +3990,7 @@
                         <div class="dashboard__headers">
                             <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;">
                                 <i class="fa fa-bolt" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>
-                                Suite Highlights
+                                Highlights
                             </div>
                             <div>
                                 <div class="loading">
@@ -3969,6 +4004,18 @@
                                     <div class="progress-bar downloading"></div>
                                     <span class="suite-highlights-header">MOST FAILED SUITE</span>
                                 </div>
+                            </div>
+                            <!-- role=img + aria-label: on screen this is four
+                                 fragments - arrow, figure, unit, caption - and
+                                 read out one at a time they say very little.
+                                 The role collapses them to the one sentence. -->
+                            <div class="delta-highlight %(failure_delta_class)%" role="img"
+                                 aria-label="%(failure_delta)%" title="%(failure_delta_title)%">
+                                <p class="delta-highlight__value">
+                                    <span class="delta-highlight__figure">%(failure_delta_figure)%</span>
+                                    <span class="delta-highlight__unit">%(failure_delta_unit)%</span>
+                                </p>
+                                <span class="suite-highlights-header">SINCE LAST BUILD</span>
                             </div>
                         </div>
                     </div>

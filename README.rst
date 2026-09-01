@@ -33,7 +33,7 @@ Features
   - Overview
   - Environment
   - Trends
-  - Suite Highlights
+  - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
 * Archives / History
 * Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
@@ -730,17 +730,19 @@ Whichever source the numbers do come from, the tab states it - ``Measured by pyt
 delta vs the previous build
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Once there is a build to compare against, the ``Dashboard``'s summary card says which way the suite is moving -
-``+3 failures since last build`` under the total count, red when there are more failures than last time and green when
-there are fewer. Nothing to configure; it appears as soon as a second build has been archived.
+Once there is a build to compare against, the ``Highlights`` card gains a second entry saying which way the suite is
+moving - ``▲ +3 failures`` over ``SINCE LAST BUILD``, red when there are more failures than last time and green with a
+``▼`` when there are fewer. Nothing to configure; it appears as soon as a second build has been archived.
 
 The absolute count tells you how bad this build is. The delta tells you whether it is getting better, which is the one
 you act on. Hovering it gives the two counts behind it - ``12 failures this build, 9 in the build before it`` - because
 ``+3`` reads very differently against 3 than against 300.
 
-*Failures* here means failures **and errors**, which is exactly what the ``Trends`` chart beside it plots as ``Failed``;
-both are read off the same per-build list, so the two can never disagree. A first build shows no delta at all rather
-than ``no change``, which would be claiming a previous build that does not exist.
+*Failures* here means failures **and errors**, which is exactly what the ``Trends`` chart plots as ``Failed``; both are
+read off the same per-build list, so the two can never disagree. No change is written ``±0 failures`` rather than
+``0 failures``, which beside ``SINCE LAST BUILD`` would say the opposite of what it means. A first build has nothing to
+compare against, and the whole entry - caption included - is left out rather than showing ``no change`` against a build
+that does not exist.
 
 custom side-nav links
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
