@@ -421,6 +421,24 @@ def _spark(states):
         summary, summary, cells)
 
 
+def _spark_order(states):
+    """Sort value for the History column.
+
+    The strip carries no text, so without this every row sorts equal and the
+    header looks broken. What it is ordered on is what it draws: how the test
+    has behaved over the last few builds - which is a different question from
+    the Pass rate column, that one reads every build ever kept.
+
+    Recent pass share leads; the number of builds drawn breaks ties, so a
+    long clean strip outranks a single green block. A strip of nothing but
+    skips has decided nothing and sorts below both.
+    """
+    decided = [state for state in states if state != 'skip']
+    if not decided: return -1
+
+    return round(1000.0 * decided.count('pass') / len(decided), 1) + len(states)
+
+
 def _movement_card(icon, title, keys, tracked, tone):
     names = ''
     for key in keys[:MOVEMENT_NAMES]:
@@ -501,6 +519,7 @@ def _rows(tracked):
             dur=_duration_text(history['duration']),
             dur_sort=str(history['duration'] if history['duration'] is not None else -1),
             spark=_spark(history['spark']),
+            spark_sort=str(_spark_order(history['spark'])),
         ))
 
     return content

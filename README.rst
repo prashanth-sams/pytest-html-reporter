@@ -6,7 +6,7 @@ pytest-html-reporter
    :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
    :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-.. image:: https://badge.fury.io/py/pytest-html-reporter.svg
+.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.3.7
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
