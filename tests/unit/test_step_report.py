@@ -353,3 +353,51 @@ def test_the_selected_test_is_never_hidden_behind_a_shut_suite(tmp_path):
 
     assert "function revealStepSuite(sid)" in page
     assert "revealStepSuite(sid);" in page
+
+
+def _jump_cells(page, kind):
+    """Every table cell that crosses into the tree, by what it points at."""
+    return re.findall(r'data-jump="%s" data-target="([^"]*)"' % kind, page)
+
+
+def test_a_test_name_in_the_table_crosses_to_its_own_entry(tmp_path):
+    # The name and the Steps icon at the end of the row answer the same
+    # question, so both cross - and to the same id, or one of them lands on
+    # somebody else's tree.
+    page = _run(tmp_path)
+
+    targets = _jump_cells(page, "test")
+    buttons = re.findall(r"onclick=\"showStepsFor\('([\d-]+)'\)\"", page)
+
+    assert targets
+    assert targets == buttons
+    for sid in targets:
+        assert 'id="step-test-%s"' % sid in page
+
+
+def test_a_suite_name_in_the_table_crosses_to_its_own_group(tmp_path):
+    # Both tables name the suite, and the id they point at has to be the one
+    # the rail gave that group.
+    page = _run(tmp_path)
+
+    targets = _jump_cells(page, "suite")
+    rail = re.findall(r'<div class="step-suite" id="step-suite-([^"]*)"', page)
+
+    assert rail
+    assert set(targets) == set(rail)
+    # Once per test row plus once on the Test Suites table.
+    assert len(targets) == len(_jump_cells(page, "test")) + len(rail)
+
+
+def test_crossing_to_a_suite_opens_that_group_and_shuts_the_rest(tmp_path):
+    # A rail a hundred names long buries the group that was asked for if the
+    # others are left open beside it.
+    page = _run(tmp_path)
+
+    body = page.split("function showStepsForSuite(sindex)")[1].split("\n            function ")[0]
+
+    assert "isolateStepSuite(suite);" in body
+    assert "other.classList.toggle('is-shut', other !== suite);" in page
+    # The pane cannot be left showing a test that belongs to a suite the
+    # crossing has just shut.
+    assert "stepPickFrom(inside)" in body

@@ -326,6 +326,7 @@ def generate_steps_view(suites):
             ))
 
         rail += str(StepSuite(
+            sindex=str(suite_index),
             sname=escape_report_text(suite_name),
             short=escape_report_text(_short(suite_name)),
             count=str(len(records)),

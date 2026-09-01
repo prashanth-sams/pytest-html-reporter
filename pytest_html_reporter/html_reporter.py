@@ -736,6 +736,10 @@ class HTMLReporter(object):
             rerun=str(record['rerun']),
             msg=escape_report_text(record['message'][:50]),
             runt=row_id,
+            # The suite half of the row id, so the Suite cell can cross to the
+            # same group in the Test Steps rail that the Test Case cell crosses
+            # into - one id, derived once, rather than two that can disagree.
+            sindex=row_id.split('-')[0],
             log_count=str(self.attach_test_logs(record, row_id)),
             attach_count=str(self.attach_test_data(record, row_id)),
             step_count=str(len(record.get('steps') or []))
@@ -954,6 +958,7 @@ class HTMLReporter(object):
 
         suite_row_text = SuiteRow(
             sname=escape_report_text(name),
+            sindex=str(suite_index),
             spass=str(_status['total_pass']),
             sfail=str(_status['total_fail']),
             sskip=str(_status['total_skip']),

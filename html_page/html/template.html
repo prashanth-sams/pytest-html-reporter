@@ -2809,6 +2809,31 @@
                     color: #39404d;
                 }
 
+                /* ---- Names that cross into the Test Steps tree ---- */
+                /* A suite or a test name is the same question as the Steps
+                   button at the end of the row - "what did this actually do?"
+                   - so the name itself answers it rather than only the icon
+                   twelve columns away. Drawn as a link only under the pointer:
+                   a table of permanently blue cells reads as a form. */
+                .metrics-card td.jump-cell {
+                    cursor: pointer;
+                }
+
+                .metrics-card td.jump-cell:hover,
+                .metrics-card td.jump-cell:focus {
+                    color: #3571a3;
+                    text-decoration: underline;
+                    text-underline-offset: 2px;
+                    outline: none;
+                }
+
+                .metrics-card td.jump-cell:hover .suite-dir,
+                .metrics-card td.jump-cell:focus .suite-dir,
+                .metrics-card td.jump-cell:hover .suite-file,
+                .metrics-card td.jump-cell:focus .suite-file {
+                    color: #3571a3;
+                }
+
                 /* ---- Counts as pills in the dashboard's status colours ---- */
                 .metrics-card td.metric-num .metric-pill {
                     display: inline-flex;
@@ -3663,6 +3688,31 @@
                 .step-test.is-active {
                     background: #ffffff;
                     border-left-color: #565656;
+                }
+
+                /* Arriving from a table row, the tree has just been rebuilt
+                   around one entry; the flash says which one, then gets out of
+                   the way. Without it the eye has to re-find the row it just
+                   clicked in a list of a hundred names. */
+                .step-suite__head.is-target,
+                .step-test.is-target {
+                    animation: stepTargetFlash 1.9s ease-out 1;
+                }
+
+                @keyframes stepTargetFlash {
+                    0%, 45% {
+                        background-color: #fdf3d8;
+                        box-shadow: inset 3px 0 0 #e0a300;
+                    }
+                    100% {
+                        background-color: transparent;
+                        box-shadow: inset 3px 0 0 rgba(224, 163, 0, 0);
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .step-suite__head.is-target,
+                    .step-test.is-target { animation: none; background-color: #fdf3d8; }
                 }
 
                 /* The status is a dot rather than a word: it repeats down every
@@ -8097,8 +8147,13 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             // the tab introduced itself with three empty phases; a failure with
             // a tree is the row somebody came here to read.
             function stepPickDefault() {
-                var visible = stepVisibleItems();
-                var withSteps = visible.filter(function(item) {
+                return stepPickFrom(stepVisibleItems());
+            }
+
+            // The same choice made over any subset of the rail - the whole of
+            // it by default, or the one suite somebody crossed to.
+            function stepPickFrom(items) {
+                var withSteps = items.filter(function(item) {
                     var payload = document.getElementById('step-' + item.getAttribute('data-sid'));
                     return payload && payload.querySelector('.step-line');
                 });
@@ -8108,9 +8163,9 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     return status === 'FAIL' || status === 'ERROR';
                 });
 
-                var pick = failed[0] || withSteps[0] || visible[0];
+                var pick = failed[0] || withSteps[0] || items[0];
 
-                return pick.getAttribute('data-sid');
+                return pick ? pick.getAttribute('data-sid') : '';
             }
 
             function showStep(sid) {
@@ -8146,34 +8201,119 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 document.getElementById('stepView').hidden = false;
             }
 
-            // The list icon on a Test Metrics row: cross to the tab with that
-            // one test already open, rather than dropping someone into a tree
-            // of every test the run produced.
-            function showStepsFor(runt) {
+            // ---- Crossing into the tree from a table row --------------------
+            // Three doors lead here: the list icon at the end of a Test Metrics
+            // row, the test name beside it, and a suite name on either table.
+            // All of them mean "show me what this did", so they land the reader
+            // on the thing they clicked rather than on the top of the tree.
+            function openStepsTab() {
+                var link = tabLinkFor('testSteps');
+                if (!link) { return false; }
+
+                openPage('testSteps', link, 'white', '#565656', 'groove');
+
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', link.getAttribute('href'));
+                }
+
+                return true;
+            }
+
+            // A filter or a half-typed search left behind on an earlier visit
+            // would hide the very row that was just asked for.
+            function clearStepFilters() {
                 stepKind = 'all';
 
                 var search = document.getElementById('stepSearch');
                 if (search) { search.value = ''; }
+            }
 
-                var link = tabLinkFor('testSteps');
-                if (link) {
-                    openPage('testSteps', link, 'white', '#565656', 'groove');
+            // Everything else shut. The rail is a hundred names long on a real
+            // run, and leaving the other groups open buries the one that was
+            // asked for among them.
+            function isolateStepSuite(suite) {
+                if (!suite) { return; }
 
-                    if (window.history && window.history.replaceState) {
-                        window.history.replaceState(null, '', link.getAttribute('href'));
-                    }
-                }
+                stepSuites().forEach(function(other) {
+                    other.classList.toggle('is-shut', other !== suite);
+                });
+            }
 
-                refreshSteps();
-                showStep(String(runt));
+            // Which row the eye should land on, said in a way that fades. The
+            // mark is dropped from wherever it was first, so two crossings in a
+            // row cannot leave two rows claiming to be the target.
+            function markStepTarget(node) {
+                Array.prototype.forEach.call(
+                    document.querySelectorAll('#stepRail .is-target'),
+                    function(old) { old.classList.remove('is-target'); }
+                );
 
+                if (!node) { return; }
+
+                // Restarting the animation on a node that still carries the
+                // class needs the browser to see it leave and come back.
+                void node.offsetWidth;
+                node.classList.add('is-target');
+
+                if (node.scrollIntoView) { node.scrollIntoView({ block: 'nearest' }); }
+
+                window.setTimeout(function() { node.classList.remove('is-target'); }, 2400);
+            }
+
+            function showStepsFor(runt) {
                 var item = document.getElementById('step-test-' + runt);
-                if (item) {
-                    // The suite it sits in may be collapsed, and scrolling to a
-                    // row inside a shut group lands on the group instead.
-                    var suite = item.closest ? item.closest('.step-suite') : null;
-                    if (suite) { suite.classList.remove('is-shut'); }
-                    if (item.scrollIntoView) { item.scrollIntoView({ block: 'nearest' }); }
+                if (!item || !openStepsTab()) { return; }
+
+                clearStepFilters();
+                refreshSteps();
+
+                isolateStepSuite(item.closest ? item.closest('.step-suite') : null);
+                showStep(String(runt));
+                markStepTarget(item);
+            }
+
+            // A suite name: open that group and nothing else, and put its own
+            // first failure in the reading pane - whatever was open before is
+            // likely to belong to a suite that has just been shut.
+            function showStepsForSuite(sindex) {
+                var suite = document.getElementById('step-suite-' + sindex);
+                if (!suite || !openStepsTab()) { return; }
+
+                clearStepFilters();
+                refreshSteps();
+
+                isolateStepSuite(suite);
+
+                var inside = Array.prototype.slice.call(suite.querySelectorAll('.step-test'))
+                                  .filter(function(item) { return !item.hidden; });
+
+                var pick = stepPickFrom(inside);
+                if (pick) { showStep(pick); }
+
+                markStepTarget(suite.querySelector('.step-suite__head'));
+            }
+
+            // Delegated: DataTables rebuilds the table on every sort, page and
+            // search, so the cells cannot carry handlers of their own.
+            $(document).on('click', 'td.jump-cell', function() {
+                jumpIntoSteps(this);
+            });
+
+            $(document).on('keydown', 'td.jump-cell', function(event) {
+                if (event.key !== 'Enter' && event.key !== ' ') { return; }
+
+                event.preventDefault();
+                jumpIntoSteps(this);
+            });
+
+            function jumpIntoSteps(cell) {
+                var target = cell.getAttribute('data-target');
+                if (!target) { return; }
+
+                if (cell.getAttribute('data-jump') === 'suite') {
+                    showStepsForSuite(target);
+                } else {
+                    showStepsFor(target);
                 }
             }
 
