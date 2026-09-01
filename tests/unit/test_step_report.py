@@ -281,3 +281,46 @@ def test_a_retry_reports_the_attempt_that_stuck(tmp_path):
     # The attempt that passed ran its own steps; showing the failing attempt's
     # tree beside a green test would describe a run that did not happen.
     assert lines == [("PASS", "Attempt 2")]
+
+
+def test_a_suite_is_named_by_its_file_in_the_rail(tmp_path):
+    # The directories repeat down the whole rail. Truncating the path instead
+    # put an ellipsis at the front while the rail's own overflow put another at
+    # the back, so a long one was clipped at both ends and named nothing.
+    page = _run(tmp_path)
+
+    assert re.search(r'class="step-suite__name" title="[^"]*test_steps_ran\.py">test_steps_ran\.py<', page)
+
+
+def test_the_cheatsheet_can_be_opened_from_the_button(tmp_path):
+    # It is written once, in the tab, and the popup is filled from it - so the
+    # guide someone reads on an empty run and the one they open from the button
+    # cannot drift apart.
+    page = _run(tmp_path)
+
+    assert 'onclick="toggleStepHelp(true)"' in page
+    assert 'id="stepHelp"' in page
+    assert page.count('class="step-guide__sheet"') == 1
+
+
+def test_the_tab_opens_on_a_failure_that_has_steps(tmp_path):
+    # The first row in collection order is almost always a test that named no
+    # steps, so the tab used to introduce itself with three empty phases.
+    page = _run(tmp_path)
+
+    assert "function stepPickDefault()" in page
+    assert "showStep(stepPickDefault())" in page
+
+
+def test_the_search_matches_a_test_name_typed_with_spaces(tmp_path):
+    # A test is named test_fails_deep_in_a_step, and what somebody types is
+    # "fails deep". Both spellings are indexed rather than asking people to
+    # guess which one the box wants.
+    page = _run(tmp_path)
+
+    entry = re.search(r'<button[^>]*class="step-test"[^>]*data-search="([^"]*)"[^>]*>', page)
+    searches = re.findall(r'data-search="([^"]*)"', page)
+
+    assert entry is not None
+    assert any("fails deep in a step" in text for text in searches)
+    assert any("fails_deep_in_a_step" in text for text in searches)

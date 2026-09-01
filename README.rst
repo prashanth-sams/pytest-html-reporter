@@ -36,6 +36,9 @@ Features
   - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
 * Analytics - flaky tests, standing failures, pass-rate drift and where the run's time goes, read across every archived build
+* Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did
+* Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
+* Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
 * Archives / History
 * Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
@@ -701,6 +704,9 @@ suite drilling down to the test and the test to what it did.
 markers, its parameters, the fixtures it named and its docstring - so a suite that has never heard of ``step()`` still
 gets a tree saying where its time went. Naming steps makes that tree deeper; it does not bring it into existence.
 
+A **How it works** button at the top opens the same cheatsheet the tab shows on a run where nobody named a
+step, so it is there when you go looking for it rather than only before you need it.
+
 It is a tab of its own rather than a panel inside ``Test Suites``, which is where Allure keeps the same information.
 The cost of folding it in is a high-level page you can no longer skim, and the high-level page is the one most people
 open first.
@@ -736,6 +742,10 @@ belong to - whatever is open when they are called is what they are filed under, 
 
 cucumber / gherkin
 """""""""""""""""""""""""""
+
+There is a demo for this half too - it needs ``pytest-bdd`` installed, and nothing else::
+
+    $ pytest tests/functional/test_gherkin.py --html-report=./report
 
 Nothing to do. A ``pytest-bdd`` scenario is already a list of named steps, so its Given / When / Then arrive on their
 own - each timed, each carrying what its parser pulled out of the line, and badged as Gherkin so a specification never

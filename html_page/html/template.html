@@ -2640,6 +2640,7 @@
                 }
 
                 .metrics-card .dataTables_filter input,
+                .metrics-card .step-search input,
                 .metrics-card .attach-search input {
                     margin: 0;
                     width: 250px;
@@ -2658,11 +2659,13 @@
                 }
 
                 .metrics-card .dataTables_filter input::placeholder,
+                .metrics-card .step-search input::placeholder,
                 .metrics-card .attach-search input::placeholder {
                     color: #a9b0ba;
                 }
 
                 .metrics-card .dataTables_filter input:focus,
+                .metrics-card .step-search input:focus,
                 .metrics-card .attach-search input:focus {
                     outline: none;
                     border-color: #8fb8dd;
@@ -2987,6 +2990,7 @@
                         width: 100%;
                     }
                     .metrics-card .dataTables_filter input,
+                    .metrics-card .step-search input,
                     .metrics-card .attach-search input {
                         width: 100%;
                     }
@@ -3514,12 +3518,15 @@
                     margin-left: auto;
                 }
 
+                /* A cap rather than a fixed height. The rail has to be able to
+                   scroll a suite of six hundred tests, which needs a bounded
+                   box - but pinning the height left a short step tree sitting
+                   in three hundred pixels of white. */
                 .step-body {
                     display: flex;
                     align-items: stretch;
-                    min-height: 0;
-                    height: calc(100vh - 268px);
-                    min-height: 430px;
+                    max-height: calc(100vh - 250px);
+                    min-height: 340px;
                 }
 
                 /* ---- Left: the suite tree ---- */
@@ -3531,31 +3538,41 @@
                     background: #fcfcfd;
                 }
 
+                /* The suite is the container and the tests are inside it, so
+                   it is drawn as a band across the rail rather than as another
+                   row: same weight as the rows underneath and they stop being
+                   tellable apart, which is what made this hard to scan. */
                 .step-suite__head {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 9px;
                     width: 100%;
-                    padding: 9px 13px;
+                    padding: 12px 14px;
                     border: none;
-                    border-bottom: 1px solid #f1f4f8;
-                    background: #f7fafd;
+                    border-top: 1px solid #e6ecf3;
+                    border-bottom: 1px solid #e6ecf3;
+                    background: #eef3f9;
                     text-align: left;
                     cursor: pointer;
                     font-family: sans-serif;
-                    font-size: 11px;
-                    font-weight: 700;
-                    letter-spacing: 0.04em;
-                    text-transform: uppercase;
-                    color: #6b7381;
+                    color: #556070;
+                }
+
+                .step-suite:first-child .step-suite__head { border-top: none; }
+
+                .step-suite__file {
+                    flex: none;
+                    font-size: 13px;
+                    color: #8a97a8;
                 }
 
                 .step-suite__head:hover { background: #eff5fb; }
                 .step-suite__head:focus { outline: none; }
 
                 .step-suite__caret {
-                    font-size: 11px;
-                    color: #a9b0ba;
+                    flex: none;
+                    font-size: 12px;
+                    color: #8a97a8;
                     transition: transform 0.15s ease;
                 }
 
@@ -3568,33 +3585,48 @@
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
-                    text-transform: none;
-                    letter-spacing: 0;
-                    font-size: 11.5px;
-                    color: #4a5160;
+                    font-size: 13.5px;
+                    font-weight: 700;
+                    color: #38414f;
                 }
 
                 .step-suite__count {
                     flex: none;
                     border-radius: 999px;
-                    padding: 1px 7px;
-                    background: rgba(107, 115, 129, 0.12);
-                    font-size: 9.5px;
+                    padding: 2px 9px;
+                    background: #ffffff;
+                    border: 1px solid #dbe3ed;
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #6b7381;
                 }
 
                 .step-test {
                     display: flex;
                     align-items: center;
-                    gap: 9px;
+                    gap: 10px;
                     width: 100%;
-                    padding: 9px 13px 9px 26px;
+                    padding: 11px 14px 11px 34px;
                     border: none;
                     border-bottom: 1px solid #f4f6fa;
                     border-left: 3px solid transparent;
                     background: none;
                     text-align: left;
                     cursor: pointer;
+                    position: relative;
                     transition: background-color 0.12s ease;
+                }
+
+                /* The rule the tests hang off, so a row is visibly a child of
+                   the suite above it rather than a sibling of it. */
+                .step-test::before {
+                    content: "";
+                    position: absolute;
+                    left: 20px;
+                    top: 0;
+                    bottom: 0;
+                    width: 1px;
+                    background: #e6ecf3;
                 }
 
                 .step-test:hover { background: #f3f7fb; }
@@ -3609,8 +3641,8 @@
                    row of the rail, and the test name is what tells them apart. */
                 .step-test__dot {
                     flex: none;
-                    width: 8px;
-                    height: 8px;
+                    width: 9px;
+                    height: 9px;
                     border-radius: 50%;
                     background-color: #aaaaaa;
                 }
@@ -3632,8 +3664,8 @@
 
                 .step-test__name {
                     font-family: sans-serif;
-                    font-size: 12.5px;
-                    font-weight: 600;
+                    font-size: 13.5px;
+                    font-weight: 500;
                     color: #39404d;
                     overflow: hidden;
                     text-overflow: ellipsis;
@@ -3642,8 +3674,8 @@
 
                 .step-test__note {
                     font-family: sans-serif;
-                    font-size: 10.5px;
-                    color: #a9b0ba;
+                    font-size: 11.5px;
+                    color: #98a1ad;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -3652,8 +3684,8 @@
                 .step-test__ms {
                     flex: none;
                     font-family: sans-serif;
-                    font-size: 10.5px;
-                    color: #a9b0ba;
+                    font-size: 11.5px;
+                    color: #98a1ad;
                 }
 
                 .step-rail__empty {
@@ -3685,28 +3717,29 @@
                 .step-view__title {
                     display: block;
                     font-family: sans-serif;
-                    font-size: 1.05rem;
+                    font-size: 1.3rem;
                     font-weight: 600;
-                    color: #39404d;
+                    color: #2f3742;
                     word-break: break-word;
+                    line-height: 1.25;
                 }
 
                 .step-view__suite {
                     display: block;
                     font-family: sans-serif;
-                    font-size: 11px;
-                    color: #a9b0ba;
-                    margin-top: 3px;
+                    font-size: 12px;
+                    color: #98a1ad;
+                    margin-top: 5px;
                 }
 
                 .step-status {
                     flex: none;
                     border-radius: 999px;
-                    padding: 3px 12px;
+                    padding: 5px 15px;
                     font-family: sans-serif;
-                    font-size: 10.5px;
+                    font-size: 12px;
                     font-weight: 700;
-                    letter-spacing: 0.05em;
+                    letter-spacing: 0.04em;
                     background-color: rgba(170, 170, 170, 0.16);
                     color: #6f747c;
                 }
@@ -3744,9 +3777,9 @@
                     text-transform: uppercase;
                 }
 
-                .step-scenario__feature { font-size: 12.5px; font-weight: 600; color: #39404d; }
-                .step-scenario__name    { font-size: 12px; color: #6b7381; }
-                .step-scenario__file    { margin-left: auto; font-size: 10.5px; color: #a9b0ba; }
+                .step-scenario__feature { font-size: 14px; font-weight: 600; color: #39404d; }
+                .step-scenario__name    { font-size: 13px; color: #6b7381; }
+                .step-scenario__file    { margin-left: auto; font-size: 11.5px; color: #98a1ad; }
 
                 /* ---- What the test says about itself ---- */
                 .step-detail {
@@ -3763,13 +3796,13 @@
                 }
 
                 .step-fact__label {
-                    flex: 0 0 108px;
+                    flex: 0 0 112px;
                     font-family: sans-serif;
-                    font-size: 9.5px;
+                    font-size: 10.5px;
                     font-weight: 700;
                     letter-spacing: 0.06em;
                     text-transform: uppercase;
-                    color: #a9b0ba;
+                    color: #98a1ad;
                     text-align: right;
                 }
 
@@ -3778,18 +3811,18 @@
                     min-width: 0;
                     display: flex;
                     flex-wrap: wrap;
-                    gap: 5px;
+                    gap: 6px;
                     font-family: sans-serif;
-                    font-size: 12px;
+                    font-size: 13px;
                     color: #4a5160;
-                    line-height: 1.5;
+                    line-height: 1.55;
                 }
 
                 .step-badge {
-                    border-radius: 4px;
-                    padding: 2px 8px;
+                    border-radius: 5px;
+                    padding: 3px 10px;
                     font-family: sans-serif;
-                    font-size: 10.5px;
+                    font-size: 11.5px;
                     font-weight: 600;
                     background-color: rgba(107, 115, 129, 0.1);
                     color: #6b7381;
@@ -3806,9 +3839,10 @@
                     background-color: rgba(53, 113, 163, 0.13);
                     color: #3571a3;
                     text-transform: uppercase;
-                    font-size: 8.5px;
+                    font-size: 9.5px;
+                    font-weight: 700;
                     letter-spacing: 0.07em;
-                    margin-right: 7px;
+                    margin-right: 8px;
                 }
 
                 /* ---- The phases, and the steps under them ---- */
@@ -3823,25 +3857,25 @@
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    padding: 8px 14px;
-                    background: #fcfcfd;
-                    border-bottom: 1px solid #f1f4f8;
+                    padding: 11px 16px;
+                    background: #f7f9fc;
+                    border-bottom: 1px solid #eef1f5;
                     font-family: sans-serif;
-                    font-size: 10px;
+                    font-size: 11.5px;
                     font-weight: 700;
                     letter-spacing: 0.07em;
                     text-transform: uppercase;
-                    color: #6b7381;
+                    color: #5d6775;
                 }
 
-                .step-phase__ms { color: #a9b0ba; letter-spacing: 0; }
+                .step-phase__ms { color: #8a929e; letter-spacing: 0; font-size: 12px; }
 
                 .step-phase__none {
                     display: none;
-                    padding: 11px 14px;
+                    padding: 13px 16px;
                     font-family: sans-serif;
-                    font-size: 11.5px;
-                    color: #c3c9d2;
+                    font-size: 12.5px;
+                    color: #b4bbc5;
                 }
 
                 .step-phase--bare .step-phase__none { display: block; }
@@ -3849,14 +3883,30 @@
                 .step-line {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 11px;
                     flex-wrap: wrap;
-                    padding: 8px 14px 8px 0;
-                    border-bottom: 1px solid #f6f8fb;
+                    position: relative;
+                    padding: 11px 16px 11px 0;
+                    border-bottom: 1px solid #f4f7fa;
                     /* The tree is drawn by indentation rather than by nesting
                        the markup: a flat list of rows is what lets one step be
                        filtered, measured and compared against its siblings. */
-                    padding-left: calc(14px + var(--step-depth, 0) * 19px);
+                    padding-left: calc(16px + var(--step-depth, 0) * 22px);
+                }
+
+                /* A rule down the indent, so a nested step is visibly held by
+                   the one above it instead of just starting further right. */
+                .step-line[style*="--step-depth: 1"]::before,
+                .step-line[style*="--step-depth: 2"]::before,
+                .step-line[style*="--step-depth: 3"]::before,
+                .step-line[style*="--step-depth: 4"]::before {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: calc(21px + (var(--step-depth, 1) - 1) * 22px);
+                    width: 1px;
+                    background: #e4eaf1;
                 }
 
                 .step-line:last-child { border-bottom: none; }
@@ -3867,8 +3917,8 @@
 
                 .step-line__mark {
                     flex: none;
-                    width: 7px;
-                    height: 7px;
+                    width: 8px;
+                    height: 8px;
                     border-radius: 50%;
                     background-color: #cfd6e0;
                 }
@@ -3891,7 +3941,7 @@
 
                 .step-line__title {
                     font-family: sans-serif;
-                    font-size: 12.5px;
+                    font-size: 13.5px;
                     color: #39404d;
                     word-break: break-word;
                 }
@@ -3900,8 +3950,8 @@
 
                 .step-line__params {
                     font-family: sans-serif;
-                    font-size: 10.5px;
-                    color: #a9b0ba;
+                    font-size: 11.5px;
+                    color: #98a1ad;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
@@ -3941,21 +3991,21 @@
                 .step-line--FAIL .step-line__bar i { background: #fca5a4; }
 
                 .step-line__ms {
-                    flex: 0 0 62px;
+                    flex: 0 0 68px;
                     text-align: right;
                     font-family: sans-serif;
-                    font-size: 10.5px;
-                    color: #6b7381;
+                    font-size: 12px;
+                    color: #5d6775;
                 }
 
                 .step-line__error {
                     flex: 1 1 100%;
-                    margin: 7px 0 1px 0;
-                    padding: 9px 11px;
+                    margin: 8px 0 2px 0;
+                    padding: 11px 13px;
                     border-radius: 5px;
                     background: #fff1f1;
                     border: 1px solid #f8dcdc;
-                    font-size: 11px;
+                    font-size: 12.5px;
                     line-height: 1.5;
                     color: #a1302f;
                     white-space: pre-wrap;
@@ -3963,6 +4013,44 @@
                     max-height: 190px;
                     overflow: auto;
                 }
+
+                .step-head__tail {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+
+                .step-help-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 7px;
+                    border: 1px solid #e9edf3;
+                    border-radius: 0.5rem;
+                    background: #ffffff;
+                    padding: 7px 14px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #5d6775;
+                    cursor: pointer;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.06);
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .step-help-btn i { color: #8a97a8; }
+
+                .step-help-btn:hover {
+                    border-color: #cfd7e3;
+                    box-shadow: 0 1px 5px rgba(46, 61, 73, 0.14);
+                }
+
+                .step-help-btn:focus { outline: none; }
+
+                /* Inside the popup the sheet is already on a panel of its own,
+                   so it drops the outer margin it needs on the page. */
+                #stepHelpBody .setup-guide { margin-top: 4px; }
+                #stepHelpBody .setup-foot { margin-bottom: 4px; }
 
                 /* ---- The teaching panel, only while nobody has named one ---- */
                 .step-guide { display: none; }
@@ -5335,7 +5423,12 @@
                         <div class="metrics-page__title"><i class="fa fa-list-ol"></i>Test Steps</div>
                         <div class="metrics-page__subtitle">What each test did, step by step, and where its time went</div>
                     </div>
-                    <div class="metrics-summary" id="stepSummary"></div>
+                    <div class="step-head__tail">
+                        <div class="metrics-summary" id="stepSummary"></div>
+                        <button type="button" class="step-help-btn" onclick="toggleStepHelp(true)">
+                            <i class="fa fa-info-circle" aria-hidden="true"></i>How it works
+                        </button>
+                    </div>
                 </div>
 
                 <div class="metrics-card step-shell">
@@ -5367,7 +5460,7 @@
                 <!-- Only while nobody has named a step. The tree above is real
                      either way - every test has three phases and its markers. -->
                 <div class="step-guide">
-                    <div class="attach-empty__head">
+                    <div class="attach-empty__head step-guide__intro">
                         <div class="attach-empty__icon"><i class="fa fa-list-ol"></i></div>
                         <div class="attach-empty__title">No test named a step in this run</div>
                         <div class="attach-empty__text">
@@ -5378,6 +5471,7 @@
                         </div>
                     </div>
 
+                    <div class="step-guide__sheet">
                     <div class="setup-guide">
                         <div class="setup-step">
                             <div class="setup-step__head"><span class="setup-step__num">1</span>Name a step</div>
@@ -5433,6 +5527,7 @@
 
                     <div class="setup-links">
                         <a href="https://github.com/prashanth-sams/pytest-html-reporter#test-steps" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
+                    </div>
                     </div>
                 </div>
 
@@ -5849,6 +5944,25 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     </span>
                 </div>
                 <div class="log-overlay__body" id="logOverlayBody"></div>
+            </div>
+        </div>
+
+        <!-- The cheatsheet is written once, in the tab. This shows the same
+             markup, so the guide someone reads on an empty run and the one
+             they open from the button can never drift apart. -->
+        <div class="log-overlay" id="stepHelp" hidden>
+            <div class="log-overlay__backdrop" onclick="toggleStepHelp(false)"></div>
+            <div class="log-overlay__panel" role="dialog" aria-modal="true" aria-label="How test steps work">
+                <div class="log-overlay__head">
+                    <span class="log-overlay__title">
+                        <i class="fa fa-list-ol" aria-hidden="true"></i>
+                        <span>How test steps work</span>
+                    </span>
+                    <span class="log-overlay__actions">
+                        <button type="button" class="log-overlay__close" aria-label="Close" onclick="toggleStepHelp(false)">&times;</button>
+                    </span>
+                </div>
+                <div class="log-overlay__body" id="stepHelpBody"></div>
             </div>
         </div>
 
@@ -7903,9 +8017,30 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
                 document.getElementById('stepView').hidden = shown === 0;
 
-                if (shown && !stillVisible) { showStep(stepVisibleItems()[0].getAttribute('data-sid')); }
+                if (shown && !stillVisible) { showStep(stepPickDefault()); }
 
                 renderStepSummary();
+            }
+
+            // What to open when nothing is chosen yet. The first row in
+            // collection order is almost always a test that named no steps, so
+            // the tab introduced itself with three empty phases; a failure with
+            // a tree is the row somebody came here to read.
+            function stepPickDefault() {
+                var visible = stepVisibleItems();
+                var withSteps = visible.filter(function(item) {
+                    var payload = document.getElementById('step-' + item.getAttribute('data-sid'));
+                    return payload && payload.querySelector('.step-line');
+                });
+
+                var failed = withSteps.filter(function(item) {
+                    var status = item.getAttribute('data-status');
+                    return status === 'FAIL' || status === 'ERROR';
+                });
+
+                var pick = failed[0] || withSteps[0] || visible[0];
+
+                return pick.getAttribute('data-sid');
             }
 
             function showStep(sid) {
@@ -7981,6 +8116,29 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 renderStepFilters();
                 filterSteps();
             }
+
+            function toggleStepHelp(open) {
+                var overlay = document.getElementById('stepHelp');
+                if (!overlay) { return; }
+
+                if (open) {
+                    var sheet = document.querySelector('.step-guide__sheet');
+                    var body = document.getElementById('stepHelpBody');
+                    // Filled on open rather than duplicated into the markup, so
+                    // there is one cheatsheet and it cannot drift out of step
+                    // with the one the empty state shows.
+                    if (sheet && !body.childNodes.length) { body.innerHTML = sheet.innerHTML; }
+                }
+
+                overlay.hidden = !open;
+                document.body.style.overflow = open ? 'hidden' : '';
+
+                if (open) { overlay.querySelector('.log-overlay__close').focus(); }
+            }
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') { toggleStepHelp(false); }
+            });
 
             $(document).ready(function() { setTimeout(refreshSteps, 140); });
 

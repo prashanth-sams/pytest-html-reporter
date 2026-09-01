@@ -26,6 +26,13 @@
 - Step trees are parked outside the metrics table, like the logs and the attachments before them, so they are never swept into its search index or into the CSV, Excel and print exports
 - A retry reports the steps of the attempt that stuck: showing the failing attempt's tree beside a test the report calls green would describe a run that did not happen
 - Records still hold nothing but built-in types, so every step survives the trip back from an xdist worker to the controller that writes the report
+- A How it works button opens the same cheatsheet the tab shows on a run where nobody named a step. The markup is written once and the popup is filled from it, so the two cannot drift apart
+- The Test Steps card sizes to its content up to a cap rather than being pinned to the viewport - the rail still scrolls a suite of six hundred tests, but a short step tree no longer sits in three hundred pixels of white
+- The tab opens on a failure that has steps rather than on the first test in collection order, which is almost always one that named none - it was introducing itself with three empty phases
+- A suite is named by its file in the rail. Truncating the path put an ellipsis at the front while the rail's own overflow put another at the back, so a long one was clipped at both ends and named nothing; the full path is on the row's title and across the top of the pane
+- The tab's search box is the one the other tables use, rather than a plain input that happened to sit in the same place
+- Larger type throughout, and the suite is drawn as a band with its file icon and count while its tests hang off a rule beneath it - at the old sizes the two rows read alike and the tree was hard to scan
+- tests/functional/test_gherkin.py is a runnable cucumber demo - a feature file, a Scenario Outline and a failing scenario - beside the plain-pytest one in tests/functional/test_steps.py
 
 0.3.7 (31/08/2026)
 -------------------

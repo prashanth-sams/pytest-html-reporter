@@ -75,10 +75,15 @@ def _test_ms(record):
 
 
 def _short(path):
-    """The end of a suite path, which is the half that names it."""
-    path = str(path)
+    """The file name of a suite, which is the half that names it.
 
-    return path if len(path) <= SUITE_TAIL_MAX else '…' + path[-(SUITE_TAIL_MAX - 1):]
+    The directories repeat down the whole rail and were crowding out the part
+    that differs - and truncating the path instead put an ellipsis at the front
+    while the rail's own overflow put another at the back, so a long one was
+    clipped at both ends and said nothing. The full path is on the row's title
+    and across the top of the pane beside it.
+    """
+    return str(path).replace('\\', '/').split('/')[-1] or str(path)
 
 
 def _pluralise(count, noun):
@@ -263,7 +268,14 @@ def _search_text(record):
     terms += [marker.get('text') for marker in (meta.get('markers') or [])]
     terms += [bdd.get('feature'), bdd.get('scenario')]
 
-    return ' '.join(str(term) for term in terms if term).lower()
+    text = ' '.join(str(term) for term in terms if term).lower()
+
+    # A test is named test_a_declined_card, and what somebody types is "declined
+    # card". Both spellings are indexed rather than asking people to guess which
+    # one the box wants.
+    spaced = text.replace('_', ' ')
+
+    return text if spaced == text else text + ' ' + spaced
 
 
 def generate_steps_view(suites):
