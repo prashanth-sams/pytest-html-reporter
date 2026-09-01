@@ -95,6 +95,9 @@ class ConfigVars:
     _coverage_trend_values = '[]'
     _coverage_trend_state = 'no-trend'
     tcoverage = []
+    _failure_delta = ''
+    _failure_delta_class = ''
+    _failure_delta_title = ''
     _report_links = ''
     _title = 'PYTEST REPORT'
     _title_full = 'PYTEST REPORT'

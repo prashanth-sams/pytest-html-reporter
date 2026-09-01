@@ -103,11 +103,27 @@ The CSS is one large block with hardcoded colors. Converting to CSS custom prope
 
 *Effort:* a couple of hours, mostly find-and-replace.
 
-### 11. Delta vs previous run
+### 11. Delta vs previous run — SHIPPED
 "+3 failures since last build" on the Dashboard, computed from the most recent archive JSON
 that is already loaded.
 
+*Why:* direction of travel matters more than the absolute count.
 *Effort:* ~20 lines.
+*Shipped as:* `run_delta` / `format_run_delta` / `run_delta_class` / `run_delta_title` and
+`generate_run_delta` in `util.py`, rendered as a `.run-delta` line under the total count on the
+summary card.
+
+Read off `ConfigVars.tfail` rather than re-reading the archive folder: `update_trends` has already
+built the per-build list - this run first, then the archived builds newest first - and taking the
+headline from the same list the Trends chart is drawn from means the number under the total count
+and the red line beside it cannot disagree. That also settles what a "failure" is here: failures
+and errors together, which is what the chart's Failed series plots.
+
+Two decisions worth keeping: a **first build shows nothing at all** rather than "no change", which
+would claim a previous build that does not exist - the placeholder fills in empty and `:empty`
+collapses the line. And the colours **run the opposite way to the coverage chip's**: there, up is
+the good direction; here, more failures than last time is the bad one, so the classes are named
+`is-worse` / `is-better` rather than reusing `is-up` / `is-down` and quietly inverting them.
 
 ### 12. Build / commit metadata option
 A `--build-info` option accepting arbitrary `key=value` pairs (CI job URL, git SHA, branch)

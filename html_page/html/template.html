@@ -380,6 +380,31 @@
                   color: darkgray;
                 }
 
+                /* Direction of travel since the last build. Note the colours
+                   run the opposite way to the coverage chip's: there, up is
+                   the good direction; here, more failures than last time is
+                   the bad one. */
+                .run-delta {
+                  margin-top: 0.5rem;
+                  font-size: 0.9rem;
+                  font-family: sans-serif;
+                  font-weight: 600;
+                  max-width: 100%;
+                  text-align: center;
+                  color: slategrey;
+                }
+
+                /* A first build has no previous build to compare against, and
+                   the placeholder is filled in empty. Collapse it rather than
+                   leaving a gap under the label. */
+                .run-delta:empty {
+                  display: none;
+                }
+
+                .run-delta.is-worse { color: #d64b4a; }
+                .run-delta.is-better { color: #6aa63b; }
+                .run-delta.is-level { color: slategrey; }
+
                 /* The badge keeps its size; the title gives way first, so the
                    two always share one line however narrow the column gets.
                    A cut tail fades out rather than ending in an ellipsis --
@@ -1217,6 +1242,10 @@
                         font-size: 1.15rem;
                         margin-top: 0.15rem;
                     }
+                    .dashboard-viewport .dashboard-card .run-delta {
+                        font-size: 0.85rem;
+                        margin-top: 0.4rem;
+                    }
 
                     /* Keep the doughnut circular and sensibly sized (never oversized) */
                     .dashboard-viewport .dashboard-card .outer_my_chart {
@@ -1434,6 +1463,10 @@
                     .total_count__label {
                         font-size: 1rem;
                         padding: 0 !important;
+                    }
+                    .run-delta {
+                        font-size: 0.8rem;
+                        margin-top: 0.35rem;
                     }
 
                     /* Chart.js sizes the doughnut from this box, so keep it
@@ -3841,6 +3874,7 @@
                               <div class="total-count-block">
                                 <span class="total__count">%(total)%</span>
                                 <span class="total_count__label">TEST CASES</span>
+                                <span class="run-delta %(failure_delta_class)%" title="%(failure_delta_title)%">%(failure_delta)%</span>
                               </div>
                           </div>
                           <div class="summary-chart">

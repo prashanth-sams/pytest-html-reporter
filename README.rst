@@ -727,6 +727,21 @@ Work down this list; the first one that applies is the answer:
 Whichever source the numbers do come from, the tab states it - ``Measured by pytest-cov during this run``, or
 ``Read from coverage.xml, written 2026-08-31 20:23`` - so you can always tell which of these you are in.
 
+delta vs the previous build
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once there is a build to compare against, the ``Dashboard``'s summary card says which way the suite is moving -
+``+3 failures since last build`` under the total count, red when there are more failures than last time and green when
+there are fewer. Nothing to configure; it appears as soon as a second build has been archived.
+
+The absolute count tells you how bad this build is. The delta tells you whether it is getting better, which is the one
+you act on. Hovering it gives the two counts behind it - ``12 failures this build, 9 in the build before it`` - because
+``+3`` reads very differently against 3 than against 300.
+
+*Failures* here means failures **and errors**, which is exactly what the ``Trends`` chart beside it plots as ``Failed``;
+both are read off the same per-build list, so the two can never disagree. A first build shows no delta at all rather
+than ``no change``, which would be claiming a previous build that does not exist.
+
 custom side-nav links
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -743,6 +758,7 @@ round, and a nav entry has no business being able to run something in whoever op
 
 .. image:: images/side_nav.png
    :alt: Side Nav
+   :width: 300px
 
 parallel runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

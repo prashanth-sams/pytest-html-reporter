@@ -43,6 +43,7 @@ from pytest_html_reporter.util import (
     archive_cutoff,
     expired_archives,
     generate_report_links,
+    generate_run_delta,
 )
 from pytest_html_reporter.coverage_report import (
     collect_coverage,
@@ -308,6 +309,10 @@ class HTMLReporter(object):
 
             # generate trends
             self.update_trends(base)
+
+            # "+3 failures since last build", off the list update_trends
+            # just built - this run first, then the archived builds
+            generate_run_delta()
 
             # generate archive template
             self.remove_old_archives()
@@ -946,6 +951,9 @@ class HTMLReporter(object):
             coverage_trend_labels=str(ConfigVars._coverage_trend_labels),
             coverage_trend_values=str(ConfigVars._coverage_trend_values),
             coverage_chip=str(ConfigVars._coverage_chip),
+            failure_delta=str(ConfigVars._failure_delta),
+            failure_delta_class=str(ConfigVars._failure_delta_class),
+            failure_delta_title=str(ConfigVars._failure_delta_title),
             report_links=str(ConfigVars._report_links)
         )
 

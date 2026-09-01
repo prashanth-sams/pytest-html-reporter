@@ -1,3 +1,10 @@
+0.3.7 (31/08/2026)
+-------------------
+- The Dashboard's summary card now says which way the suite is moving: "+3 failures since last build" under the total count, red when there are more failures than last time and green when there are fewer
+- The delta is read off the same per-build list the Trends chart is drawn from, so the number under the total count and the red line beside it cannot disagree; failures there means failures and errors together, exactly as the chart's Failed series plots them
+- A first build shows no delta at all rather than "no change", which would claim a previous build that does not exist
+- The line's tooltip gives the two counts behind it - "12 failures this build, 9 in the build before it" - because "+3" reads very differently against 3 than against 300
+
 0.3.6 (31/08/2026)
 -------------------
 - Added --archive-days / the archive_days ini key, keeping only the builds from the last N days and deleting the rest; a run on a schedule wants a stretch of time, not a build count, and 30 days stays 30 days when the schedule changes (#223)
