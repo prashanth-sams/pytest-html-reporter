@@ -36,8 +36,10 @@
 - The summary counts the suites alongside the tests, steps, scenarios and failures, and counts the ones the rail is showing rather than the ones the run had, so it cannot disagree with the list under it
 - The rail opens with every suite shut, so a six-hundred-test run shows the shape of the suite rather than nine screens of test names, with Expand all / Collapse all beside the filters. The suite holding the open test is never left shut, and a search opens whatever holds a match
 - The card now runs down to the footer. The fifty pixels between them were the page's own bottom padding and the footer's top margin rather than anything the tab had put there; the tab takes that space back and gives it to the rail, and the page no longer scrolls to show a footer that was already on screen
+- API Logs gets the same two fixes: its card runs down to the footer instead of stopping fifty pixels short of it, and its type is the size the Test Steps tab uses - the rail entries, the test under each one, the status and size, the heading, the meta strip and the payload were all a point or two smaller than the same things one tab over
+- Both cards are now capped rather than pinned, so a single attachment or a short step tree gets a card its own size instead of one the height of the window
 
-0.3.7 (31/08/2026)
+0.3.7 (01/09/2026)
 -------------------
 - New Analytics tab, separate from the Dashboard and answering a different question: the Dashboard is one run seen from every angle, Analytics is every archived build seen from the test's angle
 - Nothing extra is collected for it. Every archived build already holds a status per test, so a test's whole history has been sat on disk all along - it had simply never been read across files before
