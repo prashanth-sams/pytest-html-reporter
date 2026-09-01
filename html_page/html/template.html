@@ -1,29 +1,12 @@
  <!DOCTYPE doctype html>
     <html lang="en">
         <head>
-            <link href="https://i.imgur.com/UwGDzXn.png" rel="shortcut icon" type="image/x-icon" />
+            <link href="%(favicon)%" rel="shortcut icon" type="image/png" />
             <title>Pytest HTML Reporter</title>
             <meta charset="utf-8" />
             <meta content="width=device-width, initial-scale=1" name="viewport" />
-            <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet" crossorigin="anonymous"/>
-            <link href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css" rel="stylesheet" crossorigin="anonymous" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" crossorigin="anonymous"/>
-            <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" crossorigin="anonymous"/>
-            <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
-
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
-            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
-            <!-- Bootstrap core Datatable-->
-            <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js" type="text/javascript" crossorigin="anonymous"></script>
-            <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js" type="text/javascript"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js" type="text/javascript"></script>
-            <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js" type="text/javascript"></script>
-            <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.print.min.js" type="text/javascript"></script>
-            <script src="https://cdn.datatables.net/buttons/1.6.1/js/buttons.colVis.min.js" type="text/javascript"></script>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0" type="text/javascript"></script>
+            %(vendor_assets)%
+            %(icon_styles)%
             <style>
                 body {
                     font-family: -apple-system, sans-serif;
@@ -295,7 +278,7 @@
                     width: 100%;
                     height: 100%;
                     z-index: 9999;
-                    background: url('https://i.imgur.com/n3Tcoxz.gif') 50% 50% no-repeat rgb(249, 249, 249);
+                    background: url('%(loader_image)%') 50% 50% no-repeat rgb(249, 249, 249);
                 }
 
                 .card-wrapper {
@@ -682,6 +665,98 @@
                  .desc-video-none {
                      display: none;
                 }
+
+                /* A lightbox of the report's own. The screenshots used to open
+                   in fancybox, which is licensed GPL and so cannot travel
+                   inside an MIT-licensed package - and had to be fetched from a
+                   CDN, which a report read offline never reaches. */
+                .shot-box {
+                    display: none;
+                    position: fixed;
+                    inset: 0;
+                    z-index: 2100;
+                    background: rgba(24, 27, 32, 0.92);
+                }
+
+                .shot-box.is-open {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .shot-box__stage {
+                    flex: 1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 0;
+                    padding: 56px 64px 8px 64px;
+                }
+
+                .shot-box__image {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: contain;
+                    border-radius: 3px;
+                    background-color: #ffffff;
+                }
+
+                .shot-box__caption {
+                    flex: none;
+                    padding: 14px 64px 22px 64px;
+                    color: #d7dbe2;
+                    font-family: sans-serif;
+                    font-size: 0.82rem;
+                    letter-spacing: 0.02em;
+                    text-align: center;
+                    word-break: break-word;
+                }
+
+                .shot-box__count {
+                    color: #8b93a0;
+                    margin-left: 10px;
+                }
+
+                .shot-box__btn {
+                    position: absolute;
+                    border: none;
+                    background: rgba(255, 255, 255, 0.08);
+                    color: #e8ebf0;
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    font-size: 20px;
+                    line-height: 1;
+                    transition: background-color 0.15s ease;
+                }
+
+                .shot-box__btn:hover {
+                    background: rgba(255, 255, 255, 0.18);
+                }
+
+                .shot-box__close {
+                    top: 16px;
+                    right: 20px;
+                }
+
+                .shot-box__prev {
+                    left: 14px;
+                    top: 50%;
+                    margin-top: -21px;
+                }
+
+                .shot-box__next {
+                    right: 14px;
+                    top: 50%;
+                    margin-top: -21px;
+                }
+
+                /* One screenshot is not a gallery. */
+                .shot-box.is-single .shot-box__prev,
+                .shot-box.is-single .shot-box__next,
+                .shot-box.is-single .shot-box__count {
+                    display: none;
+                }
                  .video {
                      display: block;
                      position: relative;
@@ -804,23 +879,80 @@
                     line-height: 1.55;
                 }
 
-                .modal p {
-                    word-wrap: break-word;
-                }
-
-                .modal-footer {
-                    border-top: 0px solid #e9ecef;
-                }
-                .btn-primary {
-                    background-color: #3571a3;
-                    border-color: #3571a3;
-                }
-
                 .dashboard__headers {
                     font-size: 1.9rem;
                     color: darkgrey;
                     margin-bottom: -4%;
                 }
+
+                /* Second tile in the Highlights card, under the most-failed
+                   suite: which way the failure count moved since the last
+                   build. Built to the same rhythm as the block above it - a
+                   figure, then a small caption pinned right - so the card
+                   reads as two entries of one kind rather than a stat and a
+                   sentence.
+
+                   `clear: both` gets it below that block's floated caption,
+                   and the border is what separates the two without spending
+                   the vertical room a heading would. */
+                .delta-highlight {
+                    clear: both;
+                    padding-top: 1.4rem;
+                    margin-top: 0.6rem;
+                    border-top: 1px solid #ececec;
+                    display: flow-root;
+                }
+
+                /* A first build has nothing to compare against. Hide the whole
+                   tile, caption included - a lone "SINCE LAST BUILD" over an
+                   empty space reads as a bug. */
+                .delta-highlight.is-empty {
+                    display: none;
+                }
+
+                .delta-highlight__value {
+                    margin: 0;
+                    float: left;
+                    padding-left: 3%;
+                    font-family: sans-serif;
+                    line-height: 1.1;
+                }
+
+                /* The arrow says the direction at a glance and the colour says
+                   whether that direction is good news. Note both run the
+                   opposite way to the coverage chip's: there, up is the good
+                   direction; here, more failures than last time is the bad one
+                   - hence is-worse / is-better rather than reusing is-up /
+                   is-down with the meanings quietly swapped. A plain character
+                   rather than an icon font: it inherits the colour and the
+                   size for free, and cannot come out as a missing glyph if the
+                   report is opened where the font never loaded. */
+                .delta-highlight__figure {
+                    font-size: 2.1rem;
+                    font-weight: 600;
+                    letter-spacing: -0.01em;
+                }
+
+                .delta-highlight__figure::before {
+                    font-size: 0.62em;
+                    padding-right: 0.28em;
+                    vertical-align: 0.12em;
+                }
+
+                .delta-highlight.is-worse .delta-highlight__figure { color: #d64b4a; }
+                .delta-highlight.is-worse .delta-highlight__figure::before { content: "\25b2"; }
+
+                .delta-highlight.is-better .delta-highlight__figure { color: #6aa63b; }
+                .delta-highlight.is-better .delta-highlight__figure::before { content: "\25bc"; }
+
+                .delta-highlight.is-level .delta-highlight__figure { color: slategrey; }
+
+                .delta-highlight__unit {
+                    padding-left: 0.4rem;
+                    font-size: 0.95rem;
+                    color: dimgrey;
+                }
+
                 .outer_my_chart {
                     margin-left: 50%;
                     margin-top: -40%;
@@ -1520,7 +1652,7 @@
                         font-size: 1.4rem !important;
                     }
 
-                    /* Suite Highlights */
+                    /* Highlights */
                     .suite-highlight-inner {
                         padding-bottom: 14px;
                     }
@@ -1978,6 +2110,86 @@
                     display: inline;
                 }
 
+                /* ---- Full error: an ellipsis, an expand and a copy ---- */
+                .metrics-card td .msg-actions {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-left: 4px;
+                    vertical-align: middle;
+                }
+
+                /* The ellipsis is the only part of this that is text, so it is
+                   also the only part a CSV or a print-out carries - which is
+                   right, because those hold the cut message and nothing says
+                   so otherwise. */
+                .msg-actions .msg-more {
+                    color: #a9b0ba;
+                    margin-right: 2px;
+                }
+
+                .msg-actions .msg-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 22px;
+                    height: 22px;
+                    padding: 0;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 6px;
+                    background: #f7fafd;
+                    color: #9aa2ae;
+                    font-size: 11px;
+                    line-height: 1;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .msg-actions .msg-btn:hover,
+                .msg-actions .msg-btn:focus {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                    outline: none;
+                }
+
+                /* A message that fits is already all there: there is nothing
+                   to expand to, and an ellipsis would claim a tail that does
+                   not exist. The copy button stays either way. */
+                .msg-actions[data-full=""] .msg-open,
+                .msg-actions[data-full=""] .msg-more {
+                    display: none;
+                }
+
+                /* The tick takes the icon's place rather than a space of its
+                   own: the message cell is the narrowest thing on the page to
+                   be pushing a second glyph into. */
+                .msg-actions .msg-btn--done .fa {
+                    --fa-icon: var(--fa-check);
+                    --fa-icon-w: var(--fa-check-w);
+                    --fa-icon-h: var(--fa-check-h);
+                    --fa-icon-y: var(--fa-check-y);
+                }
+
+                .msg-actions .msg-btn--done,
+                .msg-actions .msg-btn--done:hover,
+                .msg-actions .msg-btn--done:focus {
+                    background: #edf9f0;
+                    border-color: #b7e4c7;
+                    color: #2f9e5f;
+                }
+
+                .msg-actions .msg-btn--failed,
+                .msg-actions .msg-btn--failed:hover,
+                .msg-actions .msg-btn--failed:focus {
+                    background: #fdeeee;
+                    border-color: #f2c2c2;
+                    color: #d0454c;
+                }
+
+                /* The overlay below is the page's one panel of its kind: it
+                   shows a test's captured output, and it shows one failure's
+                   full error. The class name is older than the second use. */
                 .log-overlay {
                     position: fixed;
                     inset: 0;
@@ -2565,11 +2777,23 @@
                     color: #39404d;
                 }
 
+                /* Floated rather than inline: an atomic inline would be a break
+                   opportunity, and a long suite path would then start on the line
+                   below its own icon. */
                 .metrics-card td.suite-cell::before {
-                    content: "\f15b";
-                    font-family: FontAwesome;
+                    content: "";
+                    float: left;
                     font-size: 12px;
-                    color: #c3c9d2;
+                    width: var(--fa-file-w);
+                    height: var(--fa-file-h);
+                    margin-top: 2px;
+                    background-color: #c3c9d2;
+                    -webkit-mask-image: var(--fa-file);
+                    mask-image: var(--fa-file);
+                    -webkit-mask-repeat: no-repeat;
+                    mask-repeat: no-repeat;
+                    -webkit-mask-size: 100% 100%;
+                    mask-size: 100% 100%;
                     margin-right: 9px;
                 }
 
@@ -3755,6 +3979,297 @@
                 .cov-trigger--fair   { color: #b58900; border-color: #f3e4b2; }
                 .cov-trigger--low    { color: #d64b4a; border-color: #f6cccb; }
 
+
+                /* ==================== Analytics ==================== */
+                /* The Dashboard is one build seen from every angle. This is
+                   every build seen from one angle - the test's - so nothing
+                   here is a second copy of a dashboard widget. */
+
+                .an-page {
+                    padding-bottom: 2rem;
+                }
+
+                .an-shell {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                }
+
+                .stat-tiles {
+                    display: grid;
+                    grid-template-columns: repeat(6, minmax(0, 1fr));
+                    gap: 12px;
+                }
+
+                .stat-tile {
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    padding: 16px 18px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    border-top: 3px solid #e9edf3;
+                }
+
+                /* Only the score is graded. Colouring six tiles at once would
+                   leave nothing for the one number that is meant to be read
+                   first. */
+                .stat-tile--strong { border-top-color: #98cc64; }
+                .stat-tile--fair   { border-top-color: #ffd050; }
+                .stat-tile--low    { border-top-color: #fc6766; }
+
+                .stat-tile__value {
+                    font-family: sans-serif;
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                    line-height: 1.1;
+                }
+
+                .stat-tile--strong .stat-tile__value { color: #6aa63b; }
+                .stat-tile--fair   .stat-tile__value { color: #b58900; }
+                .stat-tile--low    .stat-tile__value { color: #d64b4a; }
+
+                .stat-tile__label {
+                    margin-top: 4px;
+                    text-transform: uppercase;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
+                    color: slategrey;
+                }
+
+                .stat-tile__note {
+                    margin-top: 6px;
+                    font-size: 0.78rem;
+                    font-family: sans-serif;
+                    color: #9aa2b1;
+                    line-height: 1.35;
+                    min-height: 2.1em;
+                }
+
+                .an-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 14px;
+                }
+
+                .an-chart__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 14px 18px 0 18px;
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    font-size: 0.95rem;
+                    color: #6b7280;
+                }
+
+                .an-chart__head i {
+                    color: #a9a9a9;
+                }
+
+                .an-chart__note {
+                    margin-left: auto;
+                    font-weight: 400;
+                    font-size: 0.76rem;
+                    color: #a8b0bd;
+                }
+
+                .an-chart__wrap {
+                    position: relative;
+                    height: 230px;
+                    padding: 10px 16px 16px 16px;
+                }
+
+                .an-chart__wrap--slow {
+                    height: 300px;
+                }
+
+                /* ---- Movement cards: what changed since the build before ---- */
+                .move-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
+                    gap: 14px;
+                }
+
+                .move-card {
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    padding: 14px 16px 12px 16px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                }
+
+                .move-card__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 8px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                .move-card__title {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-family: sans-serif;
+                    font-size: 0.88rem;
+                    font-weight: 550;
+                    color: #6b7280;
+                }
+
+                .move-card__count {
+                    font-family: sans-serif;
+                    font-size: 1.15rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                }
+
+                .move-card--bad     .move-card__title i, .move-card--bad     .move-card__count { color: #d64b4a; }
+                .move-card--good    .move-card__title i, .move-card--good    .move-card__count { color: #6aa63b; }
+                .move-card--neutral .move-card__title i, .move-card--neutral .move-card__count { color: #5a8fc4; }
+                .move-card--muted   .move-card__title i, .move-card--muted   .move-card__count { color: #a8b0bd; }
+
+                .move-card__list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 10px 0 0 0;
+                }
+
+                .move__item {
+                    padding: 3px 0;
+                    font-family: sans-serif;
+                    line-height: 1.25;
+                }
+
+                .move__test {
+                    display: block;
+                    font-size: 0.82rem;
+                    color: #4a5160;
+                    word-break: break-word;
+                }
+
+                .move__suite {
+                    display: block;
+                    font-size: 0.71rem;
+                    color: #a8b0bd;
+                    word-break: break-word;
+                }
+
+                .move__more,
+                .move__empty {
+                    padding-top: 6px;
+                    font-family: sans-serif;
+                    font-size: 0.78rem;
+                    color: #a8b0bd;
+                }
+
+                /* ---- The per-test table ---- */
+                .metrics-card td.an-name {
+                    text-align: left;
+                    max-width: 340px;
+                }
+
+                .an-name__test {
+                    display: block;
+                    color: #4a5160;
+                    word-break: break-word;
+                }
+
+                .an-name__suite {
+                    display: block;
+                    font-size: 0.72rem;
+                    color: #a8b0bd;
+                    word-break: break-word;
+                }
+
+                .verdict {
+                    display: inline-block;
+                    padding: 2px 9px;
+                    border-radius: 999px;
+                    font-size: 0.72rem;
+                    letter-spacing: 0.02em;
+                    white-space: nowrap;
+                }
+
+                .verdict--broken { color: #b13635; background-color: #fbe3e3; }
+                .verdict--flaky  { color: #b58900; background-color: #fdf3d6; }
+                .verdict--stable { color: #6aa63b; background-color: #eaf4de; }
+                .verdict--muted  { color: #77808f; background-color: #eef1f5; }
+
+                /* One cell per build, oldest left. Deliberately not a chart:
+                   there is one of these on every row, and a few hundred canvas
+                   instances would cost seconds of load time to say what a row
+                   of blocks says instantly. */
+                .spark {
+                    display: inline-flex;
+                    gap: 2px;
+                    align-items: center;
+                }
+
+                /* Scoped to the strip so a block can be written as
+                   <i class="pass"></i>. On a thousand-test suite these are the
+                   biggest single thing in the page, and the class name was
+                   most of each one. */
+                .spark i {
+                    display: inline-block;
+                    width: 6px;
+                    height: 16px;
+                    border-radius: 1px;
+                }
+
+                .spark i.pass { background-color: #98cc64; }
+                .spark i.fail { background-color: #fc6766; }
+                .spark i.skip { background-color: #dfe3ea; }
+
+                .streak {
+                    font-size: 0.8rem;
+                    white-space: nowrap;
+                }
+
+                .streak--fail { color: #d64b4a; }
+                .streak--pass { color: #6aa63b; }
+                .streak--skip { color: #a8b0bd; }
+
+                /* ---- First build on record ---- */
+                .an-solo-note {
+                    display: none;
+                    align-items: flex-start;
+                    gap: 10px;
+                    padding: 14px 18px;
+                    border-radius: 6px;
+                    background-color: #f4f7fb;
+                    border: 1px solid #e3eaf3;
+                    font-family: sans-serif;
+                    font-size: 0.84rem;
+                    line-height: 1.5;
+                    color: #6b7280;
+                }
+
+                .an-solo-note i {
+                    color: #5a8fc4;
+                    margin-top: 2px;
+                }
+
+                /* Nothing longitudinal has anything to draw on a first run, so
+                   those panels are taken out rather than shown empty. */
+                .an-page.is-solo .an-solo-note { display: flex; }
+                .an-page.is-solo .an-trend,
+                .an-page.is-solo .move-grid { display: none; }
+
+                /* With both trend cards gone, a two-column grid leaves the
+                   duration card sat beside a hole. */
+                .an-page.is-solo .an-grid { grid-template-columns: minmax(0, 1fr); }
+
+                @media screen and (max-width: 1400px) {
+                    .stat-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                    .move-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                }
+
+                @media screen and (max-width: 1000px) {
+                    .stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                    .an-grid,
+                    .move-grid { grid-template-columns: minmax(0, 1fr); }
+                }
+
                 @media screen and (max-width: 900px) {
                     .cov-hero {
                         justify-content: center;
@@ -3778,12 +4293,23 @@
         </head>
     <body data-tab="dashboard">
         <div class="loader"></div>
+
+        <div class="shot-box" id="shotBox" role="dialog" aria-modal="true" aria-label="Screenshot">
+            <div class="shot-box__stage"><img class="shot-box__image" id="shotBoxImage" src="" alt="" /></div>
+            <div class="shot-box__caption"><span id="shotBoxCaption"></span><span class="shot-box__count" id="shotBoxCount"></span></div>
+            <button type="button" class="shot-box__btn shot-box__close" id="shotBoxClose" aria-label="Close">&times;</button>
+            <button type="button" class="shot-box__btn shot-box__prev" id="shotBoxPrev" aria-label="Previous screenshot">&#8249;</button>
+            <button type="button" class="shot-box__btn shot-box__next" id="shotBoxNext" aria-label="Next screenshot">&#8250;</button>
+        </div>
         <div class="sidenav">
             <a class="logo-link" onclick="openPage('dashboard', this, '', '', '')" href="#dashboard">
                 <img id="wrimagecard" class="wrimagecard" src="%(custom_logo)%" style="max-width:90%;" onerror="this.style.display='none'" />
             </a>
             <a class="tablink" href="#dashboard" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
+            </a>
+            <a class="tablink" href="#analytics" onclick="openPage('analytics', this, 'white', '#565656', 'groove'); executeDataTable('#an',1,'asc'); drawAnalytics();">
+                <i class="fa fa-line-chart" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Analytics
             </a>
             <a class="tablink" href="#suites" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
                 <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Suites
@@ -3921,7 +4447,7 @@
                         <div class="dashboard__headers">
                             <div style="font-weight: 550;font-family: sans-serif;padding-top: 5%;padding-left: 2%;">
                                 <i class="fa fa-bolt" style="color:currentcolor; margin-right: 2%; padding-left: 3%;"></i>
-                                Suite Highlights
+                                Highlights
                             </div>
                             <div>
                                 <div class="loading">
@@ -3935,6 +4461,18 @@
                                     <div class="progress-bar downloading"></div>
                                     <span class="suite-highlights-header">MOST FAILED SUITE</span>
                                 </div>
+                            </div>
+                            <!-- role=img + aria-label: on screen this is four
+                                 fragments - arrow, figure, unit, caption - and
+                                 read out one at a time they say very little.
+                                 The role collapses them to the one sentence. -->
+                            <div class="delta-highlight %(failure_delta_class)%" role="img"
+                                 aria-label="%(failure_delta)%" title="%(failure_delta_title)%">
+                                <p class="delta-highlight__value">
+                                    <span class="delta-highlight__figure">%(failure_delta_figure)%</span>
+                                    <span class="delta-highlight__unit">%(failure_delta_unit)%</span>
+                                </p>
+                                <span class="suite-highlights-header">SINCE LAST BUILD</span>
                             </div>
                         </div>
                     </div>
@@ -3982,9 +4520,15 @@
                         toggleLogs(false);
                     });
 
-                    // A test's captured stdout, stderr and logging output is
-                    // rendered once into a hidden block per test; opening it
-                    // just moves that block into the one overlay.
+                    // One panel serves two things: a test's captured output,
+                    // which is rendered once into a hidden block per test, and
+                    // one failure's full error, which the row carries on
+                    // itself. Whichever is open, this is what its Copy button
+                    // puts on the clipboard - the two are assembled
+                    // differently, so it is settled when the panel is filled
+                    // rather than read back off the screen afterwards.
+                    var overlayText = '';
+
                     function toggleLogs(open) {
                         var overlay = document.getElementById('logOverlay');
                         if (!overlay) return;
@@ -3993,16 +4537,54 @@
                         if (open) overlay.querySelector('.log-overlay__close').focus();
                     }
 
+                    function fillOverlay(icon, label, name, suite) {
+                        document.getElementById('logOverlayIcon').className = 'fa ' + icon;
+                        document.getElementById('logOverlayName').textContent = name;
+                        document.getElementById('logOverlaySuite').textContent = suite || '';
+                        document.getElementById('logOverlayPanel').setAttribute('aria-label', label);
+                        document.getElementById('logOverlayBody').scrollTop = 0;
+                        setCopyLabel('Copy');
+                    }
+
                     function showLogs(id) {
                         var source = document.getElementById('log-' + id);
                         if (!source) return;
 
-                        document.getElementById('logOverlayName').textContent = source.getAttribute('data-test') || 'Captured output';
-                        document.getElementById('logOverlaySuite').textContent = source.getAttribute('data-suite') || '';
-                        document.getElementById('logOverlayBody').innerHTML = source.innerHTML;
-                        document.getElementById('logOverlayBody').scrollTop = 0;
-                        setCopyLabel('Copy');
+                        var body = document.getElementById('logOverlayBody');
+                        body.innerHTML = source.innerHTML;
 
+                        overlayText = '';
+                        body.querySelectorAll('.log-section').forEach(function(section) {
+                            overlayText += section.querySelector('.log-section__head').textContent + '\n'
+                                         + section.querySelector('.log-section__body').textContent + '\n\n';
+                        });
+
+                        fillOverlay('fa-align-left', 'Captured output',
+                                    source.getAttribute('data-test') || 'Captured output',
+                                    source.getAttribute('data-suite'));
+                        toggleLogs(true);
+                    }
+
+                    // The error is written in as text, not as markup: it is
+                    // escaped for the attribute it travels in, and handing that
+                    // to innerHTML would show the entities rather than the
+                    // characters. A <pre> is what keeps a traceback's own line
+                    // breaks and indentation, which the old modal's <p>
+                    // collapsed into one long line.
+                    function showError(actions) {
+                        overlayText = actions.getAttribute('data-error') || '';
+
+                        var body = document.getElementById('logOverlayBody');
+                        var pre = document.createElement('pre');
+                        pre.className = 'log-section__body';
+                        pre.textContent = overlayText;
+
+                        body.innerHTML = '';
+                        body.appendChild(pre);
+
+                        fillOverlay('fa-exclamation-triangle', 'Full error',
+                                    actions.getAttribute('data-test') || 'Full error',
+                                    actions.getAttribute('data-suite'));
                         toggleLogs(true);
                     }
 
@@ -4011,29 +4593,23 @@
                         if (button) button.textContent = text;
                     }
 
-                    function copyLogs() {
-                        var body = document.getElementById('logOverlayBody');
-                        if (!body) return;
-
-                        var text = '';
-                        body.querySelectorAll('.log-section').forEach(function(section) {
-                            text += section.querySelector('.log-section__head').textContent + '\n'
-                                  + section.querySelector('.log-section__body').textContent + '\n\n';
-                        });
+                    function copyOverlay() {
+                        if (!overlayText) return;
 
                         // navigator.clipboard is unavailable when the report is
                         // opened straight off disk in some browsers, so fall
                         // back to a throwaway textarea and execCommand.
                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                            navigator.clipboard.writeText(text).then(function() { setCopyLabel('Copied'); },
-                                                                     function() { legacyCopy(text); });
+                            navigator.clipboard.writeText(overlayText).then(
+                                function() { setCopyLabel('Copied'); },
+                                function() { setCopyLabel(execCopy(overlayText) ? 'Copied' : 'Press Ctrl+C'); });
                             return;
                         }
 
-                        legacyCopy(text);
+                        setCopyLabel(execCopy(overlayText) ? 'Copied' : 'Press Ctrl+C');
                     }
 
-                    function legacyCopy(text) {
+                    function execCopy(text) {
                         var scratch = document.createElement('textarea');
                         scratch.value = text;
                         scratch.setAttribute('readonly', '');
@@ -4042,14 +4618,59 @@
                         document.body.appendChild(scratch);
                         scratch.select();
 
-                        try { document.execCommand('copy'); setCopyLabel('Copied'); }
-                        catch (err) { setCopyLabel('Press Ctrl+C'); }
+                        var copied;
+                        try { copied = document.execCommand('copy'); }
+                        catch (err) { copied = false; }
 
                         document.body.removeChild(scratch);
+                        return copied;
+                    }
+
+                    // Both of a row's buttons answer to one handler on the
+                    // document. DataTables rebuilds the rows on every sort,
+                    // search and page change, so listeners bound to the buttons
+                    // themselves would go with the rows that held them.
+                    document.addEventListener('click', function(event) {
+                        var button = event.target.closest ? event.target.closest('.msg-btn') : null;
+                        if (!button) return;
+
+                        var actions = button.closest('.msg-actions');
+                        if (!actions) return;
+
+                        if (button.classList.contains('msg-open')) showError(actions);
+                        else copyRowError(button, actions);
+                    });
+
+                    function copyRowError(button, actions) {
+                        var text = actions.getAttribute('data-error') || '';
+                        if (!text) return;
+
+                        function settle(copied) {
+                            button.classList.remove('msg-btn--done', 'msg-btn--failed');
+                            button.classList.add(copied ? 'msg-btn--done' : 'msg-btn--failed');
+
+                            // The row keeps no state of its own, so the tick has
+                            // to time itself out - a redraw would drop it anyway,
+                            // and a button left on a tick would claim the
+                            // clipboard still holds this row's error.
+                            window.clearTimeout(button.copyTimer);
+                            button.copyTimer = window.setTimeout(function() {
+                                button.classList.remove('msg-btn--done', 'msg-btn--failed');
+                            }, 1200);
+                        }
+
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(text).then(function() { settle(true); },
+                                                                     function() { settle(execCopy(text)); });
+                            return;
+                        }
+
+                        settle(execCopy(text));
                     }
 
                     window.onload = function() {
                         failureScreenshots();
+                        bindShotBox();
                         executeDataTable('#sm', 2);
                         executeDataTable('#tm', 3);
                         // Ascending: the files worth opening the tab for are
@@ -4057,6 +4678,96 @@
                         executeDataTable('#cov', 4, 'asc');
                     };
                 </script>
+            </div>
+            <div class="tabcontent" id="analytics">
+                <div class="metrics-page an-page %(analytics_state)%">
+                    <div class="metrics-page__head">
+                        <div>
+                            <div class="metrics-page__title"><i class="fa fa-line-chart"></i>Analytics</div>
+                            <div class="metrics-page__subtitle">How these tests behave over time &mdash; %(analytics_scope)%</div>
+                        </div>
+                    </div>
+
+                    <div class="an-shell">
+                        <div class="stat-tiles">%(analytics_tiles)%</div>
+
+                        <div class="an-solo-note">
+                            <i class="fa fa-info-circle" aria-hidden="true"></i>
+                            <span>
+                                This is the only build on record, so there is nothing yet to compare it
+                                against. The duration panels below are this run's and are already real;
+                                the trends, the flake rates and the movement cards fill themselves in from
+                                the second run onwards, over as many builds as <b>--archive-count</b>
+                                keeps.
+                            </span>
+                        </div>
+
+                        <div class="an-grid">
+                            <div class="metrics-card an-chart an-trend">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-line-chart" aria-hidden="true"></i>Pass rate across builds
+                                    <span class="an-chart__note">share of decided tests that passed</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anPassRate"></canvas></div>
+                            </div>
+
+                            <div class="metrics-card an-chart an-trend">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-exchange" aria-hidden="true"></i>What moved, build to build
+                                    <span class="an-chart__note">fixed, regressed, added, dropped</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anFlow"></canvas></div>
+                            </div>
+
+                            <div class="metrics-card an-chart">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-history" aria-hidden="true"></i>Where the time goes
+                                    <span class="an-chart__note">tests per duration band, this run</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anDuration"></canvas></div>
+                            </div>
+
+                            <div class="metrics-card an-chart an-trend">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-briefcase" aria-hidden="true"></i>Test base growth
+                                    <span class="an-chart__note">tests collected per build</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anGrowth"></canvas></div>
+                            </div>
+                        </div>
+
+                        <div class="metrics-card an-chart">
+                            <div class="an-chart__head">
+                                <i class="fa fa-bolt" aria-hidden="true"></i>Slowest tests in this run
+                                <span class="an-chart__note">seconds</span>
+                            </div>
+                            <div class="an-chart__wrap an-chart__wrap--slow"><canvas id="anSlowest" data-slowest="%(analytics_slowest)%"></canvas></div>
+                        </div>
+
+                        <div class="move-grid">%(analytics_movement)%</div>
+
+                        <div class="metrics-card">
+                            <table class="table row-border tablecard" id="an">
+                                <thead>
+                                    <tr>
+                                        <th class="th-left">Test</th>
+                                        <th>Verdict</th>
+                                        <th class="an-spark">History</th>
+                                        <th>Pass rate</th>
+                                        <th>Builds</th>
+                                        <th>Flips</th>
+                                        <th>Retries</th>
+                                        <th>Current streak</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    %(analytics_rows)%
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="tabcontent" id="suiteMetrics">
                 <div class="metrics-page">
@@ -4106,6 +4817,7 @@
                                 <th class="th-left">Test Case</th>
                                 <th>Status</th>
                                 <th>Time (s)</th>
+                                <th>Rerun</th>
                                 <th class="th-left">Error Message</th>
                                 <th>Logs</th>
                                 <th>Data</th>
@@ -4516,15 +5228,15 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
         </div>
         <div class="log-overlay" id="logOverlay" hidden>
             <div class="log-overlay__backdrop" onclick="toggleLogs(false)"></div>
-            <div class="log-overlay__panel" role="dialog" aria-modal="true" aria-label="Captured output">
+            <div class="log-overlay__panel" id="logOverlayPanel" role="dialog" aria-modal="true" aria-label="Captured output">
                 <div class="log-overlay__head">
                     <span class="log-overlay__title">
-                        <i class="fa fa-align-left" aria-hidden="true"></i>
+                        <i class="fa fa-align-left" id="logOverlayIcon" aria-hidden="true"></i>
                         <span id="logOverlayName">Captured output</span>
                         <em id="logOverlaySuite"></em>
                     </span>
                     <span class="log-overlay__actions">
-                        <button type="button" class="log-overlay__copy" id="logOverlayCopy" onclick="copyLogs()">Copy</button>
+                        <button type="button" class="log-overlay__copy" id="logOverlayCopy" onclick="copyOverlay()">Copy</button>
                         <button type="button" class="log-overlay__close" aria-label="Close" onclick="toggleLogs(false)">&times;</button>
                     </span>
                 </div>
@@ -4805,6 +5517,10 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         fileTitle = "Coverage";
                         searchPlaceholder = "Search files";
                         break;
+                    case "#an":
+                        fileTitle = "Analytics";
+                        searchPlaceholder = "Search tests";
+                        break;
                     default:
                         fileTitle = "metrics";
                         searchPlaceholder = "Search";
@@ -4843,7 +5559,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         },
                         titleAttr: 'Copy',
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         }
                     },
                     {
@@ -4854,7 +5570,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             return fileTitle + '-' + new Date().toLocaleString();
                         },
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         }
                     },
                     {
@@ -4865,7 +5581,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             return fileTitle + '-' + new Date().toLocaleString();
                         },
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         }
                     },
                     {
@@ -4873,7 +5589,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         text:      '<i class="fa fa-print"></i>',
                         titleAttr: 'Print',
                         exportOptions: {
-                            columns: ':visible',
+                            columns: ':visible:not(.an-spark)',
                             alignment: 'left',
                         }
                     },
@@ -4883,7 +5599,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         text:      '<i class="fa fa-low-vision"></i>',
                         titleAttr: 'Hide Column',
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         },
                         postfixButtons: [ 'colvisRestore' ]
                     },
@@ -5003,6 +5719,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     // Map hash to page IDs
                     var hashToPageMap = {
                         'dashboard': 'dashboard',
+                        'analytics': 'analytics',
                         'suites': 'suiteMetrics',
                         'test-metrics': 'testMetrics',
                         'archives': 'archives',
@@ -5559,6 +6276,291 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             })();
         </script>
         <script>
+            // ---------------------------- Analytics ----------------------------
+            // Every series here is aggregated in Python, out of output.json and
+            // the archives beside it, and arrives as a plain array. The page does
+            // no history maths of its own - it draws what it is handed.
+            var anLabels     = %(analytics_labels)%;
+            var anPassRate   = %(analytics_pass_rate)%;
+            var anGrowth     = %(analytics_growth)%;
+            var anFlowLabels = %(analytics_flow_labels)%;
+            var anFixed      = %(analytics_flow_fixed)%;
+            var anRegressed  = %(analytics_flow_regressed)%;
+            var anAdded      = %(analytics_flow_added)%;
+            var anRemoved    = %(analytics_flow_removed)%;
+            var anBucketLabels = %(analytics_bucket_labels)%;
+            var anBuckets      = %(analytics_buckets)%;
+
+            // Slowest tests are read off the canvas rather than written here.
+            // Every other series on this tab is build labels and counts, which
+            // the report generates itself; these are test names, which are
+            // whatever somebody called them, and no name belongs in a block the
+            // browser executes. The attribute is escaped like every other name
+            // on the page and unescaped by the parser before this sees it.
+            function anSlowest() {
+                var canvas = document.getElementById('anSlowest');
+                if (!canvas) { return []; }
+
+                try {
+                    return JSON.parse(canvas.getAttribute('data-slowest') || '[]');
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            // The tab starts hidden, and a canvas in a hidden tab measures zero,
+            // so a chart built at load time would be drawn one pixel high and
+            // stay that way. Building on the first open is what gives them a box
+            // to fill; the flag keeps a second open from stacking a second chart
+            // on the same canvas.
+            var anDrawn = false;
+
+            // Counts: whole numbers from zero. Chart.js will happily label a
+            // four-bar chart 0, 0.5, 1.0 ... and "2.5 tests regressed" is not a
+            // thing that can happen.
+            function anAxis(extra) {
+                var axis = {
+                    ticks: { beginAtZero: true, precision: 0, fontSize: 11, fontColor: '#999' },
+                    gridLines: { color: '#f0f2f6', zeroLineColor: '#e4e8ef', drawBorder: false }
+                };
+
+                for (var key in (extra || {})) { axis.ticks[key] = extra[key]; }
+                return axis;
+            }
+
+            function anCategoryAxis() {
+                return {
+                    ticks: { fontSize: 10, fontColor: '#999', maxRotation: 0, autoSkipPadding: 12 },
+                    gridLines: { display: false }
+                };
+            }
+
+            function anTooltip(callbacks) {
+                return {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: '#FFF',
+                    custom: keepTooltipInsideCanvas,
+                    titleFontSize: 12,
+                    titleFontColor: '#555555',
+                    bodyFontColor: '#000',
+                    bodyFontSize: 12,
+                    bodySpacing: 4,
+                    borderColor: '#555555',
+                    borderWidth: 1,
+                    cornerRadius: 4,
+                    displayColors: true,
+                    xPadding: 10,
+                    yPadding: 9,
+                    callbacks: callbacks || {}
+                };
+            }
+
+            function anChart(id, config) {
+                var canvas = document.getElementById(id);
+                if (!canvas) { return; }
+
+                new Chart(canvas.getContext('2d'), config);
+            }
+
+            function anPassRateChart() {
+                if (anPassRate.length < 2) { return; }
+
+                anChart('anPassRate', {
+                    type: 'line',
+                    data: {
+                        labels: anLabels,
+                        datasets: [{
+                            label: 'Pass rate',
+                            fill: true,
+                            backgroundColor: 'rgba(152, 204, 100, 0.13)',
+                            borderColor: '#98cc64',
+                            pointBackgroundColor: '#b3c89e',
+                            // A build in which every test was skipped decided
+                            // nothing, so it leaves a gap rather than a plunge
+                            // to zero that never happened.
+                            spanGaps: false,
+                            data: anPassRate
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: {
+                            // Barely-smoothed on purpose: the default tension
+                            // bows the line into a sine wave between builds,
+                            // reading as movement that was never measured.
+                            line: { borderWidth: 2, tension: 0.15 },
+                            point: { radius: 3, hoverRadius: 5 }
+                        },
+                        scales: {
+                            xAxes: [anCategoryAxis()],
+                            // Not pinned to 0-100, and deliberately not
+                            // beginAtZero: a suite that lives between 96% and
+                            // 99% is exactly the one whose two-point drops
+                            // matter, and a full axis flattens them into a
+                            // straight line along the top.
+                            yAxes: [{
+                                ticks: {
+                                    fontSize: 11,
+                                    fontColor: '#999',
+                                    callback: function(value) { return value + '%'; }
+                                },
+                                gridLines: {
+                                    color: '#f0f2f6', zeroLineColor: '#e4e8ef', drawBorder: false
+                                }
+                            }]
+                        },
+                        tooltips: anTooltip({
+                            label: function(item) { return item.yLabel + '% passed'; }
+                        })
+                    }
+                });
+            }
+
+            function anFlowChart() {
+                if (!anFlowLabels.length) { return; }
+
+                anChart('anFlow', {
+                    type: 'bar',
+                    data: {
+                        labels: anFlowLabels,
+                        datasets: [
+                            { label: 'Regressed', backgroundColor: '#fc6766', data: anRegressed },
+                            { label: 'Fixed',     backgroundColor: '#98cc64', data: anFixed },
+                            { label: 'Added',     backgroundColor: '#5a8fc4', data: anAdded },
+                            { label: 'Dropped',   backgroundColor: '#c9cfda', data: anRemoved }
+                        ]
+                    },
+                    options: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { boxWidth: 10, fontSize: 11, fontColor: '#999', padding: 12 }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            xAxes: [$.extend(true, anCategoryAxis(), { stacked: true })],
+                            yAxes: [$.extend(true, anAxis(), { stacked: true })]
+                        },
+                        tooltips: anTooltip()
+                    }
+                });
+            }
+
+            function anDurationChart() {
+                if (!anBuckets.length) { return; }
+
+                anChart('anDuration', {
+                    type: 'bar',
+                    data: {
+                        labels: anBucketLabels,
+                        // One colour, deepening with the band: the bars are one
+                        // measure sliced up, not four things being compared.
+                        datasets: [{
+                            label: 'Tests',
+                            backgroundColor: ['#a8d47e', '#98cc64', '#c6cf5a', '#ffd050',
+                                              '#f7b955', '#f08f52', '#fc6766'],
+                            data: anBuckets
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { xAxes: [anCategoryAxis()], yAxes: [anAxis()] },
+                        tooltips: anTooltip({
+                            label: function(item) {
+                                return item.yLabel + (item.yLabel === 1 ? ' test' : ' tests');
+                            }
+                        })
+                    }
+                });
+            }
+
+            function anGrowthChart() {
+                if (anGrowth.length < 2) { return; }
+
+                anChart('anGrowth', {
+                    type: 'line',
+                    data: {
+                        labels: anLabels,
+                        datasets: [{
+                            label: 'Tests',
+                            fill: true,
+                            backgroundColor: 'rgba(90, 143, 196, 0.12)',
+                            borderColor: '#5a8fc4',
+                            pointBackgroundColor: '#8fb4d8',
+                            steppedLine: true,
+                            data: anGrowth
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: { line: { borderWidth: 2 }, point: { radius: 2, hoverRadius: 5 } },
+                        scales: { xAxes: [anCategoryAxis()], yAxes: [anAxis()] },
+                        tooltips: anTooltip({
+                            label: function(item) { return item.yLabel + ' tests collected'; }
+                        })
+                    }
+                });
+            }
+
+            function anSlowestChart() {
+                var slowest = anSlowest();
+                if (!slowest.length) { return; }
+
+                anChart('anSlowest', {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: slowest.map(function(row) { return row[0]; }),
+                        datasets: [{
+                            label: 'Seconds',
+                            backgroundColor: '#f0a95c',
+                            data: slowest.map(function(row) { return row[1]; })
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            // Names go on the left of a horizontal bar, so the
+                            // long-name axis is the one given room, not clipped.
+                            yAxes: [{
+                                ticks: { fontSize: 11, fontColor: '#777' },
+                                gridLines: { display: false }
+                            }],
+                            xAxes: [anAxis({ callback: function(value) { return value + 's'; } })]
+                        },
+                        tooltips: anTooltip({
+                            label: function(item) { return item.xLabel + 's'; }
+                        })
+                    }
+                });
+            }
+
+            function drawAnalytics() {
+                if (anDrawn) { return; }
+                anDrawn = true;
+
+                anPassRateChart();
+                anFlowChart();
+                anDurationChart();
+                anGrowthChart();
+                anSlowestChart();
+
+                // The canvases were sized the moment the tab was shown, which is
+                // the same tick this runs in; one more pass once the browser has
+                // laid the cards out settles them at their real width.
+                setTimeout(resizeVisibleCharts, 0);
+            }
+        </script>
+        <script>
             function failureScreenshots() {
                 // The grid is baked in at report-generation time, so a run that
                 // attached nothing leaves the tab as a blank slab. Flag the empty
@@ -5573,6 +6575,67 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                   $(e.target).closest('.bg-highlight').find('.below-desc').first().html(hoverText);
                 }, function (e) {
                   $(e.target).closest('.bg-highlight').find('.below-desc').first().html('');
+                });
+            }
+
+            // The screenshot lightbox. The tiles still carry the attributes
+            // fancybox read - data-fancybox groups them, data-caption names the
+            // test - so only the thing that opens them has changed.
+            var shotLinks = [], shotIndex = 0;
+
+            function showShot(i) {
+                if (!shotLinks.length) return;
+
+                shotIndex = (i + shotLinks.length) % shotLinks.length;
+
+                var link = shotLinks[shotIndex];
+                document.getElementById('shotBoxImage').src = link.getAttribute('href');
+                document.getElementById('shotBoxCaption').textContent = link.getAttribute('data-caption') || '';
+                document.getElementById('shotBoxCount').textContent = (shotIndex + 1) + ' / ' + shotLinks.length;
+            }
+
+            function openShotBox(link) {
+                var group = link.getAttribute('data-fancybox');
+                shotLinks = [].slice.call(document.querySelectorAll('[data-fancybox="' + group + '"]'));
+
+                var box = document.getElementById('shotBox');
+                box.classList.toggle('is-single', shotLinks.length < 2);
+                box.classList.add('is-open');
+                showShot(shotLinks.indexOf(link));
+                document.getElementById('shotBoxClose').focus();
+            }
+
+            function closeShotBox() {
+                document.getElementById('shotBox').classList.remove('is-open');
+                // Dropping the source stops a large screenshot sitting in memory
+                // behind a closed overlay.
+                document.getElementById('shotBoxImage').src = '';
+            }
+
+            function bindShotBox() {
+                document.addEventListener('click', function (e) {
+                    var link = e.target.closest ? e.target.closest('[data-fancybox]') : null;
+                    if (!link) return;
+
+                    e.preventDefault();
+                    openShotBox(link);
+                });
+
+                document.getElementById('shotBoxClose').addEventListener('click', closeShotBox);
+                document.getElementById('shotBoxPrev').addEventListener('click', function () { showShot(shotIndex - 1); });
+                document.getElementById('shotBoxNext').addEventListener('click', function () { showShot(shotIndex + 1); });
+
+                // A click on the picture itself is not a click on the backdrop.
+                document.getElementById('shotBox').addEventListener('click', function (e) {
+                    if (e.target === this || e.target.className === 'shot-box__stage') closeShotBox();
+                });
+
+                document.addEventListener('keydown', function (e) {
+                    if (!document.getElementById('shotBox').classList.contains('is-open')) return;
+
+                    if (e.key === 'Escape') closeShotBox();
+                    else if (e.key === 'ArrowLeft') showShot(shotIndex - 1);
+                    else if (e.key === 'ArrowRight') showShot(shotIndex + 1);
                 });
             }
 

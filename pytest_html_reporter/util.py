@@ -561,6 +561,119 @@ def count_log_lines(sections):
 
 
 # --------------------------------------------------------------------------
+# delta vs the previous build
+# --------------------------------------------------------------------------
+
+
+def run_delta(counts):
+    """This build's count against the build before it.
+
+    Read off the same list the Trends chart is drawn from - this run first,
+    then the archived builds newest first - so the headline on the summary
+    card and the line on the chart beside it can never disagree. A first build
+    has nothing to compare against and gets no delta rather than a delta of
+    zero: "no change" would claim a previous build that does not exist.
+    """
+    if len(counts) < 2:
+        return None
+
+    try:
+        return int(counts[0]) - int(counts[1])
+    except (TypeError, ValueError):
+        # An archived build written by a version that did not record this
+        # count. Better to say nothing than to read the gap as a number.
+        return None
+
+
+def format_run_delta(delta, noun="failure"):
+    """The whole line: '+3 failures since last build' / 'no change in failures'.
+
+    The two cases are not one phrase plus a suffix. "no change" already says
+    what it is being compared against, and the column the line sits in is
+    narrow enough that spelling it out again wraps it onto a second row.
+    """
+    if delta is None:
+        return ""
+
+    if delta == 0:
+        return "no change in %ss" % noun
+
+    return "%+d %s since last build" % (
+        delta, noun if abs(delta) == 1 else noun + "s")
+
+
+def run_delta_class(delta):
+    """Which direction is the good one. Fewer failures than last time is better.
+
+    A first build has no delta and gets is-empty, which hides the whole tile:
+    caption included, so there is no stray "SINCE LAST BUILD" over nothing.
+    """
+    if delta is None:
+        return "is-empty"
+
+    if delta > 0:
+        return "is-worse"
+
+    return "is-better" if delta < 0 else "is-level"
+
+
+def run_delta_figure(delta):
+    """The number on the tile: '+3', '-1', or the no-change '\u00b10'.
+
+    Written with its sign even at zero. The tile is read as a delta, and a bare
+    "0 failures" beside "SINCE LAST BUILD" says the opposite of what it means -
+    no failures at all, rather than no change in them.
+    """
+    if delta is None:
+        return ""
+
+    return "\u00b10" if delta == 0 else "%+d" % delta
+
+
+def run_delta_unit(delta, noun="failure"):
+    """The word under the figure, agreeing with it."""
+    if delta is None:
+        return ""
+
+    return noun if abs(delta) == 1 else noun + "s"
+
+
+def run_delta_title(counts, noun="failure"):
+    """The two raw counts behind the delta, for the chip's tooltip.
+
+    "+3 failures" reads very differently against 3 and against 300, and the
+    figure it is a delta of is not the total count shown above it.
+    """
+    if run_delta(counts) is None:
+        return ""
+
+    current, previous = int(counts[0]), int(counts[1])
+
+    return "%d %s this build, %d in the build before it" % (
+        current, noun if current == 1 else noun + "s", previous)
+
+
+def generate_run_delta():
+    """Fill in the failure delta shown under the total count on the Dashboard.
+
+    Failures here are what the Trends chart calls Failed - failures and errors
+    together - because the two sit inches apart on the same page.
+    """
+    delta = run_delta(ConfigVars.tfail)
+
+    ConfigVars._failure_delta_class = run_delta_class(delta)
+    ConfigVars._failure_delta_figure = escape_report_text(run_delta_figure(delta))
+    ConfigVars._failure_delta_unit = escape_report_text(run_delta_unit(delta))
+
+    # The whole sentence, for the tile's tooltip alongside the two raw counts:
+    # the tile itself is three fragments, and one of them read aloud on its own
+    # says very little.
+    ConfigVars._failure_delta = escape_report_text(format_run_delta(delta))
+    ConfigVars._failure_delta_title = escape_report_text(
+        run_delta_title(ConfigVars.tfail))
+
+
+# --------------------------------------------------------------------------
 # archive retention
 # --------------------------------------------------------------------------
 

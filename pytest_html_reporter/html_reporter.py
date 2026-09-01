@@ -11,11 +11,14 @@ import pytest
 
 from html_page.archive_body import ArchiveBody
 from html_page.archive_row import ArchiveRow
+from pytest_html_reporter.analytics import generate_analytics
 from html_page.attachment_body import AttachmentBody
 from html_page.attachment_item import AttachmentItem
 from html_page.attachment_meta import AttachmentMeta
 from html_page.attachment_part import AttachmentPart
 from html_page.floating_error import FloatingError
+from html_page.assets import image, vendor_assets
+from html_page.icon_styles import icon_styles
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
@@ -43,10 +46,15 @@ from pytest_html_reporter.util import (
     archive_cutoff,
     expired_archives,
     generate_report_links,
+    generate_run_delta,
 )
 from pytest_html_reporter.coverage_report import (
     collect_coverage,
     generate_coverage_view,
+)
+from pytest_html_reporter.report_opener import (
+    open_mode,
+    open_report,
 )
 from pytest_html_reporter.attachments import (
     attachment_size,
@@ -104,6 +112,11 @@ class HTMLReporter(object):
         # actually reaches.
         self.archive_days = archive_days(config)
         self.archive_since = archive_since(config)
+
+        # Whether the finished report is handed to a browser. Resolved now,
+        # while the run is being configured, so a value that is not a mode is
+        # a usage error before the tests run rather than after them.
+        self.open_mode = open_mode(config)
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
@@ -309,12 +322,20 @@ class HTMLReporter(object):
             # generate trends
             self.update_trends(base)
 
+            # "+3 failures since last build", off the list update_trends
+            # just built - this run first, then the archived builds
+            generate_run_delta()
+
             # generate archive template
             self.remove_old_archives()
             self.update_archives_template(base) if self.archive_count != '0' else None
 
             # generate suite highlights
             generate_suite_highlights()
+
+            # read every build still on disk into per-test histories: flake
+            # rates, failing streaks, pass-rate drift, where the minutes go
+            generate_analytics(base)
 
             # collect host, interpreter and invocation details
             generate_environment_info(self.config)
@@ -331,9 +352,13 @@ class HTMLReporter(object):
 
             # generate html report
             live_logs_file = open(path, 'w', encoding='utf-8')
-            message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
+            message = self.renew_template_text(image('logo.png'))
             live_logs_file.write(message)
             live_logs_file.close()
+
+            # hand it to a browser, on a run that looks like somebody is sat
+            # in front of it - and never on a build agent
+            open_report(path, self.open_mode)
 
     @pytest.hookimpl(tryfirst=True, hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
@@ -582,21 +607,27 @@ class HTMLReporter(object):
             name=escape_report_text(record['test_name']),
             stat=str(record['status']),
             dur=str(record['duration']),
+            rerun=str(record['rerun']),
             msg=escape_report_text(record['message'][:50]),
             runt=row_id,
             log_count=str(self.attach_test_logs(record, row_id)),
             attach_count=str(self.attach_test_data(record, row_id))
         )
 
-        # The raw length, not the escaped one: this asks whether the message was
-        # cut short, and escaping it first would make a message full of angle
-        # brackets look long enough to need a modal it does not need.
-        if len(record['message']) < 49:
+        # A row with nothing to say gets neither button: a passing test has no
+        # error to copy, and offering to copy an empty string reads as a bug.
+        if not record['message'].strip():
             test_row_text.floating_error_text = ''
         else:
-            test_row_text.floating_error_text = str(
-                FloatingError(full_msg=escape_report_text(record['message']), runt=row_id)
-            )
+            # The raw length, not the escaped one: this asks whether the message
+            # was cut short, and escaping it first would make a message full of
+            # angle brackets look long enough to need the panel it does not need.
+            test_row_text.floating_error_text = str(FloatingError(
+                full_msg=escape_report_text(record['message']),
+                has_full='' if len(record['message']) < 49 else '1',
+                sname=escape_report_text(record['suite_name']),
+                name=escape_report_text(record['test_name'])
+            ))
 
         ConfigVars._test_metrics_content += str(test_row_text)
 
@@ -780,6 +811,12 @@ class HTMLReporter(object):
                 'message': str(record['message']),
                 'test_name': str(record['test_name']),
                 'rerun': str(record['rerun']),
+                # Written for the sake of the build after this one: the
+                # Analytics tab reads durations back out of the archives, and a
+                # number that was never stored is a number no later run can
+                # show. Archives written before this simply have no key, and
+                # are read as "not measured" rather than as zero.
+                'duration': record['duration'],
             }
 
         self.json_data['content']['suites'][suite_index] = {
@@ -880,6 +917,10 @@ class HTMLReporter(object):
 
     def renew_template_text(self, logo_url):
         template_text = HtmlTemplate(
+            vendor_assets=vendor_assets(),
+            icon_styles=icon_styles(),
+            favicon=image('favicon.png'),
+            loader_image=image('loader.gif'),
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
             title=escape_report_text(ConfigVars._title),
@@ -924,6 +965,23 @@ class HTMLReporter(object):
             attachment_items=str(ConfigVars._attachment_items),
             attachment_store=str(ConfigVars._attachment_store),
             logs_notice=str(ConfigVars._logs_notice),
+            analytics_tiles=str(ConfigVars._analytics_tiles),
+            analytics_rows=str(ConfigVars._analytics_rows),
+            analytics_movement=str(ConfigVars._analytics_movement),
+            analytics_builds=str(ConfigVars._analytics_builds),
+            analytics_scope=escape_report_text(ConfigVars._analytics_scope),
+            analytics_state=str(ConfigVars._analytics_state),
+            analytics_labels=str(ConfigVars._analytics_labels),
+            analytics_pass_rate=str(ConfigVars._analytics_pass_rate),
+            analytics_growth=str(ConfigVars._analytics_growth),
+            analytics_flow_labels=str(ConfigVars._analytics_flow_labels),
+            analytics_flow_fixed=str(ConfigVars._analytics_flow_fixed),
+            analytics_flow_regressed=str(ConfigVars._analytics_flow_regressed),
+            analytics_flow_added=str(ConfigVars._analytics_flow_added),
+            analytics_flow_removed=str(ConfigVars._analytics_flow_removed),
+            analytics_bucket_labels=str(ConfigVars._analytics_bucket_labels),
+            analytics_buckets=str(ConfigVars._analytics_buckets),
+            analytics_slowest=str(ConfigVars._analytics_slowest),
             environment_rows=str(ConfigVars._environment_rows),
             environment=escape_report_text(ConfigVars._environment_label),
             environment_title=escape_report_text(ConfigVars._environment),
@@ -946,6 +1004,11 @@ class HTMLReporter(object):
             coverage_trend_labels=str(ConfigVars._coverage_trend_labels),
             coverage_trend_values=str(ConfigVars._coverage_trend_values),
             coverage_chip=str(ConfigVars._coverage_chip),
+            failure_delta=str(ConfigVars._failure_delta),
+            failure_delta_class=str(ConfigVars._failure_delta_class),
+            failure_delta_title=str(ConfigVars._failure_delta_title),
+            failure_delta_figure=str(ConfigVars._failure_delta_figure),
+            failure_delta_unit=str(ConfigVars._failure_delta_unit),
             report_links=str(ConfigVars._report_links)
         )
 

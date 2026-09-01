@@ -101,22 +101,40 @@ def test_archive_row():
 
 
 def test_floating_error():
-    runt = str(get_random_number())
-    full_msg = get_random_string()
+    full_msg = get_random_string(80)
+    sname = get_random_string()
+    name = get_random_string()
 
-    floating_error = FloatingError(runt=runt, full_msg=full_msg)
-
+    floating_error = FloatingError(full_msg=full_msg, has_full="1", sname=sname, name=name)
     soup = BeautifulSoup(str(floating_error), "html.parser")
 
-    error_link = soup.find("a", href=f"#myModal-{runt}")
+    actions = soup.find("span", class_="msg-actions")
+    assert actions["data-error"] == full_msg
+    assert actions["data-suite"] == sname
+    assert actions["data-test"] == name
+    assert actions["data-full"] == "1"
 
-    assert error_link
-    assert error_link.text == "(...)"
+    # An expand and a copy, in that order, and neither carries any text: the
+    # ellipsis is all the cell contributes to the table's search index and to
+    # its CSV, Excel and print exports.
+    assert [button["title"] for button in actions.findAll("button")] \
+        == ["Show the full error", "Copy the full error"]
+    assert actions.get_text(strip=True) == "\u2026"
 
-    error_container = soup.find("div", id=f"myModal-{runt}")
 
-    assert error_container
-    assert soup.find("p").text.strip() == full_msg
+def test_floating_error_offers_no_expand_when_nothing_was_cut():
+    """The message fits in the cell, so there is nothing to open a panel for -
+    but it is still worth copying."""
+    floating_error = FloatingError(full_msg="boom", has_full="", sname="s", name="n")
+    soup = BeautifulSoup(str(floating_error), "html.parser")
+
+    actions = soup.find("span", class_="msg-actions")
+
+    # Both buttons stay in the markup and `data-full` hides the expand one, the
+    # same way `data-logs` hides the Logs button on a test that captured nothing.
+    assert actions["data-full"] == ""
+    assert actions.find("button", class_="msg-open") is not None
+    assert actions.find("button", class_="msg-copy") is not None
 
 
 def test_screenshot_details():
@@ -176,27 +194,28 @@ def test_test_row():
     floating_error_text = get_random_string()
     log_count = str(get_random_number())
     runt = get_random_string()
+    rerun = str(get_random_number())
 
     attach_count = str(get_random_number())
 
-    test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, msg=msg,
+    test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
                        floating_error_text=floating_error_text, log_count=log_count,
                        attach_count=attach_count, runt=runt)
     soup = BeautifulSoup(str(test_row), "html.parser")
 
     cells = soup.findAll("td")
 
-    for node, expected in zip(cells, [sname, name, stat, dur]):
+    for node, expected in zip(cells, [sname, name, stat, dur, rerun]):
         assert node.text.strip() == expected
 
-    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[4].text.strip())
+    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[5].text.strip())
 
-    log_cell = cells[5]
+    log_cell = cells[6]
     assert log_cell["data-logs"] == log_count
     assert log_cell.find("button")["onclick"] == "showLogs('%s')" % runt
     assert log_count in log_cell.find("button").text
 
-    attach_cell = cells[6]
+    attach_cell = cells[7]
     assert attach_cell["data-logs"] == attach_count
     assert attach_cell.find("button")["onclick"] == "showAttachmentsFor('%s')" % runt
     assert attach_count in attach_cell.find("button").text
@@ -205,11 +224,11 @@ def test_test_row():
 def test_test_row_without_logs_says_so():
     """The button is left in the row and hidden by `data-logs`, so a test that
     captured nothing shows a dash instead of opening an empty panel."""
-    test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", msg="",
+    test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", rerun="0", msg="",
                        floating_error_text="", log_count="0", attach_count="0", runt="0-0")
     soup = BeautifulSoup(str(test_row), "html.parser")
 
-    for cell in soup.findAll("td")[5:7]:
+    for cell in soup.findAll("td")[6:8]:
         assert cell["data-logs"] == "0"
         assert cell.find("span", class_="log-none") is not None
 

@@ -33,14 +33,16 @@ Features
   - Overview
   - Environment
   - Trends
-  - Suite Highlights
+  - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
+* Analytics - flaky tests, standing failures, pass-rate drift and where the run's time goes, read across every archived build
 * Archives / History
 * Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
 * Custom side-nav links to any page of your own
+* Opens the finished report in a browser on a local run, and stays quiet on a build agent
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
 
@@ -106,6 +108,55 @@ so an hourly run reaches a multi-megabyte report inside a couple of months.
 
 A build is dated by the moment its run started, which is kept in the name of its archive file, so an age limit still
 measures the right thing after the reports have been copied into a fresh CI workspace.
+
+..
+
+        Opening the report
+
+When the run finishes, the report is opened in your browser. Nothing is needed to get this - it is what the command you
+already run now does::
+
+    $ pytest tests/ --html-report=./report
+
+It only happens on a run somebody is sat in front of. Three things all have to be true, and a build agent fails every
+one of them:
+
+=========================================  ===========================================================
+Checked                                    Why
+=========================================  ===========================================================
+The run's output is a terminal             Output piped into a file or a log collector - ``cron``,
+                                           ``nohup``, a build system nobody has heard of - means
+                                           nobody is watching it go past
+No CI variable is set                      ``CI``, ``GITHUB_ACTIONS``, ``JENKINS_URL`` and the rest of
+                                           the usual set; ``CI=false`` counts as "not CI"
+There is a desktop to open into            ``DISPLAY`` or ``WAYLAND_DISPLAY``, on anything that is not
+                                           macOS or Windows. Without this, a headless box opens the
+                                           report in a *console* browser, on top of the summary the
+                                           run just printed
+=========================================  ===========================================================
+
+``--report-open`` sets which of that applies::
+
+    $ pytest tests/ --report-open=none      # never open it
+    $ pytest tests/ --report-open=always    # open it whatever the run looks like
+    $ pytest tests/ --report-open=auto      # the default, as described above
+
+=========================  ==============================================================================
+``--report-open``          When the report is opened
+=========================  ==============================================================================
+``auto`` (default)         On an interactive run with a desktop to open into, and never in CI
+``always``                 Every run - for a setup the checks above read wrongly
+``none``                   Never
+=========================  ==============================================================================
+
+Turning it off for good belongs in the ini file rather than in every command::
+
+    [pytest]
+    report_open = none
+
+The browser is asked for a tab rather than a window, so a suite run over and over does not bury the desktop. A machine
+with no browser on it is not an error: the report is written either way, and a run that could not open it still passes
+or fails on its tests alone.
 
 ..
 
@@ -279,6 +330,7 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_attachment_limit = 20000
     report_coverage = auto
     report_coverage_limit = 500
+    report_open = auto
     report_link =
         Coverage=htmlcov/index.html
         CI job=https://ci.example.com/job/42
@@ -287,6 +339,9 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). ``report_attachments`` and
 ``report_attachment_limit`` mirror ``--report-attachments`` and ``--report-attachment-limit`` the same way, as do
 ``report_coverage``, ``report_coverage_file`` and ``report_coverage_limit``.
+
+``report_open`` takes the same values as ``--report-open`` (``auto`` / ``always`` / ``none``), and is the place to
+turn the browser off once for everybody rather than in every command.
 
 ``report_link`` takes one ``Label=URL`` per line and, like ``build_info``, adds to whatever ``--report-link`` passes
 rather than being replaced by it.
@@ -727,6 +782,67 @@ Work down this list; the first one that applies is the answer:
 Whichever source the numbers do come from, the tab states it - ``Measured by pytest-cov during this run``, or
 ``Read from coverage.xml, written 2026-08-31 20:23`` - so you can always tell which of these you are in.
 
+delta vs the previous build
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once there is a build to compare against, the ``Highlights`` card gains a second entry saying which way the suite is
+moving - ``▲ +3 failures`` over ``SINCE LAST BUILD``, red when there are more failures than last time and green with a
+``▼`` when there are fewer. Nothing to configure; it appears as soon as a second build has been archived.
+
+The absolute count tells you how bad this build is. The delta tells you whether it is getting better, which is the one
+you act on. Hovering it gives the two counts behind it - ``12 failures this build, 9 in the build before it`` - because
+``+3`` reads very differently against 3 than against 300.
+
+*Failures* here means failures **and errors**, which is exactly what the ``Trends`` chart plots as ``Failed``; both are
+read off the same per-build list, so the two can never disagree. No change is written ``±0 failures`` rather than
+``0 failures``, which beside ``SINCE LAST BUILD`` would say the opposite of what it means. A first build has nothing to
+compare against, and the whole entry - caption included - is left out rather than showing ``no change`` against a build
+that does not exist.
+
+analytics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``Dashboard`` answers *how did this run go?*. The ``Analytics`` tab answers *how does this test behave?*, which no
+single run can - so it reads every build you have kept and lines them up per test. Nothing to install, nothing to
+configure, and nothing extra is collected: the archives already hold a status per test per build.
+
+Six figures across the top, then the panels behind them:
+
+* **Stability score** - one number, 0-100, for how much the suite can be trusted. It starts at the mean per-test pass
+  rate and is charged half the mean flip rate, because a test that alternates pass, fail, pass has the same pass rate
+  as one everybody already knows is broken and is the more expensive of the two to live with. Green at 80, amber at
+  60, red below it.
+* **Pass rate this run**, with the movement in points since the last build.
+* **Flaky tests** - tests that have flipped between passing and failing, or that needed a retry to pass.
+* **Always failing** - tests that have failed every build they were in, two builds running or more.
+* **Builds analysed** and **time in tests**, against the median build.
+
+``Pass rate across builds`` plots the drift; the axis is *not* pinned to 0-100, because a suite that lives between 96%
+and 99% is exactly the one whose two-point drops matter. ``What moved, build to build`` stacks what changed at each
+step - fixed, regressed, added, dropped. ``Where the time goes`` buckets this run's tests by duration, which a
+slowest-tests list cannot tell you: two thousand tests at 300ms each is a different problem from ten tests at a
+minute. ``Test base growth`` shows the suite being added to, or quietly shrinking.
+
+Underneath, four cards name what changed since the previous build - **newly failing**, **newly fixed**, **new tests**
+and **no longer run** - and then a searchable, sortable row per test: its verdict, its recent outcomes as a strip of
+one block per build, its pass rate, how many times it has flipped, its retries, how long its current streak has run
+for and its duration. It opens worst-behaved first, so the list to work through is already the list on screen.
+
+**Flaky and always failing are kept apart on purpose.** A test that only ever fails is a bug with an owner; putting it
+at the top of a flakiness list sends somebody hunting a race that is not there. Skips are excluded from the pass/fail
+arithmetic rather than counted against a test - a test skipped for three builds between two passes has not flipped
+twice - and a test that has only ever been skipped shows no pass rate at all rather than a rate of zero. ``xfail`` and
+``xpass`` count as passes: they are outcomes the suite declared in advance, and counting them as failures would put
+every ``xfail``-marked test at the top of the list, where nothing is wrong.
+
+How far back it reads is whatever ``--archive-count``, ``--archive-days`` and ``--archive-since`` have kept; the
+charts draw the most recent twenty builds so the axis stays readable, while the tables count every build on disk. On
+a **first run** the tab says so and shows the duration panels - which are real from run one - rather than drawing four
+empty axes.
+
+Per-test durations are recorded into ``output.json`` from this version on, so the duration panels fill from the run
+that produced them; builds archived by an earlier version are read as *not measured* rather than as instant.
+
 custom side-nav links
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -743,6 +859,7 @@ round, and a nav entry has no business being able to run something in whoever op
 
 .. image:: images/side_nav.png
    :alt: Side Nav
+   :width: 300px
 
 parallel runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

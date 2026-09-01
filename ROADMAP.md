@@ -31,12 +31,17 @@ clickable so they drive `table.column(2).search(...)` on the existing DataTable.
 *Why:* one-click "show me only the failures" is the most common action on a report like this.
 *Effort:* ~15 lines of JS. The DataTables API is already loaded.
 
-### 3. Slowest-tests panel
+### 3. Slowest-tests panel — SHIPPED
 `ConfigVars._duration` is already captured per test (`html_reporter.py:41`) and rendered into
 `%(dur)%`. Sort it, take the top 10, render a horizontal bar list on the Dashboard.
 
 *Why:* free performance visibility from data already collected.
 *Effort:* ~40 lines.
+*Shipped as:* a horizontal bar chart on the Analytics tab rather than on the Dashboard, which is a
+fixed-height one-screen viewport with no room left in it. Tests measuring 0.0s are left out — ten
+rows of "slowest test: no time at all" reads as a chart that failed to load rather than as a fast
+suite. It sits beside a duration histogram, which answers the question the top-10 cannot: two
+thousand tests at 300ms each is a different problem from ten tests at a minute.
 
 ### 4. Copy-error and copy-rerun-command buttons
 Next to each failure message, a copy icon for the full traceback and one that yields
@@ -45,6 +50,12 @@ it is string concatenation.
 
 *Why:* removes the most repeated manual step in day-to-day triage.
 *Effort:* ~20 lines.
+*Shipped as:* the copy half only - the rerun-command button was built and then dropped as unwanted.
+`FloatingError` now renders an expand and a copy button carrying the error in `data-` attributes,
+and the `(...)` link and its per-row Bootstrap modal are gone: the full error opens in the same
+overlay the `Logs` column uses, which gave the dialog a `Copy` button and a `<pre>` body for free.
+The old modal's `<p>` had been collapsing every traceback into one run-on line. One delegated click
+handler serves the rows, because DataTables rebuilds them on each sort, search and page change.
 
 ### 5. Deep-linkable rows
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an
@@ -79,12 +90,27 @@ sections are folded into the stored record afterwards. The text is parked outsid
 holding it would be pulled into the DataTables search index and into every CSV / Excel / print
 export. A per-test character cap keeps one chatty test from outweighing the rest of the file.
 
-### 8. Flaky test detection from archives
+### 8. Flaky test detection from archives — SHIPPED
 `load_archive` already reads every archived `output.json`. Flag any test whose status flipped
 across retained builds as flaky, with a "flakiest tests" card.
 
 *Why:* genuinely differentiating, and the data is already on disk.
 *Effort:* ~50 lines in `pytest_html_reporter/util.py`, reusing the existing archive loop.
+*Shipped as:* `pytest_html_reporter/analytics.py` and the whole Analytics tab, not a card. Once the
+archives are being read per test rather than per build, a flake rate is one of about eight things
+that fall out of the same pass — pass-rate drift, failing streaks, fixed/regressed/added/dropped
+between builds, duration bands — and a single card would have thrown the other seven away.
+
+It is its own module rather than more of `util.py`: the archive loop there builds page fragments as
+it goes, and this needs the builds as data first and rendering second. Two things had to be settled
+before any of the numbers meant anything. Flaky and always-failing are counted apart — a test that
+only ever fails is a bug with an owner, and putting it top of a flakiness list sends somebody
+hunting a race that is not there. And skips are excluded from the pass/fail arithmetic rather than
+counted against a test, or a test skipped for three builds between two passes reads as two flips.
+
+`output.json` gained a per-test `duration` in the same change. Without it the duration panels could
+only ever describe the current run, because a number that was never stored is a number no later
+build can show; archives written before it have no key and are read as *not measured*, never as zero.
 
 ### 9. Failure grouping by exception type
 Parse the first line of each captured error and group — "12 failures, 9 are `TimeoutException`".
@@ -103,11 +129,46 @@ The CSS is one large block with hardcoded colors. Converting to CSS custom prope
 
 *Effort:* a couple of hours, mostly find-and-replace.
 
-### 11. Delta vs previous run
+### 11. Delta vs previous run — SHIPPED
 "+3 failures since last build" on the Dashboard, computed from the most recent archive JSON
 that is already loaded.
 
+*Why:* direction of travel matters more than the absolute count.
 *Effort:* ~20 lines.
+*Shipped as:* `run_delta` / `format_run_delta` / `run_delta_class` / `run_delta_title` and
+`run_delta_figure` / `run_delta_unit` / `generate_run_delta` in `util.py`, rendered as a
+`.delta-highlight` tile - arrow, signed figure, unit, right-pinned caption - as the second entry in
+the Highlights card, which lost its "Suite" prefix in the process because it now holds two kinds of
+thing.
+
+Read off `ConfigVars.tfail` rather than re-reading the archive folder: `update_trends` has already
+built the per-build list - this run first, then the archived builds newest first - and taking the
+headline from the same list the Trends chart is drawn from means the two cannot disagree. That also
+settles what a "failure" is here: failures and errors together, which is what the chart's Failed
+series plots - and it is why the line ended up on the Trends card rather than the summary card,
+where it read as a fourth statistic about this build instead of the headline for the chart it
+describes.
+
+The Trends card was tried first and given up: as a subtitle it pushed the chart down, and
+`.dashboard__headers`' own `-4%` bottom margin - tuned for a heading of one line - then pulled the
+chart back up over it; absolutely positioned in the card's corner it cleared the chart but needed
+two separately scoped offsets, one to dodge the `position: fixed` download icon and one for the
+width below which it and the centred heading stop fitting on a row. The Highlights card takes it
+with none of that: the card is a list of findings about the run, so a second entry is what it is
+already shaped for.
+
+Three decisions worth keeping. No change is written **`±0`**, not `0`: beside `SINCE LAST BUILD` a
+bare `0 failures` says the opposite of what it means. The arrow is a **plain character**, not an
+icon font - it inherits colour and size for free and cannot render as a missing glyph in a report
+opened somewhere the font never loaded. And a first build hides the **whole tile, caption
+included**, via `is-empty` on the wrapper rather than `:empty` on the text: a lone
+`SINCE LAST BUILD` over blank space reads as a bug.
+
+Two decisions worth keeping: a **first build shows nothing at all** rather than "no change", which
+would claim a previous build that does not exist - the placeholder fills in empty and `:empty`
+collapses the line. And the colours **run the opposite way to the coverage chip's**: there, up is
+the good direction; here, more failures than last time is the bad one, so the classes are named
+`is-worse` / `is-better` rather than reusing `is-up` / `is-down` and quietly inverting them.
 
 ### 12. Build / commit metadata option
 A `--build-info` option accepting arbitrary `key=value` pairs (CI job URL, git SHA, branch)

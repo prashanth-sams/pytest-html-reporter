@@ -1,3 +1,71 @@
+0.3.7 (31/08/2026)
+-------------------
+- New Analytics tab, separate from the Dashboard and answering a different question: the Dashboard is one run seen from every angle, Analytics is every archived build seen from the test's angle
+- Nothing extra is collected for it. Every archived build already holds a status per test, so a test's whole history has been sat on disk all along - it had simply never been read across files before
+- Six figures across the top: a stability score, this run's pass rate with its movement in points since the last build, the flaky count, the always-failing count, how many builds were analysed, and the time in tests against the median build
+- The stability score starts at the mean per-test pass rate and is charged half the mean flip rate: a test that alternates pass, fail, pass has the same pass rate as one everybody already knows is broken, and is the more expensive of the two to live with
+- Flaky and always failing are counted apart on purpose - a test that only ever fails is a bug with an owner, and putting it at the top of a flakiness list sends somebody hunting a race that is not there
+- A retry inside a single build counts as flaky on its own: same code, same build, two different answers is the least ambiguous evidence there is
+- Skips are left out of the pass/fail arithmetic rather than counted against a test, so a test skipped for three builds between two passes has not flipped twice; a test that has only ever been skipped shows no pass rate rather than a rate of zero
+- xfail and xpass count as passes. They are outcomes the suite declared in advance, and counting them as failures would have put every xfail-marked test at the top of the "always failing" list, where nothing is wrong
+- A test that failed the only build it was in reads as "Failing", not "Unreliable": that is a claim about a pattern, and one build has not shown one
+- Pass rate across builds is plotted with an axis that is not pinned to 0-100 - a suite that lives between 96% and 99% is exactly the one whose two-point drops matter, and a full axis flattens them into a line along the top
+- What moved, build to build stacks the fixed, regressed, added and dropped counts at each step; a test quietly disappearing from the suite is as often an accident as a decision
+- Where the time goes buckets this run's tests by duration, which a slowest-tests list cannot answer: two thousand tests at 300ms each is a different problem from ten tests at a minute
+- Test base growth plots the tests collected per build, and a slowest-tests chart lists the ten longest in this run - tests measuring no time at all are left out rather than drawn as ten rows of nothing
+- Four cards name what changed since the previous build - newly failing, newly fixed, new tests, no longer run - each listing the tests behind the number
+- A row per test underneath, searchable and sortable like the other tables, showing its verdict, its recent outcomes as one coloured block per build, its pass rate, flips, retries, current streak and duration. It opens worst-behaved first, so the list to work through is already the list on screen
+- The history strip is markup rather than a chart: there is one on every row, and a few hundred canvas instances would cost seconds of load time to say what a row of blocks says instantly
+- The tables count every build still on disk, bounded by --archive-count, --archive-days and --archive-since; the charts draw the most recent twenty so the axis stays readable
+- Builds stamped to the same minute - a pipeline that reruns the suite, a matrix leg - are numbered rather than left as three identical ticks on one axis
+- A first run says so and shows the duration panels, which are real from run one, rather than drawing four empty axes and four empty cards
+- One unreadable archive file is skipped rather than costing the whole tab; the other builds still have something to say
+- Archives are ordered on the timestamp inside the file rather than on the file name, where "1788194287.2" sorts after "1788194287.271306" as text and would silently shuffle the history
+- output.json now records each test's duration alongside its status, which is what lets a later build show a duration history at all. Builds archived by an earlier version have no such key and are read as "not measured" rather than as instant
+- The slowest-tests names travel to the chart on a data attribute, escaped like every other name on the page, rather than being written into a script block as source code: a parametrized case can be called anything at all, and none of it belongs anywhere the browser is willing to run it
+- The history strip is left out of the tab's CSV, Excel, Copy and print exports, where a column of coloured blocks is a column of nothing
+- The finished report is now opened in a browser when the run ends, which is what everybody did by hand anyway; --report-open / the report_open ini key turns it off
+- It only happens on a run somebody is sat in front of: the output has to be going to a terminal, no CI variable can be set, and there has to be a desktop to open into. A build agent fails all three
+- Without that last check a headless Linux box would have webbrowser fall through to whatever console browser it could find and paint the report over the summary the run had just printed
+- CI=false counts as "not CI", because it is a real thing to write and reading it as "this is CI" gets it exactly backwards
+- --report-open=always opens it whatever the run looks like - the escape hatch for a setup those checks read wrongly - and --report-open=none never does
+- A report_open that is not one of the three modes fails the run with a usage error while it is still being configured: somebody who wrote "report_open = off" has said they want no browser, and quietly opening one anyway is the single outcome they were trying to avoid
+- The report is handed over as a file:// URL rather than as a path, so one written into a folder with a space or an accent in its name still opens
+- The browser is asked for a tab rather than a window, so a suite run over and over does not bury the desktop
+- None of it can fail a run: the tests are over and the report is written by the time any of it happens, so a machine with no browser on it is not a failed build
+- The Dashboard's Highlights card now says which way the suite is moving: a "▲ +3 failures" tile over a "SINCE LAST BUILD" caption, red when there are more failures than last time and green with a "▼" when there are fewer
+- The delta is read off the same per-build list the chart under it is drawn from, so the two cannot disagree; failures there means failures and errors together, exactly as the chart's Failed series plots them
+- A first build shows no delta at all rather than "no change", which would claim a previous build that does not exist
+- That card is now titled Highlights rather than Suite Highlights: it holds two kinds of finding about the run, and only one of them is about a suite
+- No change is written "±0 failures", not "0 failures", which beside SINCE LAST BUILD would say the opposite of what it means - no failures at all, rather than no change in them
+- A first build leaves the whole entry out, caption included, rather than showing "no change" against a build that does not exist
+- The line's tooltip gives the two counts behind it - "12 failures this build, 9 in the build before it" - because "+3" reads very differently against 3 than against 300
+- Test Metrics now carries a Rerun column of its own, next to the one Test Suites has had: the suite total says the run retried five times, and only the per-test count says which test they were spent on
+- The count is the retries that test took, so a suite's column is still the sum of the rows under it; a test that ran once shows a muted 0 rather than a blank
+- Every row with an error now carries a copy button beside the message, putting the whole error on the clipboard - the cell has room for about fifty characters, and the rest of it used to have to be opened and then selected by hand before it could be pasted anywhere
+- A passing row gets no button at all: there is no error to copy, and a button that copies an empty string reads as a broken one
+- The blue (...) link that opened the rest of a cut message is now an expand button beside the copy one, so the two read as a pair of controls rather than as a link buried in the message text; a muted ellipsis after the text is what says the message was cut
+- The full error now opens in the report's own panel - the one the Logs column already used - instead of the Bootstrap modal, and that panel has a Copy button of its own
+- The error is shown in a monospace block that keeps its line breaks and indentation. The old modal put it in a <p>, which collapsed a whole traceback into one run-on line and made the alignment of an assertion diff impossible to read
+- The panel names the test and its suite, closes on Escape or a click outside, and no longer ends in a full-width blue Close button
+- A message short enough to be shown whole offers no expand button, only the copy one - there is nothing to open a panel for
+- The full error now travels in a data attribute rather than as a modal built into the cell, so it no longer reaches the table's search box or its CSV, Excel, Copy and print exports. Those used to carry the cut message, the "(...)", the whole error again and the word "Close" run together in one field; they now carry the cut message and an ellipsis
+- The report's icons no longer come off a CDN: the Font Awesome 4.7 glyphs it uses now ship with the plugin as SVGs under html_page/icons, so a report read offline, on a network that cannot reach cdnjs, or out of an archive months later still has its icons rather than a page of empty boxes
+- They are inlined into the page as CSS masks painted with currentcolor, so an icon still takes the colour of whatever it sits in - the red or green of an archived build, the amber of a notice, the grey of a disabled button - exactly as the font did
+- The markup did not change: an icon is still <i class="fa fa-home"></i>, and a new one is added by dropping its SVG into that folder under the name of its class
+- The two icons that were drawn by a CSS glyph rather than by a class - the file in front of a suite's name, and the tick the copy button turns into - come from the same SVGs, so nothing is left needing the font
+- An icon still takes its size from the text around it, the way the font's own `font-size: inherit` had it: a 1.45rem page title gets a 1.45rem icon, and the rail's stay at 16px
+- Each SVG is cropped to the glyph's outline and carries its coordinates on Font Awesome's 1792-unit em, so the em box it stood in is rebuilt in CSS and the outline dropped back into its corner of it - the icons come out the size, width and footing on the line they had, and the ones drawn wider than that em (the camera, the monitor, the line chart) are no longer cut off at its edge
+- Everything the report draws with now travels inside it. jQuery, DataTables and its Buttons, Bootstrap, Chart.js, jsPDF, dom-to-image and JSZip ship with the plugin and are written into the page, so a report is one file that opens anywhere
+- Run without internet before this and the report was a blank white page: the libraries came from five different CDNs, jQuery never arrived, and nothing that depended on it ran - no tables, no charts, no tabs, nothing to look at at all
+- A CDN going away has the same effect years later, which for a folder of archived builds is the more likely way to lose them
+- The favicon, the logo on the rail and the loading spinner were being fetched from imgur. They are packaged images now, written into the page as data URIs
+- The screenshot gallery no longer uses fancyBox. fancyBox 3 is GPLv3 or a paid commercial licence, so it was never something an MIT-licensed package could ship, and pulling it from a CDN was the only reason it worked at all
+- In its place is a lightbox of the report's own: the same tiles open it, the caption still names the suite and the test, the arrow keys and the buttons move through the run's screenshots, and Escape or a click outside closes it
+- The libraries are kept verbatim under html_page/vendor, with their versions and licences listed beside them, so what the report carries can be read off in one place
+- The report is bigger for it - about 300KB before, about 1.3MB now. An archived build is a JSON file rather than a copy of the page, so that is one file per run and not one per build
+- The only http links left in a report are ones to click: its own documentation and the sponsor's site. Nothing has to be fetched for the page to draw
+
 0.3.6 (31/08/2026)
 -------------------
 - Added --archive-days / the archive_days ini key, keeping only the builds from the last N days and deleting the rest; a run on a schedule wants a stretch of time, not a build count, and 30 days stays 30 days when the schedule changes (#223)

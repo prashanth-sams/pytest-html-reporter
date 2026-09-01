@@ -85,9 +85,20 @@ def _sections(payload):
     return re.findall(r'<div class="log-section__head">(.*?)</div>', payload)
 
 
+def _metrics_table(page):
+    """Just the Test Metrics table.
+
+    A test's name is now on an Analytics row as well, and that table comes
+    first in the document - so a row matched against the whole page is the
+    wrong row, in a table that has none of the cells being asserted on.
+    """
+    return page.split('id="tm"', 1)[-1].split('</table>', 1)[0]
+
+
 def _cell(page, test_name):
     """The `data-logs` count on a test's row."""
-    row = re.search(r'<tr>(?:(?!</tr>).)*?%s.*?</tr>' % re.escape(test_name), page, re.S)
+    row = re.search(r'<tr>(?:(?!</tr>).)*?%s.*?</tr>' % re.escape(test_name),
+                    _metrics_table(page), re.S)
     return re.search(r'<td class="log-cell" data-logs="(\d*)"', row.group(0)).group(1)
 
 
