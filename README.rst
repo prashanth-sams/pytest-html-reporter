@@ -35,6 +35,7 @@ Features
   - Trends
   - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
+* Analytics - flaky tests, standing failures, pass-rate drift and where the run's time goes, read across every archived build
 * Archives / History
 * Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
@@ -797,6 +798,50 @@ read off the same per-build list, so the two can never disagree. No change is wr
 ``0 failures``, which beside ``SINCE LAST BUILD`` would say the opposite of what it means. A first build has nothing to
 compare against, and the whole entry - caption included - is left out rather than showing ``no change`` against a build
 that does not exist.
+
+analytics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``Dashboard`` answers *how did this run go?*. The ``Analytics`` tab answers *how does this test behave?*, which no
+single run can - so it reads every build you have kept and lines them up per test. Nothing to install, nothing to
+configure, and nothing extra is collected: the archives already hold a status per test per build.
+
+Six figures across the top, then the panels behind them:
+
+* **Stability score** - one number, 0-100, for how much the suite can be trusted. It starts at the mean per-test pass
+  rate and is charged half the mean flip rate, because a test that alternates pass, fail, pass has the same pass rate
+  as one everybody already knows is broken and is the more expensive of the two to live with. Green at 80, amber at
+  60, red below it.
+* **Pass rate this run**, with the movement in points since the last build.
+* **Flaky tests** - tests that have flipped between passing and failing, or that needed a retry to pass.
+* **Always failing** - tests that have failed every build they were in, two builds running or more.
+* **Builds analysed** and **time in tests**, against the median build.
+
+``Pass rate across builds`` plots the drift; the axis is *not* pinned to 0-100, because a suite that lives between 96%
+and 99% is exactly the one whose two-point drops matter. ``What moved, build to build`` stacks what changed at each
+step - fixed, regressed, added, dropped. ``Where the time goes`` buckets this run's tests by duration, which a
+slowest-tests list cannot tell you: two thousand tests at 300ms each is a different problem from ten tests at a
+minute. ``Test base growth`` shows the suite being added to, or quietly shrinking.
+
+Underneath, four cards name what changed since the previous build - **newly failing**, **newly fixed**, **new tests**
+and **no longer run** - and then a searchable, sortable row per test: its verdict, its recent outcomes as a strip of
+one block per build, its pass rate, how many times it has flipped, its retries, how long its current streak has run
+for and its duration. It opens worst-behaved first, so the list to work through is already the list on screen.
+
+**Flaky and always failing are kept apart on purpose.** A test that only ever fails is a bug with an owner; putting it
+at the top of a flakiness list sends somebody hunting a race that is not there. Skips are excluded from the pass/fail
+arithmetic rather than counted against a test - a test skipped for three builds between two passes has not flipped
+twice - and a test that has only ever been skipped shows no pass rate at all rather than a rate of zero. ``xfail`` and
+``xpass`` count as passes: they are outcomes the suite declared in advance, and counting them as failures would put
+every ``xfail``-marked test at the top of the list, where nothing is wrong.
+
+How far back it reads is whatever ``--archive-count``, ``--archive-days`` and ``--archive-since`` have kept; the
+charts draw the most recent twenty builds so the axis stays readable, while the tables count every build on disk. On
+a **first run** the tab says so and shows the duration panels - which are real from run one - rather than drawing four
+empty axes.
+
+Per-test durations are recorded into ``output.json`` from this version on, so the duration panels fill from the run
+that produced them; builds archived by an earlier version are read as *not measured* rather than as instant.
 
 custom side-nav links
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

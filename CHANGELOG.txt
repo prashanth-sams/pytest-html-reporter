@@ -1,5 +1,29 @@
 0.3.7 (31/08/2026)
 -------------------
+- New Analytics tab, separate from the Dashboard and answering a different question: the Dashboard is one run seen from every angle, Analytics is every archived build seen from the test's angle
+- Nothing extra is collected for it. Every archived build already holds a status per test, so a test's whole history has been sat on disk all along - it had simply never been read across files before
+- Six figures across the top: a stability score, this run's pass rate with its movement in points since the last build, the flaky count, the always-failing count, how many builds were analysed, and the time in tests against the median build
+- The stability score starts at the mean per-test pass rate and is charged half the mean flip rate: a test that alternates pass, fail, pass has the same pass rate as one everybody already knows is broken, and is the more expensive of the two to live with
+- Flaky and always failing are counted apart on purpose - a test that only ever fails is a bug with an owner, and putting it at the top of a flakiness list sends somebody hunting a race that is not there
+- A retry inside a single build counts as flaky on its own: same code, same build, two different answers is the least ambiguous evidence there is
+- Skips are left out of the pass/fail arithmetic rather than counted against a test, so a test skipped for three builds between two passes has not flipped twice; a test that has only ever been skipped shows no pass rate rather than a rate of zero
+- xfail and xpass count as passes. They are outcomes the suite declared in advance, and counting them as failures would have put every xfail-marked test at the top of the "always failing" list, where nothing is wrong
+- A test that failed the only build it was in reads as "Failing", not "Unreliable": that is a claim about a pattern, and one build has not shown one
+- Pass rate across builds is plotted with an axis that is not pinned to 0-100 - a suite that lives between 96% and 99% is exactly the one whose two-point drops matter, and a full axis flattens them into a line along the top
+- What moved, build to build stacks the fixed, regressed, added and dropped counts at each step; a test quietly disappearing from the suite is as often an accident as a decision
+- Where the time goes buckets this run's tests by duration, which a slowest-tests list cannot answer: two thousand tests at 300ms each is a different problem from ten tests at a minute
+- Test base growth plots the tests collected per build, and a slowest-tests chart lists the ten longest in this run - tests measuring no time at all are left out rather than drawn as ten rows of nothing
+- Four cards name what changed since the previous build - newly failing, newly fixed, new tests, no longer run - each listing the tests behind the number
+- A row per test underneath, searchable and sortable like the other tables, showing its verdict, its recent outcomes as one coloured block per build, its pass rate, flips, retries, current streak and duration. It opens worst-behaved first, so the list to work through is already the list on screen
+- The history strip is markup rather than a chart: there is one on every row, and a few hundred canvas instances would cost seconds of load time to say what a row of blocks says instantly
+- The tables count every build still on disk, bounded by --archive-count, --archive-days and --archive-since; the charts draw the most recent twenty so the axis stays readable
+- Builds stamped to the same minute - a pipeline that reruns the suite, a matrix leg - are numbered rather than left as three identical ticks on one axis
+- A first run says so and shows the duration panels, which are real from run one, rather than drawing four empty axes and four empty cards
+- One unreadable archive file is skipped rather than costing the whole tab; the other builds still have something to say
+- Archives are ordered on the timestamp inside the file rather than on the file name, where "1788194287.2" sorts after "1788194287.271306" as text and would silently shuffle the history
+- output.json now records each test's duration alongside its status, which is what lets a later build show a duration history at all. Builds archived by an earlier version have no such key and are read as "not measured" rather than as instant
+- The slowest-tests names travel to the chart on a data attribute, escaped like every other name on the page, rather than being written into a script block as source code: a parametrized case can be called anything at all, and none of it belongs anywhere the browser is willing to run it
+- The history strip is left out of the tab's CSV, Excel, Copy and print exports, where a column of coloured blocks is a column of nothing
 - The finished report is now opened in a browser when the run ends, which is what everybody did by hand anyway; --report-open / the report_open ini key turns it off
 - It only happens on a run somebody is sat in front of: the output has to be going to a terminal, no CI variable can be set, and there has to be a desktop to open into. A build agent fails all three
 - Without that last check a headless Linux box would have webbrowser fall through to whatever console browser it could find and paint the report over the summary the run had just printed

@@ -31,12 +31,17 @@ clickable so they drive `table.column(2).search(...)` on the existing DataTable.
 *Why:* one-click "show me only the failures" is the most common action on a report like this.
 *Effort:* ~15 lines of JS. The DataTables API is already loaded.
 
-### 3. Slowest-tests panel
+### 3. Slowest-tests panel — SHIPPED
 `ConfigVars._duration` is already captured per test (`html_reporter.py:41`) and rendered into
 `%(dur)%`. Sort it, take the top 10, render a horizontal bar list on the Dashboard.
 
 *Why:* free performance visibility from data already collected.
 *Effort:* ~40 lines.
+*Shipped as:* a horizontal bar chart on the Analytics tab rather than on the Dashboard, which is a
+fixed-height one-screen viewport with no room left in it. Tests measuring 0.0s are left out — ten
+rows of "slowest test: no time at all" reads as a chart that failed to load rather than as a fast
+suite. It sits beside a duration histogram, which answers the question the top-10 cannot: two
+thousand tests at 300ms each is a different problem from ten tests at a minute.
 
 ### 4. Copy-error and copy-rerun-command buttons
 Next to each failure message, a copy icon for the full traceback and one that yields
@@ -85,12 +90,27 @@ sections are folded into the stored record afterwards. The text is parked outsid
 holding it would be pulled into the DataTables search index and into every CSV / Excel / print
 export. A per-test character cap keeps one chatty test from outweighing the rest of the file.
 
-### 8. Flaky test detection from archives
+### 8. Flaky test detection from archives — SHIPPED
 `load_archive` already reads every archived `output.json`. Flag any test whose status flipped
 across retained builds as flaky, with a "flakiest tests" card.
 
 *Why:* genuinely differentiating, and the data is already on disk.
 *Effort:* ~50 lines in `pytest_html_reporter/util.py`, reusing the existing archive loop.
+*Shipped as:* `pytest_html_reporter/analytics.py` and the whole Analytics tab, not a card. Once the
+archives are being read per test rather than per build, a flake rate is one of about eight things
+that fall out of the same pass — pass-rate drift, failing streaks, fixed/regressed/added/dropped
+between builds, duration bands — and a single card would have thrown the other seven away.
+
+It is its own module rather than more of `util.py`: the archive loop there builds page fragments as
+it goes, and this needs the builds as data first and rendering second. Two things had to be settled
+before any of the numbers meant anything. Flaky and always-failing are counted apart — a test that
+only ever fails is a bug with an owner, and putting it top of a flakiness list sends somebody
+hunting a race that is not there. And skips are excluded from the pass/fail arithmetic rather than
+counted against a test, or a test skipped for three builds between two passes reads as two flips.
+
+`output.json` gained a per-test `duration` in the same change. Without it the duration panels could
+only ever describe the current run, because a number that was never stored is a number no later
+build can show; archives written before it have no key and are read as *not measured*, never as zero.
 
 ### 9. Failure grouping by exception type
 Parse the first line of each captured error and group — "12 failures, 9 are `TimeoutException`".

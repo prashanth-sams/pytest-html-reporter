@@ -11,6 +11,7 @@ import pytest
 
 from html_page.archive_body import ArchiveBody
 from html_page.archive_row import ArchiveRow
+from pytest_html_reporter.analytics import generate_analytics
 from html_page.attachment_body import AttachmentBody
 from html_page.attachment_item import AttachmentItem
 from html_page.attachment_meta import AttachmentMeta
@@ -331,6 +332,10 @@ class HTMLReporter(object):
 
             # generate suite highlights
             generate_suite_highlights()
+
+            # read every build still on disk into per-test histories: flake
+            # rates, failing streaks, pass-rate drift, where the minutes go
+            generate_analytics(base)
 
             # collect host, interpreter and invocation details
             generate_environment_info(self.config)
@@ -806,6 +811,12 @@ class HTMLReporter(object):
                 'message': str(record['message']),
                 'test_name': str(record['test_name']),
                 'rerun': str(record['rerun']),
+                # Written for the sake of the build after this one: the
+                # Analytics tab reads durations back out of the archives, and a
+                # number that was never stored is a number no later run can
+                # show. Archives written before this simply have no key, and
+                # are read as "not measured" rather than as zero.
+                'duration': record['duration'],
             }
 
         self.json_data['content']['suites'][suite_index] = {
@@ -954,6 +965,23 @@ class HTMLReporter(object):
             attachment_items=str(ConfigVars._attachment_items),
             attachment_store=str(ConfigVars._attachment_store),
             logs_notice=str(ConfigVars._logs_notice),
+            analytics_tiles=str(ConfigVars._analytics_tiles),
+            analytics_rows=str(ConfigVars._analytics_rows),
+            analytics_movement=str(ConfigVars._analytics_movement),
+            analytics_builds=str(ConfigVars._analytics_builds),
+            analytics_scope=escape_report_text(ConfigVars._analytics_scope),
+            analytics_state=str(ConfigVars._analytics_state),
+            analytics_labels=str(ConfigVars._analytics_labels),
+            analytics_pass_rate=str(ConfigVars._analytics_pass_rate),
+            analytics_growth=str(ConfigVars._analytics_growth),
+            analytics_flow_labels=str(ConfigVars._analytics_flow_labels),
+            analytics_flow_fixed=str(ConfigVars._analytics_flow_fixed),
+            analytics_flow_regressed=str(ConfigVars._analytics_flow_regressed),
+            analytics_flow_added=str(ConfigVars._analytics_flow_added),
+            analytics_flow_removed=str(ConfigVars._analytics_flow_removed),
+            analytics_bucket_labels=str(ConfigVars._analytics_bucket_labels),
+            analytics_buckets=str(ConfigVars._analytics_buckets),
+            analytics_slowest=str(ConfigVars._analytics_slowest),
             environment_rows=str(ConfigVars._environment_rows),
             environment=escape_report_text(ConfigVars._environment_label),
             environment_title=escape_report_text(ConfigVars._environment),

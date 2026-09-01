@@ -3979,6 +3979,297 @@
                 .cov-trigger--fair   { color: #b58900; border-color: #f3e4b2; }
                 .cov-trigger--low    { color: #d64b4a; border-color: #f6cccb; }
 
+
+                /* ==================== Analytics ==================== */
+                /* The Dashboard is one build seen from every angle. This is
+                   every build seen from one angle - the test's - so nothing
+                   here is a second copy of a dashboard widget. */
+
+                .an-page {
+                    padding-bottom: 2rem;
+                }
+
+                .an-shell {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 14px;
+                }
+
+                .stat-tiles {
+                    display: grid;
+                    grid-template-columns: repeat(6, minmax(0, 1fr));
+                    gap: 12px;
+                }
+
+                .stat-tile {
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    padding: 16px 18px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                    border-top: 3px solid #e9edf3;
+                }
+
+                /* Only the score is graded. Colouring six tiles at once would
+                   leave nothing for the one number that is meant to be read
+                   first. */
+                .stat-tile--strong { border-top-color: #98cc64; }
+                .stat-tile--fair   { border-top-color: #ffd050; }
+                .stat-tile--low    { border-top-color: #fc6766; }
+
+                .stat-tile__value {
+                    font-family: sans-serif;
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                    line-height: 1.1;
+                }
+
+                .stat-tile--strong .stat-tile__value { color: #6aa63b; }
+                .stat-tile--fair   .stat-tile__value { color: #b58900; }
+                .stat-tile--low    .stat-tile__value { color: #d64b4a; }
+
+                .stat-tile__label {
+                    margin-top: 4px;
+                    text-transform: uppercase;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
+                    color: slategrey;
+                }
+
+                .stat-tile__note {
+                    margin-top: 6px;
+                    font-size: 0.78rem;
+                    font-family: sans-serif;
+                    color: #9aa2b1;
+                    line-height: 1.35;
+                    min-height: 2.1em;
+                }
+
+                .an-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                    gap: 14px;
+                }
+
+                .an-chart__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 14px 18px 0 18px;
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    font-size: 0.95rem;
+                    color: #6b7280;
+                }
+
+                .an-chart__head i {
+                    color: #a9a9a9;
+                }
+
+                .an-chart__note {
+                    margin-left: auto;
+                    font-weight: 400;
+                    font-size: 0.76rem;
+                    color: #a8b0bd;
+                }
+
+                .an-chart__wrap {
+                    position: relative;
+                    height: 230px;
+                    padding: 10px 16px 16px 16px;
+                }
+
+                .an-chart__wrap--slow {
+                    height: 300px;
+                }
+
+                /* ---- Movement cards: what changed since the build before ---- */
+                .move-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
+                    gap: 14px;
+                }
+
+                .move-card {
+                    background-color: #ffffff;
+                    border-radius: 6px;
+                    padding: 14px 16px 12px 16px;
+                    box-shadow: 0 1px 2px rgba(46, 61, 73, 0.08), 0 10px 22px rgba(46, 61, 73, 0.10);
+                }
+
+                .move-card__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 8px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                .move-card__title {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-family: sans-serif;
+                    font-size: 0.88rem;
+                    font-weight: 550;
+                    color: #6b7280;
+                }
+
+                .move-card__count {
+                    font-family: sans-serif;
+                    font-size: 1.15rem;
+                    font-weight: 700;
+                    color: #4a5160;
+                }
+
+                .move-card--bad     .move-card__title i, .move-card--bad     .move-card__count { color: #d64b4a; }
+                .move-card--good    .move-card__title i, .move-card--good    .move-card__count { color: #6aa63b; }
+                .move-card--neutral .move-card__title i, .move-card--neutral .move-card__count { color: #5a8fc4; }
+                .move-card--muted   .move-card__title i, .move-card--muted   .move-card__count { color: #a8b0bd; }
+
+                .move-card__list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 10px 0 0 0;
+                }
+
+                .move__item {
+                    padding: 3px 0;
+                    font-family: sans-serif;
+                    line-height: 1.25;
+                }
+
+                .move__test {
+                    display: block;
+                    font-size: 0.82rem;
+                    color: #4a5160;
+                    word-break: break-word;
+                }
+
+                .move__suite {
+                    display: block;
+                    font-size: 0.71rem;
+                    color: #a8b0bd;
+                    word-break: break-word;
+                }
+
+                .move__more,
+                .move__empty {
+                    padding-top: 6px;
+                    font-family: sans-serif;
+                    font-size: 0.78rem;
+                    color: #a8b0bd;
+                }
+
+                /* ---- The per-test table ---- */
+                .metrics-card td.an-name {
+                    text-align: left;
+                    max-width: 340px;
+                }
+
+                .an-name__test {
+                    display: block;
+                    color: #4a5160;
+                    word-break: break-word;
+                }
+
+                .an-name__suite {
+                    display: block;
+                    font-size: 0.72rem;
+                    color: #a8b0bd;
+                    word-break: break-word;
+                }
+
+                .verdict {
+                    display: inline-block;
+                    padding: 2px 9px;
+                    border-radius: 999px;
+                    font-size: 0.72rem;
+                    letter-spacing: 0.02em;
+                    white-space: nowrap;
+                }
+
+                .verdict--broken { color: #b13635; background-color: #fbe3e3; }
+                .verdict--flaky  { color: #b58900; background-color: #fdf3d6; }
+                .verdict--stable { color: #6aa63b; background-color: #eaf4de; }
+                .verdict--muted  { color: #77808f; background-color: #eef1f5; }
+
+                /* One cell per build, oldest left. Deliberately not a chart:
+                   there is one of these on every row, and a few hundred canvas
+                   instances would cost seconds of load time to say what a row
+                   of blocks says instantly. */
+                .spark {
+                    display: inline-flex;
+                    gap: 2px;
+                    align-items: center;
+                }
+
+                /* Scoped to the strip so a block can be written as
+                   <i class="pass"></i>. On a thousand-test suite these are the
+                   biggest single thing in the page, and the class name was
+                   most of each one. */
+                .spark i {
+                    display: inline-block;
+                    width: 6px;
+                    height: 16px;
+                    border-radius: 1px;
+                }
+
+                .spark i.pass { background-color: #98cc64; }
+                .spark i.fail { background-color: #fc6766; }
+                .spark i.skip { background-color: #dfe3ea; }
+
+                .streak {
+                    font-size: 0.8rem;
+                    white-space: nowrap;
+                }
+
+                .streak--fail { color: #d64b4a; }
+                .streak--pass { color: #6aa63b; }
+                .streak--skip { color: #a8b0bd; }
+
+                /* ---- First build on record ---- */
+                .an-solo-note {
+                    display: none;
+                    align-items: flex-start;
+                    gap: 10px;
+                    padding: 14px 18px;
+                    border-radius: 6px;
+                    background-color: #f4f7fb;
+                    border: 1px solid #e3eaf3;
+                    font-family: sans-serif;
+                    font-size: 0.84rem;
+                    line-height: 1.5;
+                    color: #6b7280;
+                }
+
+                .an-solo-note i {
+                    color: #5a8fc4;
+                    margin-top: 2px;
+                }
+
+                /* Nothing longitudinal has anything to draw on a first run, so
+                   those panels are taken out rather than shown empty. */
+                .an-page.is-solo .an-solo-note { display: flex; }
+                .an-page.is-solo .an-trend,
+                .an-page.is-solo .move-grid { display: none; }
+
+                /* With both trend cards gone, a two-column grid leaves the
+                   duration card sat beside a hole. */
+                .an-page.is-solo .an-grid { grid-template-columns: minmax(0, 1fr); }
+
+                @media screen and (max-width: 1400px) {
+                    .stat-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                    .move-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                }
+
+                @media screen and (max-width: 1000px) {
+                    .stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                    .an-grid,
+                    .move-grid { grid-template-columns: minmax(0, 1fr); }
+                }
+
                 @media screen and (max-width: 900px) {
                     .cov-hero {
                         justify-content: center;
@@ -4016,6 +4307,9 @@
             </a>
             <a class="tablink" href="#dashboard" id="defaultOpen" onclick="openPage('dashboard', this, 'white', '#565656', 'groove')">
                 <i class="fa fa-home" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Dashboard
+            </a>
+            <a class="tablink" href="#analytics" onclick="openPage('analytics', this, 'white', '#565656', 'groove'); executeDataTable('#an',1,'asc'); drawAnalytics();">
+                <i class="fa fa-line-chart" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Analytics
             </a>
             <a class="tablink" href="#suites" onclick="openPage('suiteMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#sm',2)">
                 <i class="fa fa-briefcase" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Suites
@@ -4384,6 +4678,96 @@
                         executeDataTable('#cov', 4, 'asc');
                     };
                 </script>
+            </div>
+            <div class="tabcontent" id="analytics">
+                <div class="metrics-page an-page %(analytics_state)%">
+                    <div class="metrics-page__head">
+                        <div>
+                            <div class="metrics-page__title"><i class="fa fa-line-chart"></i>Analytics</div>
+                            <div class="metrics-page__subtitle">How these tests behave over time &mdash; %(analytics_scope)%</div>
+                        </div>
+                    </div>
+
+                    <div class="an-shell">
+                        <div class="stat-tiles">%(analytics_tiles)%</div>
+
+                        <div class="an-solo-note">
+                            <i class="fa fa-info-circle" aria-hidden="true"></i>
+                            <span>
+                                This is the only build on record, so there is nothing yet to compare it
+                                against. The duration panels below are this run's and are already real;
+                                the trends, the flake rates and the movement cards fill themselves in from
+                                the second run onwards, over as many builds as <b>--archive-count</b>
+                                keeps.
+                            </span>
+                        </div>
+
+                        <div class="an-grid">
+                            <div class="metrics-card an-chart an-trend">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-line-chart" aria-hidden="true"></i>Pass rate across builds
+                                    <span class="an-chart__note">share of decided tests that passed</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anPassRate"></canvas></div>
+                            </div>
+
+                            <div class="metrics-card an-chart an-trend">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-exchange" aria-hidden="true"></i>What moved, build to build
+                                    <span class="an-chart__note">fixed, regressed, added, dropped</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anFlow"></canvas></div>
+                            </div>
+
+                            <div class="metrics-card an-chart">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-history" aria-hidden="true"></i>Where the time goes
+                                    <span class="an-chart__note">tests per duration band, this run</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anDuration"></canvas></div>
+                            </div>
+
+                            <div class="metrics-card an-chart an-trend">
+                                <div class="an-chart__head">
+                                    <i class="fa fa-briefcase" aria-hidden="true"></i>Test base growth
+                                    <span class="an-chart__note">tests collected per build</span>
+                                </div>
+                                <div class="an-chart__wrap"><canvas id="anGrowth"></canvas></div>
+                            </div>
+                        </div>
+
+                        <div class="metrics-card an-chart">
+                            <div class="an-chart__head">
+                                <i class="fa fa-bolt" aria-hidden="true"></i>Slowest tests in this run
+                                <span class="an-chart__note">seconds</span>
+                            </div>
+                            <div class="an-chart__wrap an-chart__wrap--slow"><canvas id="anSlowest" data-slowest="%(analytics_slowest)%"></canvas></div>
+                        </div>
+
+                        <div class="move-grid">%(analytics_movement)%</div>
+
+                        <div class="metrics-card">
+                            <table class="table row-border tablecard" id="an">
+                                <thead>
+                                    <tr>
+                                        <th class="th-left">Test</th>
+                                        <th>Verdict</th>
+                                        <th class="an-spark">History</th>
+                                        <th>Pass rate</th>
+                                        <th>Builds</th>
+                                        <th>Flips</th>
+                                        <th>Retries</th>
+                                        <th>Current streak</th>
+                                        <th>Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    %(analytics_rows)%
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="tabcontent" id="suiteMetrics">
                 <div class="metrics-page">
@@ -5133,6 +5517,10 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         fileTitle = "Coverage";
                         searchPlaceholder = "Search files";
                         break;
+                    case "#an":
+                        fileTitle = "Analytics";
+                        searchPlaceholder = "Search tests";
+                        break;
                     default:
                         fileTitle = "metrics";
                         searchPlaceholder = "Search";
@@ -5171,7 +5559,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         },
                         titleAttr: 'Copy',
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         }
                     },
                     {
@@ -5182,7 +5570,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             return fileTitle + '-' + new Date().toLocaleString();
                         },
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         }
                     },
                     {
@@ -5193,7 +5581,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             return fileTitle + '-' + new Date().toLocaleString();
                         },
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         }
                     },
                     {
@@ -5201,7 +5589,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         text:      '<i class="fa fa-print"></i>',
                         titleAttr: 'Print',
                         exportOptions: {
-                            columns: ':visible',
+                            columns: ':visible:not(.an-spark)',
                             alignment: 'left',
                         }
                     },
@@ -5211,7 +5599,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         text:      '<i class="fa fa-low-vision"></i>',
                         titleAttr: 'Hide Column',
                         exportOptions: {
-                            columns: ':visible'
+                            columns: ':visible:not(.an-spark)'
                         },
                         postfixButtons: [ 'colvisRestore' ]
                     },
@@ -5331,6 +5719,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     // Map hash to page IDs
                     var hashToPageMap = {
                         'dashboard': 'dashboard',
+                        'analytics': 'analytics',
                         'suites': 'suiteMetrics',
                         'test-metrics': 'testMetrics',
                         'archives': 'archives',
@@ -5885,6 +6274,291 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     }
                 });
             })();
+        </script>
+        <script>
+            // ---------------------------- Analytics ----------------------------
+            // Every series here is aggregated in Python, out of output.json and
+            // the archives beside it, and arrives as a plain array. The page does
+            // no history maths of its own - it draws what it is handed.
+            var anLabels     = %(analytics_labels)%;
+            var anPassRate   = %(analytics_pass_rate)%;
+            var anGrowth     = %(analytics_growth)%;
+            var anFlowLabels = %(analytics_flow_labels)%;
+            var anFixed      = %(analytics_flow_fixed)%;
+            var anRegressed  = %(analytics_flow_regressed)%;
+            var anAdded      = %(analytics_flow_added)%;
+            var anRemoved    = %(analytics_flow_removed)%;
+            var anBucketLabels = %(analytics_bucket_labels)%;
+            var anBuckets      = %(analytics_buckets)%;
+
+            // Slowest tests are read off the canvas rather than written here.
+            // Every other series on this tab is build labels and counts, which
+            // the report generates itself; these are test names, which are
+            // whatever somebody called them, and no name belongs in a block the
+            // browser executes. The attribute is escaped like every other name
+            // on the page and unescaped by the parser before this sees it.
+            function anSlowest() {
+                var canvas = document.getElementById('anSlowest');
+                if (!canvas) { return []; }
+
+                try {
+                    return JSON.parse(canvas.getAttribute('data-slowest') || '[]');
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            // The tab starts hidden, and a canvas in a hidden tab measures zero,
+            // so a chart built at load time would be drawn one pixel high and
+            // stay that way. Building on the first open is what gives them a box
+            // to fill; the flag keeps a second open from stacking a second chart
+            // on the same canvas.
+            var anDrawn = false;
+
+            // Counts: whole numbers from zero. Chart.js will happily label a
+            // four-bar chart 0, 0.5, 1.0 ... and "2.5 tests regressed" is not a
+            // thing that can happen.
+            function anAxis(extra) {
+                var axis = {
+                    ticks: { beginAtZero: true, precision: 0, fontSize: 11, fontColor: '#999' },
+                    gridLines: { color: '#f0f2f6', zeroLineColor: '#e4e8ef', drawBorder: false }
+                };
+
+                for (var key in (extra || {})) { axis.ticks[key] = extra[key]; }
+                return axis;
+            }
+
+            function anCategoryAxis() {
+                return {
+                    ticks: { fontSize: 10, fontColor: '#999', maxRotation: 0, autoSkipPadding: 12 },
+                    gridLines: { display: false }
+                };
+            }
+
+            function anTooltip(callbacks) {
+                return {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: '#FFF',
+                    custom: keepTooltipInsideCanvas,
+                    titleFontSize: 12,
+                    titleFontColor: '#555555',
+                    bodyFontColor: '#000',
+                    bodyFontSize: 12,
+                    bodySpacing: 4,
+                    borderColor: '#555555',
+                    borderWidth: 1,
+                    cornerRadius: 4,
+                    displayColors: true,
+                    xPadding: 10,
+                    yPadding: 9,
+                    callbacks: callbacks || {}
+                };
+            }
+
+            function anChart(id, config) {
+                var canvas = document.getElementById(id);
+                if (!canvas) { return; }
+
+                new Chart(canvas.getContext('2d'), config);
+            }
+
+            function anPassRateChart() {
+                if (anPassRate.length < 2) { return; }
+
+                anChart('anPassRate', {
+                    type: 'line',
+                    data: {
+                        labels: anLabels,
+                        datasets: [{
+                            label: 'Pass rate',
+                            fill: true,
+                            backgroundColor: 'rgba(152, 204, 100, 0.13)',
+                            borderColor: '#98cc64',
+                            pointBackgroundColor: '#b3c89e',
+                            // A build in which every test was skipped decided
+                            // nothing, so it leaves a gap rather than a plunge
+                            // to zero that never happened.
+                            spanGaps: false,
+                            data: anPassRate
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: {
+                            // Barely-smoothed on purpose: the default tension
+                            // bows the line into a sine wave between builds,
+                            // reading as movement that was never measured.
+                            line: { borderWidth: 2, tension: 0.15 },
+                            point: { radius: 3, hoverRadius: 5 }
+                        },
+                        scales: {
+                            xAxes: [anCategoryAxis()],
+                            // Not pinned to 0-100, and deliberately not
+                            // beginAtZero: a suite that lives between 96% and
+                            // 99% is exactly the one whose two-point drops
+                            // matter, and a full axis flattens them into a
+                            // straight line along the top.
+                            yAxes: [{
+                                ticks: {
+                                    fontSize: 11,
+                                    fontColor: '#999',
+                                    callback: function(value) { return value + '%'; }
+                                },
+                                gridLines: {
+                                    color: '#f0f2f6', zeroLineColor: '#e4e8ef', drawBorder: false
+                                }
+                            }]
+                        },
+                        tooltips: anTooltip({
+                            label: function(item) { return item.yLabel + '% passed'; }
+                        })
+                    }
+                });
+            }
+
+            function anFlowChart() {
+                if (!anFlowLabels.length) { return; }
+
+                anChart('anFlow', {
+                    type: 'bar',
+                    data: {
+                        labels: anFlowLabels,
+                        datasets: [
+                            { label: 'Regressed', backgroundColor: '#fc6766', data: anRegressed },
+                            { label: 'Fixed',     backgroundColor: '#98cc64', data: anFixed },
+                            { label: 'Added',     backgroundColor: '#5a8fc4', data: anAdded },
+                            { label: 'Dropped',   backgroundColor: '#c9cfda', data: anRemoved }
+                        ]
+                    },
+                    options: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { boxWidth: 10, fontSize: 11, fontColor: '#999', padding: 12 }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            xAxes: [$.extend(true, anCategoryAxis(), { stacked: true })],
+                            yAxes: [$.extend(true, anAxis(), { stacked: true })]
+                        },
+                        tooltips: anTooltip()
+                    }
+                });
+            }
+
+            function anDurationChart() {
+                if (!anBuckets.length) { return; }
+
+                anChart('anDuration', {
+                    type: 'bar',
+                    data: {
+                        labels: anBucketLabels,
+                        // One colour, deepening with the band: the bars are one
+                        // measure sliced up, not four things being compared.
+                        datasets: [{
+                            label: 'Tests',
+                            backgroundColor: ['#a8d47e', '#98cc64', '#c6cf5a', '#ffd050',
+                                              '#f7b955', '#f08f52', '#fc6766'],
+                            data: anBuckets
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { xAxes: [anCategoryAxis()], yAxes: [anAxis()] },
+                        tooltips: anTooltip({
+                            label: function(item) {
+                                return item.yLabel + (item.yLabel === 1 ? ' test' : ' tests');
+                            }
+                        })
+                    }
+                });
+            }
+
+            function anGrowthChart() {
+                if (anGrowth.length < 2) { return; }
+
+                anChart('anGrowth', {
+                    type: 'line',
+                    data: {
+                        labels: anLabels,
+                        datasets: [{
+                            label: 'Tests',
+                            fill: true,
+                            backgroundColor: 'rgba(90, 143, 196, 0.12)',
+                            borderColor: '#5a8fc4',
+                            pointBackgroundColor: '#8fb4d8',
+                            steppedLine: true,
+                            data: anGrowth
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        elements: { line: { borderWidth: 2 }, point: { radius: 2, hoverRadius: 5 } },
+                        scales: { xAxes: [anCategoryAxis()], yAxes: [anAxis()] },
+                        tooltips: anTooltip({
+                            label: function(item) { return item.yLabel + ' tests collected'; }
+                        })
+                    }
+                });
+            }
+
+            function anSlowestChart() {
+                var slowest = anSlowest();
+                if (!slowest.length) { return; }
+
+                anChart('anSlowest', {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: slowest.map(function(row) { return row[0]; }),
+                        datasets: [{
+                            label: 'Seconds',
+                            backgroundColor: '#f0a95c',
+                            data: slowest.map(function(row) { return row[1]; })
+                        }]
+                    },
+                    options: {
+                        legend: { display: false },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            // Names go on the left of a horizontal bar, so the
+                            // long-name axis is the one given room, not clipped.
+                            yAxes: [{
+                                ticks: { fontSize: 11, fontColor: '#777' },
+                                gridLines: { display: false }
+                            }],
+                            xAxes: [anAxis({ callback: function(value) { return value + 's'; } })]
+                        },
+                        tooltips: anTooltip({
+                            label: function(item) { return item.xLabel + 's'; }
+                        })
+                    }
+                });
+            }
+
+            function drawAnalytics() {
+                if (anDrawn) { return; }
+                anDrawn = true;
+
+                anPassRateChart();
+                anFlowChart();
+                anDurationChart();
+                anGrowthChart();
+                anSlowestChart();
+
+                // The canvases were sized the moment the tab was shown, which is
+                // the same tick this runs in; one more pass once the browser has
+                // laid the cards out settles them at their real width.
+                setTimeout(resizeVisibleCharts, 0);
+            }
         </script>
         <script>
             function failureScreenshots() {
