@@ -16,6 +16,7 @@ from html_page.attachment_item import AttachmentItem
 from html_page.attachment_meta import AttachmentMeta
 from html_page.attachment_part import AttachmentPart
 from html_page.floating_error import FloatingError
+from html_page.assets import image, vendor_assets
 from html_page.icon_styles import icon_styles
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
@@ -346,7 +347,7 @@ class HTMLReporter(object):
 
             # generate html report
             live_logs_file = open(path, 'w', encoding='utf-8')
-            message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
+            message = self.renew_template_text(image('logo.png'))
             live_logs_file.write(message)
             live_logs_file.close()
 
@@ -905,7 +906,10 @@ class HTMLReporter(object):
 
     def renew_template_text(self, logo_url):
         template_text = HtmlTemplate(
+            vendor_assets=vendor_assets(),
             icon_styles=icon_styles(),
+            favicon=image('favicon.png'),
+            loader_image=image('loader.gif'),
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
             title=escape_report_text(ConfigVars._title),
