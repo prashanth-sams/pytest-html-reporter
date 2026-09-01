@@ -600,6 +600,7 @@ class HTMLReporter(object):
             name=escape_report_text(record['test_name']),
             stat=str(record['status']),
             dur=str(record['duration']),
+            rerun=str(record['rerun']),
             msg=escape_report_text(record['message'][:50]),
             runt=row_id,
             log_count=str(self.attach_test_logs(record, row_id)),

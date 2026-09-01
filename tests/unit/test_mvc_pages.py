@@ -176,27 +176,28 @@ def test_test_row():
     floating_error_text = get_random_string()
     log_count = str(get_random_number())
     runt = get_random_string()
+    rerun = str(get_random_number())
 
     attach_count = str(get_random_number())
 
-    test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, msg=msg,
+    test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
                        floating_error_text=floating_error_text, log_count=log_count,
                        attach_count=attach_count, runt=runt)
     soup = BeautifulSoup(str(test_row), "html.parser")
 
     cells = soup.findAll("td")
 
-    for node, expected in zip(cells, [sname, name, stat, dur]):
+    for node, expected in zip(cells, [sname, name, stat, dur, rerun]):
         assert node.text.strip() == expected
 
-    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[4].text.strip())
+    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[5].text.strip())
 
-    log_cell = cells[5]
+    log_cell = cells[6]
     assert log_cell["data-logs"] == log_count
     assert log_cell.find("button")["onclick"] == "showLogs('%s')" % runt
     assert log_count in log_cell.find("button").text
 
-    attach_cell = cells[6]
+    attach_cell = cells[7]
     assert attach_cell["data-logs"] == attach_count
     assert attach_cell.find("button")["onclick"] == "showAttachmentsFor('%s')" % runt
     assert attach_count in attach_cell.find("button").text
@@ -205,11 +206,11 @@ def test_test_row():
 def test_test_row_without_logs_says_so():
     """The button is left in the row and hidden by `data-logs`, so a test that
     captured nothing shows a dash instead of opening an empty panel."""
-    test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", msg="",
+    test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", rerun="0", msg="",
                        floating_error_text="", log_count="0", attach_count="0", runt="0-0")
     soup = BeautifulSoup(str(test_row), "html.parser")
 
-    for cell in soup.findAll("td")[5:7]:
+    for cell in soup.findAll("td")[6:8]:
         assert cell["data-logs"] == "0"
         assert cell.find("span", class_="log-none") is not None
 

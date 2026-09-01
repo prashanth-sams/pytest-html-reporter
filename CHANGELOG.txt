@@ -16,6 +16,8 @@
 - No change is written "±0 failures", not "0 failures", which beside SINCE LAST BUILD would say the opposite of what it means - no failures at all, rather than no change in them
 - A first build leaves the whole entry out, caption included, rather than showing "no change" against a build that does not exist
 - The line's tooltip gives the two counts behind it - "12 failures this build, 9 in the build before it" - because "+3" reads very differently against 3 than against 300
+- Test Metrics now carries a Rerun column of its own, next to the one Test Suites has had: the suite total says the run retried five times, and only the per-test count says which test they were spent on
+- The count is the retries that test took, so a suite's column is still the sum of the rows under it; a test that ran once shows a muted 0 rather than a blank
 
 0.3.6 (31/08/2026)
 -------------------

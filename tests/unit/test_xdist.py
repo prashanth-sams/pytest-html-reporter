@@ -11,6 +11,7 @@ import sys
 import textwrap
 
 import pytest
+from bs4 import BeautifulSoup
 
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.html_reporter import HTMLReporter
@@ -163,6 +164,26 @@ def test_reruns_are_summed_per_suite():
     reporter.build_report()
 
     assert reporter.json_data["content"]["suites"][0]["status"]["total_rerun"] == 3
+
+
+def test_each_test_metrics_row_carries_its_own_rerun_count():
+    """The suite total says the run retried three times; only the row says
+    which test they were spent on."""
+    reporter = _reporter()
+    reporter._records = [
+        _record("tests/test_a.py", "test_one", "FAIL", 0, rerun=2),
+        _record("tests/test_a.py", "test_two", "PASS", 1, rerun=1),
+        _record("tests/test_a.py", "test_three", "PASS", 2),
+    ]
+
+    reporter.build_report()
+
+    soup = BeautifulSoup("<table>" + ConfigVars._test_metrics_content + "</table>", "html.parser")
+    rows = [[cell.text.strip() for cell in row.findAll("td")] for row in soup.findAll("tr")]
+
+    assert [(row[1], row[4]) for row in rows] == [
+        ("test_one", "2"), ("test_two", "1"), ("test_three", "0"),
+    ]
 
 
 def test_error_modals_get_distinct_ids():
