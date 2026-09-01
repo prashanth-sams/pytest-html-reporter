@@ -32,7 +32,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     package_data={
-        "html_page": ["html/*.html"],
+        "html_page": ["html/*.html", "icons/*.svg"],
     },
     long_description_content_type="text/x-rst",
     python_requires=">=3.5",

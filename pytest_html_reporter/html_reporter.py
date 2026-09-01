@@ -16,6 +16,7 @@ from html_page.attachment_item import AttachmentItem
 from html_page.attachment_meta import AttachmentMeta
 from html_page.attachment_part import AttachmentPart
 from html_page.floating_error import FloatingError
+from html_page.icon_styles import icon_styles
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
@@ -904,6 +905,7 @@ class HTMLReporter(object):
 
     def renew_template_text(self, logo_url):
         template_text = HtmlTemplate(
+            icon_styles=icon_styles(),
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
             title=escape_report_text(ConfigVars._title),

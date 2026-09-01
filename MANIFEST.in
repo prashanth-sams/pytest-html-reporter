@@ -3,6 +3,8 @@ include README.rst
 
 global-include *.py
 recursive-include html_page/html *.html
+recursive-include html_page/icons *.svg
+include html_page/icons/README.md
 prune tests/
 prune test_draft/
 prune venv/

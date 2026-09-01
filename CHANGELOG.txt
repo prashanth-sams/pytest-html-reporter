@@ -26,6 +26,12 @@
 - The panel names the test and its suite, closes on Escape or a click outside, and no longer ends in a full-width blue Close button
 - A message short enough to be shown whole offers no expand button, only the copy one - there is nothing to open a panel for
 - The full error now travels in a data attribute rather than as a modal built into the cell, so it no longer reaches the table's search box or its CSV, Excel, Copy and print exports. Those used to carry the cut message, the "(...)", the whole error again and the word "Close" run together in one field; they now carry the cut message and an ellipsis
+- The report's icons no longer come off a CDN: the Font Awesome 4.7 glyphs it uses now ship with the plugin as SVGs under html_page/icons, so a report read offline, on a network that cannot reach cdnjs, or out of an archive months later still has its icons rather than a page of empty boxes
+- They are inlined into the page as CSS masks painted with currentcolor, so an icon still takes the colour of whatever it sits in - the red or green of an archived build, the amber of a notice, the grey of a disabled button - exactly as the font did
+- The markup did not change: an icon is still <i class="fa fa-home"></i>, and a new one is added by dropping its SVG into that folder under the name of its class
+- The two icons that were drawn by a CSS glyph rather than by a class - the file in front of a suite's name, and the tick the copy button turns into - come from the same SVGs, so nothing is left needing the font
+- An icon still takes its size from the text around it, the way the font's own `font-size: inherit` had it: a 1.45rem page title gets a 1.45rem icon, and the rail's stay at 16px
+- Each SVG is cropped to the glyph's outline and carries its coordinates on Font Awesome's 1792-unit em, so the em box it stood in is rebuilt in CSS and the outline dropped back into its corner of it - the icons come out the size, width and footing on the line they had, and the ones drawn wider than that em (the camera, the monitor, the line chart) are no longer cut off at its edge
 
 0.3.6 (31/08/2026)
 -------------------
