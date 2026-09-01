@@ -150,15 +150,16 @@ def test_a_long_message_holding_markup_is_escaped_in_the_modal():
     assert "&lt;b&gt;" in ConfigVars._test_metrics_content
 
 
-def test_the_modal_is_opened_on_the_raw_length_not_the_escaped_one():
-    # "<<<..." is 40 characters and needs no modal; escaped it is over 49, and
-    # measuring after escaping would open one for a message that fits
+def test_the_panel_is_offered_on_the_raw_length_not_the_escaped_one():
+    # "<<<..." is 40 characters and is shown whole; escaped it is over 49, and
+    # measuring after escaping would offer to expand a message that fits
     reporter = _reporter()
     reporter._records = [_record("tests/test_a.py", "test_one", message="<" * 40)]
 
     reporter.build_report()
 
-    assert "myModal-" not in ConfigVars._test_metrics_content
+    assert 'data-full=""' in ConfigVars._test_metrics_content
+    assert 'data-full="1"' not in ConfigVars._test_metrics_content
 
 
 def test_a_screenshot_caption_holding_markup_is_written_as_text():

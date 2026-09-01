@@ -101,22 +101,40 @@ def test_archive_row():
 
 
 def test_floating_error():
-    runt = str(get_random_number())
-    full_msg = get_random_string()
+    full_msg = get_random_string(80)
+    sname = get_random_string()
+    name = get_random_string()
 
-    floating_error = FloatingError(runt=runt, full_msg=full_msg)
-
+    floating_error = FloatingError(full_msg=full_msg, has_full="1", sname=sname, name=name)
     soup = BeautifulSoup(str(floating_error), "html.parser")
 
-    error_link = soup.find("a", href=f"#myModal-{runt}")
+    actions = soup.find("span", class_="msg-actions")
+    assert actions["data-error"] == full_msg
+    assert actions["data-suite"] == sname
+    assert actions["data-test"] == name
+    assert actions["data-full"] == "1"
 
-    assert error_link
-    assert error_link.text == "(...)"
+    # An expand and a copy, in that order, and neither carries any text: the
+    # ellipsis is all the cell contributes to the table's search index and to
+    # its CSV, Excel and print exports.
+    assert [button["title"] for button in actions.findAll("button")] \
+        == ["Show the full error", "Copy the full error"]
+    assert actions.get_text(strip=True) == "\u2026"
 
-    error_container = soup.find("div", id=f"myModal-{runt}")
 
-    assert error_container
-    assert soup.find("p").text.strip() == full_msg
+def test_floating_error_offers_no_expand_when_nothing_was_cut():
+    """The message fits in the cell, so there is nothing to open a panel for -
+    but it is still worth copying."""
+    floating_error = FloatingError(full_msg="boom", has_full="", sname="s", name="n")
+    soup = BeautifulSoup(str(floating_error), "html.parser")
+
+    actions = soup.find("span", class_="msg-actions")
+
+    # Both buttons stay in the markup and `data-full` hides the expand one, the
+    # same way `data-logs` hides the Logs button on a test that captured nothing.
+    assert actions["data-full"] == ""
+    assert actions.find("button", class_="msg-open") is not None
+    assert actions.find("button", class_="msg-copy") is not None
 
 
 def test_screenshot_details():

@@ -186,18 +186,21 @@ def test_each_test_metrics_row_carries_its_own_rerun_count():
     ]
 
 
-def test_error_modals_get_distinct_ids():
-    long_message = "E   assert something quite long went wrong here indeed" * 2
+def test_each_row_carries_its_own_full_error():
+    """Every row holds its own error on itself, so two failures merged from
+    different workers cannot end up showing each other's."""
     reporter = _reporter()
     reporter._records = [
-        _record("tests/test_a.py", "test_one", "FAIL", 0, message=long_message),
-        _record("tests/test_b.py", "test_two", "FAIL", 1, message=long_message),
+        _record("tests/test_a.py", "test_one", "FAIL", 0, message="E   the first went wrong" * 3),
+        _record("tests/test_b.py", "test_two", "FAIL", 1, message="E   the second went wrong" * 3),
     ]
 
     reporter.build_report()
 
-    ids = set(part.split('"')[0] for part in ConfigVars._test_metrics_content.split('id="myModal-')[1:])
-    assert len(ids) == 2
+    soup = BeautifulSoup("<table>" + ConfigVars._test_metrics_content + "</table>", "html.parser")
+    errors = [node["data-error"] for node in soup.findAll("span", class_="msg-actions")]
+
+    assert errors == ["E   the first went wrong" * 3, "E   the second went wrong" * 3]
 
 
 def test_a_worker_hands_its_records_to_the_controller():

@@ -804,18 +804,6 @@
                     line-height: 1.55;
                 }
 
-                .modal p {
-                    word-wrap: break-word;
-                }
-
-                .modal-footer {
-                    border-top: 0px solid #e9ecef;
-                }
-                .btn-primary {
-                    background-color: #3571a3;
-                    border-color: #3571a3;
-                }
-
                 .dashboard__headers {
                     font-size: 1.9rem;
                     color: darkgrey;
@@ -2047,6 +2035,83 @@
                     display: inline;
                 }
 
+                /* ---- Full error: an ellipsis, an expand and a copy ---- */
+                .metrics-card td .msg-actions {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-left: 4px;
+                    vertical-align: middle;
+                }
+
+                /* The ellipsis is the only part of this that is text, so it is
+                   also the only part a CSV or a print-out carries - which is
+                   right, because those hold the cut message and nothing says
+                   so otherwise. */
+                .msg-actions .msg-more {
+                    color: #a9b0ba;
+                    margin-right: 2px;
+                }
+
+                .msg-actions .msg-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 22px;
+                    height: 22px;
+                    padding: 0;
+                    border: 1px solid #e3e7ee;
+                    border-radius: 6px;
+                    background: #f7fafd;
+                    color: #9aa2ae;
+                    font-size: 11px;
+                    line-height: 1;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .msg-actions .msg-btn:hover,
+                .msg-actions .msg-btn:focus {
+                    background: #565656;
+                    border-color: #565656;
+                    color: #ffffff;
+                    outline: none;
+                }
+
+                /* A message that fits is already all there: there is nothing
+                   to expand to, and an ellipsis would claim a tail that does
+                   not exist. The copy button stays either way. */
+                .msg-actions[data-full=""] .msg-open,
+                .msg-actions[data-full=""] .msg-more {
+                    display: none;
+                }
+
+                /* The tick takes the icon's place rather than a space of its
+                   own: the message cell is the narrowest thing on the page to
+                   be pushing a second glyph into. */
+                .msg-actions .msg-btn--done .fa::before {
+                    content: "\f00c";
+                }
+
+                .msg-actions .msg-btn--done,
+                .msg-actions .msg-btn--done:hover,
+                .msg-actions .msg-btn--done:focus {
+                    background: #edf9f0;
+                    border-color: #b7e4c7;
+                    color: #2f9e5f;
+                }
+
+                .msg-actions .msg-btn--failed,
+                .msg-actions .msg-btn--failed:hover,
+                .msg-actions .msg-btn--failed:focus {
+                    background: #fdeeee;
+                    border-color: #f2c2c2;
+                    color: #d0454c;
+                }
+
+                /* The overlay below is the page's one panel of its kind: it
+                   shows a test's captured output, and it shows one failure's
+                   full error. The class name is older than the second use. */
                 .log-overlay {
                     position: fixed;
                     inset: 0;
@@ -4063,9 +4128,15 @@
                         toggleLogs(false);
                     });
 
-                    // A test's captured stdout, stderr and logging output is
-                    // rendered once into a hidden block per test; opening it
-                    // just moves that block into the one overlay.
+                    // One panel serves two things: a test's captured output,
+                    // which is rendered once into a hidden block per test, and
+                    // one failure's full error, which the row carries on
+                    // itself. Whichever is open, this is what its Copy button
+                    // puts on the clipboard - the two are assembled
+                    // differently, so it is settled when the panel is filled
+                    // rather than read back off the screen afterwards.
+                    var overlayText = '';
+
                     function toggleLogs(open) {
                         var overlay = document.getElementById('logOverlay');
                         if (!overlay) return;
@@ -4074,16 +4145,54 @@
                         if (open) overlay.querySelector('.log-overlay__close').focus();
                     }
 
+                    function fillOverlay(icon, label, name, suite) {
+                        document.getElementById('logOverlayIcon').className = 'fa ' + icon;
+                        document.getElementById('logOverlayName').textContent = name;
+                        document.getElementById('logOverlaySuite').textContent = suite || '';
+                        document.getElementById('logOverlayPanel').setAttribute('aria-label', label);
+                        document.getElementById('logOverlayBody').scrollTop = 0;
+                        setCopyLabel('Copy');
+                    }
+
                     function showLogs(id) {
                         var source = document.getElementById('log-' + id);
                         if (!source) return;
 
-                        document.getElementById('logOverlayName').textContent = source.getAttribute('data-test') || 'Captured output';
-                        document.getElementById('logOverlaySuite').textContent = source.getAttribute('data-suite') || '';
-                        document.getElementById('logOverlayBody').innerHTML = source.innerHTML;
-                        document.getElementById('logOverlayBody').scrollTop = 0;
-                        setCopyLabel('Copy');
+                        var body = document.getElementById('logOverlayBody');
+                        body.innerHTML = source.innerHTML;
 
+                        overlayText = '';
+                        body.querySelectorAll('.log-section').forEach(function(section) {
+                            overlayText += section.querySelector('.log-section__head').textContent + '\n'
+                                         + section.querySelector('.log-section__body').textContent + '\n\n';
+                        });
+
+                        fillOverlay('fa-align-left', 'Captured output',
+                                    source.getAttribute('data-test') || 'Captured output',
+                                    source.getAttribute('data-suite'));
+                        toggleLogs(true);
+                    }
+
+                    // The error is written in as text, not as markup: it is
+                    // escaped for the attribute it travels in, and handing that
+                    // to innerHTML would show the entities rather than the
+                    // characters. A <pre> is what keeps a traceback's own line
+                    // breaks and indentation, which the old modal's <p>
+                    // collapsed into one long line.
+                    function showError(actions) {
+                        overlayText = actions.getAttribute('data-error') || '';
+
+                        var body = document.getElementById('logOverlayBody');
+                        var pre = document.createElement('pre');
+                        pre.className = 'log-section__body';
+                        pre.textContent = overlayText;
+
+                        body.innerHTML = '';
+                        body.appendChild(pre);
+
+                        fillOverlay('fa-exclamation-triangle', 'Full error',
+                                    actions.getAttribute('data-test') || 'Full error',
+                                    actions.getAttribute('data-suite'));
                         toggleLogs(true);
                     }
 
@@ -4092,29 +4201,23 @@
                         if (button) button.textContent = text;
                     }
 
-                    function copyLogs() {
-                        var body = document.getElementById('logOverlayBody');
-                        if (!body) return;
-
-                        var text = '';
-                        body.querySelectorAll('.log-section').forEach(function(section) {
-                            text += section.querySelector('.log-section__head').textContent + '\n'
-                                  + section.querySelector('.log-section__body').textContent + '\n\n';
-                        });
+                    function copyOverlay() {
+                        if (!overlayText) return;
 
                         // navigator.clipboard is unavailable when the report is
                         // opened straight off disk in some browsers, so fall
                         // back to a throwaway textarea and execCommand.
                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                            navigator.clipboard.writeText(text).then(function() { setCopyLabel('Copied'); },
-                                                                     function() { legacyCopy(text); });
+                            navigator.clipboard.writeText(overlayText).then(
+                                function() { setCopyLabel('Copied'); },
+                                function() { setCopyLabel(execCopy(overlayText) ? 'Copied' : 'Press Ctrl+C'); });
                             return;
                         }
 
-                        legacyCopy(text);
+                        setCopyLabel(execCopy(overlayText) ? 'Copied' : 'Press Ctrl+C');
                     }
 
-                    function legacyCopy(text) {
+                    function execCopy(text) {
                         var scratch = document.createElement('textarea');
                         scratch.value = text;
                         scratch.setAttribute('readonly', '');
@@ -4123,10 +4226,54 @@
                         document.body.appendChild(scratch);
                         scratch.select();
 
-                        try { document.execCommand('copy'); setCopyLabel('Copied'); }
-                        catch (err) { setCopyLabel('Press Ctrl+C'); }
+                        var copied;
+                        try { copied = document.execCommand('copy'); }
+                        catch (err) { copied = false; }
 
                         document.body.removeChild(scratch);
+                        return copied;
+                    }
+
+                    // Both of a row's buttons answer to one handler on the
+                    // document. DataTables rebuilds the rows on every sort,
+                    // search and page change, so listeners bound to the buttons
+                    // themselves would go with the rows that held them.
+                    document.addEventListener('click', function(event) {
+                        var button = event.target.closest ? event.target.closest('.msg-btn') : null;
+                        if (!button) return;
+
+                        var actions = button.closest('.msg-actions');
+                        if (!actions) return;
+
+                        if (button.classList.contains('msg-open')) showError(actions);
+                        else copyRowError(button, actions);
+                    });
+
+                    function copyRowError(button, actions) {
+                        var text = actions.getAttribute('data-error') || '';
+                        if (!text) return;
+
+                        function settle(copied) {
+                            button.classList.remove('msg-btn--done', 'msg-btn--failed');
+                            button.classList.add(copied ? 'msg-btn--done' : 'msg-btn--failed');
+
+                            // The row keeps no state of its own, so the tick has
+                            // to time itself out - a redraw would drop it anyway,
+                            // and a button left on a tick would claim the
+                            // clipboard still holds this row's error.
+                            window.clearTimeout(button.copyTimer);
+                            button.copyTimer = window.setTimeout(function() {
+                                button.classList.remove('msg-btn--done', 'msg-btn--failed');
+                            }, 1200);
+                        }
+
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(text).then(function() { settle(true); },
+                                                                     function() { settle(execCopy(text)); });
+                            return;
+                        }
+
+                        settle(execCopy(text));
                     }
 
                     window.onload = function() {
@@ -4598,15 +4745,15 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
         </div>
         <div class="log-overlay" id="logOverlay" hidden>
             <div class="log-overlay__backdrop" onclick="toggleLogs(false)"></div>
-            <div class="log-overlay__panel" role="dialog" aria-modal="true" aria-label="Captured output">
+            <div class="log-overlay__panel" id="logOverlayPanel" role="dialog" aria-modal="true" aria-label="Captured output">
                 <div class="log-overlay__head">
                     <span class="log-overlay__title">
-                        <i class="fa fa-align-left" aria-hidden="true"></i>
+                        <i class="fa fa-align-left" id="logOverlayIcon" aria-hidden="true"></i>
                         <span id="logOverlayName">Captured output</span>
                         <em id="logOverlaySuite"></em>
                     </span>
                     <span class="log-overlay__actions">
-                        <button type="button" class="log-overlay__copy" id="logOverlayCopy" onclick="copyLogs()">Copy</button>
+                        <button type="button" class="log-overlay__copy" id="logOverlayCopy" onclick="copyOverlay()">Copy</button>
                         <button type="button" class="log-overlay__close" aria-label="Close" onclick="toggleLogs(false)">&times;</button>
                     </span>
                 </div>

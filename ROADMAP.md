@@ -45,6 +45,12 @@ it is string concatenation.
 
 *Why:* removes the most repeated manual step in day-to-day triage.
 *Effort:* ~20 lines.
+*Shipped as:* the copy half only - the rerun-command button was built and then dropped as unwanted.
+`FloatingError` now renders an expand and a copy button carrying the error in `data-` attributes,
+and the `(...)` link and its per-row Bootstrap modal are gone: the full error opens in the same
+overlay the `Logs` column uses, which gave the dialog a `Copy` button and a `<pre>` body for free.
+The old modal's `<p>` had been collapsing every traceback into one run-on line. One delegated click
+handler serves the rows, because DataTables rebuilds them on each sort, search and page change.
 
 ### 5. Deep-linkable rows
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an

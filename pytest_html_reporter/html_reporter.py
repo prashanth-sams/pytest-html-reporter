@@ -607,15 +607,20 @@ class HTMLReporter(object):
             attach_count=str(self.attach_test_data(record, row_id))
         )
 
-        # The raw length, not the escaped one: this asks whether the message was
-        # cut short, and escaping it first would make a message full of angle
-        # brackets look long enough to need a modal it does not need.
-        if len(record['message']) < 49:
+        # A row with nothing to say gets neither button: a passing test has no
+        # error to copy, and offering to copy an empty string reads as a bug.
+        if not record['message'].strip():
             test_row_text.floating_error_text = ''
         else:
-            test_row_text.floating_error_text = str(
-                FloatingError(full_msg=escape_report_text(record['message']), runt=row_id)
-            )
+            # The raw length, not the escaped one: this asks whether the message
+            # was cut short, and escaping it first would make a message full of
+            # angle brackets look long enough to need the panel it does not need.
+            test_row_text.floating_error_text = str(FloatingError(
+                full_msg=escape_report_text(record['message']),
+                has_full='' if len(record['message']) < 49 else '1',
+                sname=escape_report_text(record['suite_name']),
+                name=escape_report_text(record['test_name'])
+            ))
 
         ConfigVars._test_metrics_content += str(test_row_text)
 

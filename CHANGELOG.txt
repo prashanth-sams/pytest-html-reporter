@@ -18,6 +18,14 @@
 - The line's tooltip gives the two counts behind it - "12 failures this build, 9 in the build before it" - because "+3" reads very differently against 3 than against 300
 - Test Metrics now carries a Rerun column of its own, next to the one Test Suites has had: the suite total says the run retried five times, and only the per-test count says which test they were spent on
 - The count is the retries that test took, so a suite's column is still the sum of the rows under it; a test that ran once shows a muted 0 rather than a blank
+- Every row with an error now carries a copy button beside the message, putting the whole error on the clipboard - the cell has room for about fifty characters, and the rest of it used to have to be opened and then selected by hand before it could be pasted anywhere
+- A passing row gets no button at all: there is no error to copy, and a button that copies an empty string reads as a broken one
+- The blue (...) link that opened the rest of a cut message is now an expand button beside the copy one, so the two read as a pair of controls rather than as a link buried in the message text; a muted ellipsis after the text is what says the message was cut
+- The full error now opens in the report's own panel - the one the Logs column already used - instead of the Bootstrap modal, and that panel has a Copy button of its own
+- The error is shown in a monospace block that keeps its line breaks and indentation. The old modal put it in a <p>, which collapsed a whole traceback into one run-on line and made the alignment of an assertion diff impossible to read
+- The panel names the test and its suite, closes on Escape or a click outside, and no longer ends in a full-width blue Close button
+- A message short enough to be shown whole offers no expand button, only the copy one - there is nothing to open a panel for
+- The full error now travels in a data attribute rather than as a modal built into the cell, so it no longer reaches the table's search box or its CSV, Excel, Copy and print exports. Those used to carry the cut message, the "(...)", the whole error again and the word "Close" run together in one field; they now carry the cut message and an ellipsis
 
 0.3.6 (31/08/2026)
 -------------------
