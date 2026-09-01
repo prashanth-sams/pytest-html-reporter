@@ -1,5 +1,14 @@
 0.3.7 (31/08/2026)
 -------------------
+- The finished report is now opened in a browser when the run ends, which is what everybody did by hand anyway; --report-open / the report_open ini key turns it off
+- It only happens on a run somebody is sat in front of: the output has to be going to a terminal, no CI variable can be set, and there has to be a desktop to open into. A build agent fails all three
+- Without that last check a headless Linux box would have webbrowser fall through to whatever console browser it could find and paint the report over the summary the run had just printed
+- CI=false counts as "not CI", because it is a real thing to write and reading it as "this is CI" gets it exactly backwards
+- --report-open=always opens it whatever the run looks like - the escape hatch for a setup those checks read wrongly - and --report-open=none never does
+- A report_open that is not one of the three modes fails the run with a usage error while it is still being configured: somebody who wrote "report_open = off" has said they want no browser, and quietly opening one anyway is the single outcome they were trying to avoid
+- The report is handed over as a file:// URL rather than as a path, so one written into a folder with a space or an accent in its name still opens
+- The browser is asked for a tab rather than a window, so a suite run over and over does not bury the desktop
+- None of it can fail a run: the tests are over and the report is written by the time any of it happens, so a machine with no browser on it is not a failed build
 - The Dashboard's Highlights card now says which way the suite is moving: a "▲ +3 failures" tile over a "SINCE LAST BUILD" caption, red when there are more failures than last time and green with a "▼" when there are fewer
 - The delta is read off the same per-build list the chart under it is drawn from, so the two cannot disagree; failures there means failures and errors together, exactly as the chart's Failed series plots them
 - A first build shows no delta at all rather than "no change", which would claim a previous build that does not exist

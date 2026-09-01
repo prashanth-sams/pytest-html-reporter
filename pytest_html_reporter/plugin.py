@@ -148,6 +148,16 @@ def pytest_addoption(parser):
              "'Coverage=htmlcov/index.html'; repeat for more",
     )
 
+    group.addoption(
+        "--report-open",
+        action="store",
+        dest="report_open",
+        default=None,
+        choices=("auto", "always", "none"),
+        help="whether to open the finished report in a browser: auto (default - "
+             "on an interactive run with a desktop to open into), always or none",
+    )
+
     parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
@@ -219,6 +229,12 @@ def pytest_addoption(parser):
         "report_link",
         type="linelist",
         help="extra links to show in the report's side nav, one LABEL=URL per line",
+    )
+
+    parser.addini(
+        "report_open",
+        help="whether to open the finished report in a browser: auto, always or none",
+        default="",
     )
 
     parser.addini(

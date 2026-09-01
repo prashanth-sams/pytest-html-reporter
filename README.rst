@@ -41,6 +41,7 @@ Features
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
 * Custom side-nav links to any page of your own
+* Opens the finished report in a browser on a local run, and stays quiet on a build agent
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
 
@@ -106,6 +107,55 @@ so an hourly run reaches a multi-megabyte report inside a couple of months.
 
 A build is dated by the moment its run started, which is kept in the name of its archive file, so an age limit still
 measures the right thing after the reports have been copied into a fresh CI workspace.
+
+..
+
+        Opening the report
+
+When the run finishes, the report is opened in your browser. Nothing is needed to get this - it is what the command you
+already run now does::
+
+    $ pytest tests/ --html-report=./report
+
+It only happens on a run somebody is sat in front of. Three things all have to be true, and a build agent fails every
+one of them:
+
+=========================================  ===========================================================
+Checked                                    Why
+=========================================  ===========================================================
+The run's output is a terminal             Output piped into a file or a log collector - ``cron``,
+                                           ``nohup``, a build system nobody has heard of - means
+                                           nobody is watching it go past
+No CI variable is set                      ``CI``, ``GITHUB_ACTIONS``, ``JENKINS_URL`` and the rest of
+                                           the usual set; ``CI=false`` counts as "not CI"
+There is a desktop to open into            ``DISPLAY`` or ``WAYLAND_DISPLAY``, on anything that is not
+                                           macOS or Windows. Without this, a headless box opens the
+                                           report in a *console* browser, on top of the summary the
+                                           run just printed
+=========================================  ===========================================================
+
+``--report-open`` sets which of that applies::
+
+    $ pytest tests/ --report-open=none      # never open it
+    $ pytest tests/ --report-open=always    # open it whatever the run looks like
+    $ pytest tests/ --report-open=auto      # the default, as described above
+
+=========================  ==============================================================================
+``--report-open``          When the report is opened
+=========================  ==============================================================================
+``auto`` (default)         On an interactive run with a desktop to open into, and never in CI
+``always``                 Every run - for a setup the checks above read wrongly
+``none``                   Never
+=========================  ==============================================================================
+
+Turning it off for good belongs in the ini file rather than in every command::
+
+    [pytest]
+    report_open = none
+
+The browser is asked for a tab rather than a window, so a suite run over and over does not bury the desktop. A machine
+with no browser on it is not an error: the report is written either way, and a run that could not open it still passes
+or fails on its tests alone.
 
 ..
 
@@ -279,6 +329,7 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_attachment_limit = 20000
     report_coverage = auto
     report_coverage_limit = 500
+    report_open = auto
     report_link =
         Coverage=htmlcov/index.html
         CI job=https://ci.example.com/job/42
@@ -287,6 +338,9 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). ``report_attachments`` and
 ``report_attachment_limit`` mirror ``--report-attachments`` and ``--report-attachment-limit`` the same way, as do
 ``report_coverage``, ``report_coverage_file`` and ``report_coverage_limit``.
+
+``report_open`` takes the same values as ``--report-open`` (``auto`` / ``always`` / ``none``), and is the place to
+turn the browser off once for everybody rather than in every command.
 
 ``report_link`` takes one ``Label=URL`` per line and, like ``build_info``, adds to whatever ``--report-link`` passes
 rather than being replaced by it.

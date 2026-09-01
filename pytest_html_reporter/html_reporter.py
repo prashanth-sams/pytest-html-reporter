@@ -49,6 +49,10 @@ from pytest_html_reporter.coverage_report import (
     collect_coverage,
     generate_coverage_view,
 )
+from pytest_html_reporter.report_opener import (
+    open_mode,
+    open_report,
+)
 from pytest_html_reporter.attachments import (
     attachment_size,
     filename_for,
@@ -105,6 +109,11 @@ class HTMLReporter(object):
         # actually reaches.
         self.archive_days = archive_days(config)
         self.archive_since = archive_since(config)
+
+        # Whether the finished report is handed to a browser. Resolved now,
+        # while the run is being configured, so a value that is not a mode is
+        # a usage error before the tests run rather than after them.
+        self.open_mode = open_mode(config)
 
         # One record per finished test. In a serial run this process fills the
         # list on its own; under xdist every worker fills its own copy and the
@@ -339,6 +348,10 @@ class HTMLReporter(object):
             message = self.renew_template_text('https://i.imgur.com/LRSRHJO.png')
             live_logs_file.write(message)
             live_logs_file.close()
+
+            # hand it to a browser, on a run that looks like somebody is sat
+            # in front of it - and never on a build agent
+            open_report(path, self.open_mode)
 
     @pytest.hookimpl(tryfirst=True, hookwrapper=True)
     def pytest_runtest_makereport(self, item, call):
