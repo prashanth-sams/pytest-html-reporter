@@ -19,6 +19,7 @@ import re
 from collections import OrderedDict
 
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.steps import open_step
 
 
 # What the viewer knows how to lay out. Anything else is shown as plain text.
@@ -262,6 +263,12 @@ def add(kind, title, parts, meta=None, code="", detail="", ms=""):
     parts = [part for part in parts if part.get("text")]
     if not parts: return None
 
+    # Which step was running when this was attached, so the payload can be
+    # shown under the step that produced it rather than only against the test.
+    # Read here rather than passed in: attach_json is called by code that has
+    # no idea a report exists, let alone which step it is inside.
+    step = open_step()
+
     record = {
         "kind": kind if kind in KINDS else "text",
         "title": _text(title, TITLE_MAX) or kind.upper(),
@@ -280,6 +287,9 @@ def add(kind, title, parts, meta=None, code="", detail="", ms=""):
         # The rail prints the duration; the summary above it has to add the
         # calls up and find the slowest, which it cannot do from "1.20 s".
         "ms": _text(ms),
+        # -1 for an attachment made outside any step, which is every one made
+        # by a suite that never reached for them.
+        "step": -1 if step is None else step["id"],
     }
 
     _pending().append(record)

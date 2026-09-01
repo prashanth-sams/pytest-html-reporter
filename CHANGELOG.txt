@@ -1,3 +1,32 @@
+0.3.8 (01/09/2026)
+-------------------
+- New Test Steps tab: the named, timed pieces a test is actually made of, drilling down from the suite to the test to what it did. A status column says a test failed; this says where, and how long it had been running when it got there
+- step() is both a decorator and a with block, and steps nest by being called from inside one another - nothing is threaded between them
+- A decorated function's own arguments fill in the {placeholders} of its title and are kept as the step's parameters, so the tab shows the call that was made rather than the sentence it was written from
+- The tab is never empty. Every test has a set up, a body and a tear down, each timed from pytest's own per-phase report, and every test carries its markers, parameters, fixtures and docstring - so a suite that has never heard of step() still gets a tree saying where its time went
+- It is a tab of its own rather than a panel inside Test Suites, which is where Allure keeps the same information. Folding it in costs you a high-level page you can still skim, and that is the page most people open first
+- A pytest-bdd scenario needs no changes at all: its Given/When/Then arrive as steps automatically, badged as Gherkin, with what each step's parser pulled out of the line kept beside it. The feature, scenario and feature file are named above the tree
+- The bdd hooks are declared optionalhook, which is the whole of the defence - pytest does not warn or skip an unknown hook, it refuses to start, so declaring them plainly would have broken every run that does not have pytest-bdd installed. Which is most of them
+- A Scenario Outline's <placeholders> are already substituted by the time the hook fires, so the report shows the row that actually ran; the example row is shown as parameters and pytest-bdd's internal _pytest_bdd_example marker is not shown as a marker
+- A step's Gherkin arguments are told from the fixtures pytest-bdd injects alongside them by shape rather than by asking pytest-bdd, whose way of saying which is which has changed more than once - a parser reads a line of text, so anything richer than a scalar came from the fixture machinery
+- Every marker is shown, including the ones a test never mentions: item.own_markers holds only what was written on the test itself, so a module-level pytestmark and a marker on the class were both invisible to it. iter_markers_with_node is used instead, and each marker says which scope it came from
+- pytest's own markers are coloured apart from yours: skipif changes how a test runs, @smoke only names it
+- parametrize shows its argument names rather than every row the test will ever run with - a hundred rows on one badge, when this case's own row is already shown as its parameters
+- A skipif condition is evaluated at import, so it reaches any reporter as a bare True or False rather than the expression that was written; the reason is shown instead of a bool that means nothing
+- The fixtures listed are the ones the test asked for - its own signature plus usefixtures - rather than item.fixturenames, which is the whole transitive closure: asking for tmp_path dragged in tmp_path_factory, and a test naming two fixtures read as a test naming nine
+- Anything attached while a step is open is filed under that step. attach_json, attach_api, attach_text and attach_file need no extra argument to say which one they belong to
+- The message of a failure is kept on the step that raised, and the steps it was raised inside are marked failed without repeating it - one exception walking out through four steps was printing the same traceback four times, with the only one that says where furthest down the page
+- A yield fixture holds its with step(...) open across the whole test, so nesting is counted from each phase's own floor: without that, every step the test body ran was reported as a step of the fixture, one Open a session swallowing the test that used it
+- Steps are recorded per thread, so a test that fans work out to a pool nests each thread within itself rather than interleaving every thread onto one stack and reporting a tree that never existed
+- A with block that never exited is closed at the drain and marked failed: the test died inside it, and a step that simply stops being mentioned reads as a step that never ran
+- Duration bars are scaled within the test rather than across the run, because the question in front of a step tree is always which part of this test was slow, never which test was slow
+- The tab's own durations are summed from the per-phase milliseconds rather than from the record's seconds-rounded-to-two-places, where every test faster than 5ms arrived as a flat 0
+- --report-steps (all / failed / none) and --report-step-limit, with report_steps and report_step_limit ini keys. The limit is followed by a line saying the rest were dropped, because a tree that stops halfway reads as a test that stopped there
+- A Steps column on Test Metrics counts what each test recorded and crosses to the tab with that one test already open
+- Step trees are parked outside the metrics table, like the logs and the attachments before them, so they are never swept into its search index or into the CSV, Excel and print exports
+- A retry reports the steps of the attempt that stuck: showing the failing attempt's tree beside a test the report calls green would describe a run that did not happen
+- Records still hold nothing but built-in types, so every step survives the trip back from an xdist worker to the controller that writes the report
+
 0.3.7 (31/08/2026)
 -------------------
 - New Analytics tab, separate from the Dashboard and answering a different question: the Dashboard is one run seen from every angle, Analytics is every archived build seen from the test's angle

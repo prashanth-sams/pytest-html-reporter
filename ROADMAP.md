@@ -67,13 +67,35 @@ anchor id so a failure can be pasted into Slack and open directly. Pairs with #4
 
 ## Tier 2 — small collection change, big payoff
 
-### 6. Markers and parametrize as columns / badges
+### 6. Markers and parametrize as columns / badges — SHIPPED
 `item` is available in `pytest_runtest_teardown`; `item.own_markers` and `item.callspec.params`
 come free. Adds `@smoke` / `@regression` badges and makes marker-based filtering work through the
 existing search box.
 
 *Why:* parametrized cases currently show only as opaque `test_x[a-b-c]`.
 *Effort:* ~25 lines.
+*Shipped as:* `pytest_html_reporter/markers.py`, rendered as badges on the `Test Steps` tab (#16) rather
+than as a Test Metrics column — the table already carries eight columns, and a marker list is a fact
+about a test rather than a value to sort a table by. Marker text is in the tab's search index, so
+marker-based filtering works there.
+
+**`own_markers` was the wrong source, and it fails silently.** It holds only the markers written on the
+test itself, so a module-level `pytestmark`, a `@pytest.mark.parametrize` on the class, and anything
+applied by a plugin are all absent from it — nothing errors, the badges are just quietly incomplete.
+`iter_markers_with_node()` walks out through class, module, package and session and hands back the node
+each marker came from, which is also what lets a badge say *where* it was written — the answer when
+nobody remembers applying it. Its pairs are `(node, mark)`, which reads like the wrong way round and
+takes down every test in the run if you believe the reading.
+
+Two markers are deliberately cut down. `parametrize` carries every row the test will ever run with — a
+hundred rows on one badge — so only the argument names are kept, and this case's own row is shown as its
+parameters, read off `callspec.params`. And a `skipif` condition is evaluated at import, so it arrives as
+a bare `True`/`False` rather than `sys.platform == "win32"`; the reason is shown instead of a bool that
+means nothing.
+
+Fixtures come from the test's own signature plus `usefixtures`, not from `item.fixturenames` — that is the
+whole transitive closure, so asking for `tmp_path` dragged in `tmp_path_factory` and every autouse fixture
+in every conftest above the test, and a test naming two fixtures read as a test naming nine.
 
 ### 7. Captured stdout / stderr / logs — SHIPPED
 `rep.capstdout`, `rep.capstderr`, and `rep.caplog` are already on the report object handled in
@@ -272,6 +294,64 @@ only message is that `--cov-branch` was not passed.
 The dashboard got a chip, not the ring. Same finding as #1: the dashboard is a fixed-height flex column
 at >=1200px, and a third row compresses both chart rows. The chip states the figure and crosses to the
 tab, where the ring, the per-file split and the trend all have room.
+
+---
+
+
+---
+
+### 16. Test steps — SHIPPED
+Nested, individually timed steps with per-step attachments, after Allure's steps feature.
+
+*Shipped as:* `pytest_html_reporter/steps.py` (the `step` decorator / context manager),
+`markers.py` (#6), `bdd.py` (pytest-bdd), `step_report.py` (rendering), eight `Step*` components, a
+`Test Steps` tab, a `Steps` column on Test Metrics, and `--report-steps` / `--report-step-limit`.
+
+**A tab of its own, not a panel inside Test Suites.** Allure keeps steps inside its suites view; the cost
+is a high-level page you can no longer skim, and the high-level page is the one most people open first.
+Here the drill-down is the tab's whole job — suite, then test, then what the test did — and Test Suites
+stays a page of totals.
+
+**The tab had to be worth opening before anyone writes a single `step()`.** A feature that shows an empty
+panel until the suite is rewritten is a feature nobody adopts. So the tree is built from what pytest
+already knows: every test has a set up, a body and a tear down, each timed from pytest's own per-phase
+report, and every test carries its markers, parameters, fixtures and docstring. Naming steps makes the
+tree deeper — it does not bring it into existence. The teaching panel only appears while nobody has named
+one, and the tree stays visible underneath it.
+
+**Gherkin was free, and had one landmine.** A pytest-bdd scenario is already a list of named steps, so its
+Given/When/Then arrive with no changes to the suite. The landmine is the guard: pytest does not warn about
+an unknown hook and does not skip it — it *refuses to start*, with
+`PluginValidationError: unknown hook 'pytest_bdd_after_step'`. Declaring those hooks plainly would have
+broken every run that does not have pytest-bdd installed, which is most of them. `optionalhook=True` is
+the whole of the defence, and there is a test asserting it on every one of them, because the failure mode
+is a hard stop for users who never asked for the feature.
+
+Four decisions worth keeping:
+
+*The message goes on the step that raised.* An exception walks out through every step it was raised
+inside, and each of those genuinely failed — but printing the traceback once per level put the only one
+that says *where* furthest down the page. Ancestors are marked failed without the text. Identity is
+tracked by holding the exception object, not its `id()`: a caught exception is collected and CPython hands
+the same id straight to the next one, which silently swallowed the second of two identical-looking
+failures.
+
+*Nesting is counted from each phase's floor.* A `yield` fixture holds its `with step(...)` open across the
+whole test, so counting depth from the stack alone reported every step the test body ran as a step *of the
+fixture* — one `Open a session` swallowing the test that used it.
+
+*Bars are scaled within the test.* The question in front of a step tree is always "which part of this test
+was slow", never "which test was slow" — scaling across the run draws a flat line for every test but one.
+
+*Steps are per-thread.* One stack shared by every thread came back nested in whatever order the threads
+interleaved: a tree that never existed. Each thread nests within itself, and a background thread's steps
+land at the top level.
+
+The tab's own durations are summed from the per-phase milliseconds rather than the record's
+seconds-rounded-to-two-places, where every test faster than 5ms arrived as a flat `0`. Step trees are
+parked outside the metrics table for the same reason logs and attachments are, and a retry reports the
+steps of the attempt that stuck — the failing attempt's tree beside a green test would describe a run that
+did not happen.
 
 ---
 

@@ -675,6 +675,119 @@ any positive integer       Characters per payload
     $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 
 
+test steps
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See it before you wire anything up - the bundled demo needs no browser and no network::
+
+    $ pytest tests/functional/test_steps.py --html-report=./report
+
+A status column tells you a test failed. Steps tell you **where**, and how long it had been running when it got there.
+Name the pieces a test is made of and they are timed, nested and shown on a ``Test Steps`` tab of their own, with the
+suite drilling down to the test and the test to what it did.
+
+.. code-block:: python
+
+    from pytest_html_reporter import step
+
+    def test_checkout():
+        with step("Add to cart", sku="A-12"):
+            cart.add("A-12")
+
+        with step("Charge the card"):
+            assert gateway.charge(cart).ok
+
+**The tab is never empty.** Every test has a set up, a body and a tear down, each timed, and every test carries its
+markers, its parameters, the fixtures it named and its docstring - so a suite that has never heard of ``step()`` still
+gets a tree saying where its time went. Naming steps makes that tree deeper; it does not bring it into existence.
+
+It is a tab of its own rather than a panel inside ``Test Suites``, which is where Allure keeps the same information.
+The cost of folding it in is a high-level page you can no longer skim, and the high-level page is the one most people
+open first.
+
+a decorator, for the code the tests share
+"""""""""""""""""""""""""""""""""""""""""
+
+The methods of a page object or an API client are already the steps of every test that calls them. Decorating them
+once names all of those tests, and the arguments of the call fill in the ``{placeholders}`` of the title::
+
+    @step("Log in as {user}")
+    def login(user, password):
+        page.fill("#user", user)
+        page.click("#submit")
+
+    login("amy")        # the tab shows: Log in as amy, with user=amy kept beside it
+
+Steps **nest by being called from inside one another** - nothing is passed between them, and a step opened in a
+fixture is filed under ``Set up`` or ``Tear down`` rather than swallowing the test that used it.
+
+A step that raises is recorded as failed, with the message, and **the exception carries on out**. The message is kept
+on the step that actually raised; the steps it was raised inside are marked failed without repeating it, so one
+failure is printed once rather than once per level.
+
+anything attached lands on the step
+"""""""""""""""""""""""""""""""""""
+
+``attach_json``, ``attach_api``, ``attach_text`` and ``attach_file`` need no extra argument to say which step they
+belong to - whatever is open when they are called is what they are filed under, and the step shows a paperclip::
+
+    with step("Submit credentials"):
+        attach_api(requests.post(url, json=payload))
+
+cucumber / gherkin
+"""""""""""""""""""""""""""
+
+Nothing to do. A ``pytest-bdd`` scenario is already a list of named steps, so its Given / When / Then arrive on their
+own - each timed, each carrying what its parser pulled out of the line, and badged as Gherkin so a specification never
+reads as somebody's plumbing. The feature, the scenario and the feature file are named above the tree, an Outline's
+``<placeholders>`` are shown filled in with the row that actually ran, and the scenario's tags arrive as markers.
+
+``pytest-bdd`` does not have to be installed - the hooks are declared optional, so a run without it is untouched.
+
+every marker, and where it was written
+""""""""""""""""""""""""""""""""""""""
+
+Markers are shown in full, including the ones a test never mentions: a module-level ``pytestmark``, a marker on the
+class, one added by ``request.node.add_marker`` while the test ran. Each says which scope it came from, which is the
+answer when nobody remembers applying it. pytest's own markers are coloured apart from yours, because ``skipif``
+changes how a test runs and ``@smoke`` only names it.
+
+Two are cut down deliberately. ``parametrize`` shows its argument **names** rather than every row the test will ever
+run with - this case's own row is already shown as its parameters. And a ``skipif`` condition is evaluated at import,
+so ``sys.platform == "win32"`` reaches any reporter as a bare ``False``; the reason is shown instead.
+
+keeping the file down
+"""""""""""""""""""""""""""
+
+Step trees are held outside the metrics table, so they are never swept into its search box or into the CSV, Excel and
+print exports.
+
+``--report-steps`` narrows whose steps survive:
+
+=========================  ==============================================================================
+Value                      Kept
+=========================  ==============================================================================
+``all`` *(default)*        Every test's
+``failed``                 Only ``FAIL`` and ``ERROR`` tests'
+``none``                   No steps - the phases and their timings stay, as they cost nothing
+=========================  ==============================================================================
+
+``--report-step-limit`` caps how many steps one test can record, so a step inside a loop over ten thousand rows cannot
+run away with the page. The cap is followed by a line saying the rest were dropped:
+
+=========================  ==============================================================================
+Value                      Kept
+=========================  ==============================================================================
+``500`` *(default)*        500 steps per test
+any positive integer       Steps per test
+``0``                      Every one
+=========================  ==============================================================================
+
+::
+
+    $ pytest --html-report=./report --report-steps=failed --report-step-limit=100
+
+
 test coverage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

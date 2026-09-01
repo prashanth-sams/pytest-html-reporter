@@ -3494,6 +3494,496 @@
                     line-height: 1.55;
                 }
 
+                /* ---- Test Steps: suite -> test -> step ---- */
+                .step-shell {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .step-toolbar {
+                    justify-content: space-between;
+                }
+
+                .step-filters {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .step-search {
+                    margin-left: auto;
+                }
+
+                .step-body {
+                    display: flex;
+                    align-items: stretch;
+                    min-height: 0;
+                    height: calc(100vh - 268px);
+                    min-height: 430px;
+                }
+
+                /* ---- Left: the suite tree ---- */
+                .step-rail {
+                    flex: 0 0 326px;
+                    max-width: 326px;
+                    overflow-y: auto;
+                    border-right: 1px solid #eef1f5;
+                    background: #fcfcfd;
+                }
+
+                .step-suite__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    width: 100%;
+                    padding: 9px 13px;
+                    border: none;
+                    border-bottom: 1px solid #f1f4f8;
+                    background: #f7fafd;
+                    text-align: left;
+                    cursor: pointer;
+                    font-family: sans-serif;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    color: #6b7381;
+                }
+
+                .step-suite__head:hover { background: #eff5fb; }
+                .step-suite__head:focus { outline: none; }
+
+                .step-suite__caret {
+                    font-size: 11px;
+                    color: #a9b0ba;
+                    transition: transform 0.15s ease;
+                }
+
+                .step-suite.is-shut .step-suite__caret { transform: rotate(-90deg); }
+                .step-suite.is-shut .step-suite__tests { display: none; }
+
+                .step-suite__name {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    text-transform: none;
+                    letter-spacing: 0;
+                    font-size: 11.5px;
+                    color: #4a5160;
+                }
+
+                .step-suite__count {
+                    flex: none;
+                    border-radius: 999px;
+                    padding: 1px 7px;
+                    background: rgba(107, 115, 129, 0.12);
+                    font-size: 9.5px;
+                }
+
+                .step-test {
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    width: 100%;
+                    padding: 9px 13px 9px 26px;
+                    border: none;
+                    border-bottom: 1px solid #f4f6fa;
+                    border-left: 3px solid transparent;
+                    background: none;
+                    text-align: left;
+                    cursor: pointer;
+                    transition: background-color 0.12s ease;
+                }
+
+                .step-test:hover { background: #f3f7fb; }
+                .step-test:focus { outline: none; }
+
+                .step-test.is-active {
+                    background: #ffffff;
+                    border-left-color: #565656;
+                }
+
+                /* The status is a dot rather than a word: it repeats down every
+                   row of the rail, and the test name is what tells them apart. */
+                .step-test__dot {
+                    flex: none;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background-color: #aaaaaa;
+                }
+
+                .step-test__dot--PASS  { background-color: #98cc64; }
+                .step-test__dot--FAIL  { background-color: #fc6766; }
+                .step-test__dot--ERROR { background-color: #b13635; }
+                .step-test__dot--SKIP  { background-color: #ffd050; }
+                .step-test__dot--xPASS { background-color: #aaaaaa; }
+                .step-test__dot--xFAIL { background-color: #d35fbf; }
+
+                .step-test__main {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                    flex: 1 1 auto;
+                    min-width: 0;
+                }
+
+                .step-test__name {
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                    font-weight: 600;
+                    color: #39404d;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .step-test__note {
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    color: #a9b0ba;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .step-test__ms {
+                    flex: none;
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    color: #a9b0ba;
+                }
+
+                .step-rail__empty {
+                    padding: 26px 18px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #a9b0ba;
+                    text-align: center;
+                }
+
+                /* ---- Right: the step tree ---- */
+                .step-view {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    overflow-y: auto;
+                }
+
+                .step-view__head {
+                    display: flex;
+                    align-items: flex-start;
+                    justify-content: space-between;
+                    gap: 14px;
+                    padding: 15px 20px 13px 20px;
+                    border-bottom: 1px solid #eef1f5;
+                }
+
+                .step-view__title {
+                    display: block;
+                    font-family: sans-serif;
+                    font-size: 1.05rem;
+                    font-weight: 600;
+                    color: #39404d;
+                    word-break: break-word;
+                }
+
+                .step-view__suite {
+                    display: block;
+                    font-family: sans-serif;
+                    font-size: 11px;
+                    color: #a9b0ba;
+                    margin-top: 3px;
+                }
+
+                .step-status {
+                    flex: none;
+                    border-radius: 999px;
+                    padding: 3px 12px;
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    background-color: rgba(170, 170, 170, 0.16);
+                    color: #6f747c;
+                }
+
+                .step-status--PASS  { background-color: rgba(152, 204, 100, 0.18); color: #5c8f2e; }
+                .step-status--FAIL  { background-color: rgba(252, 103, 102, 0.16); color: #c9403f; }
+                .step-status--ERROR { background-color: rgba(177, 54, 53, 0.16);  color: #a1302f; }
+                .step-status--SKIP  { background-color: rgba(255, 208, 80, 0.22);  color: #a5791a; }
+                .step-status--xFAIL { background-color: rgba(211, 95, 191, 0.16); color: #a4408f; }
+
+                .step-view__body { padding: 0 20px 22px 20px; }
+
+                /* ---- A BDD test says where it came from ---- */
+                .step-scenario {
+                    display: flex;
+                    align-items: baseline;
+                    flex-wrap: wrap;
+                    gap: 9px;
+                    margin: 15px 0 0 0;
+                    padding: 10px 14px;
+                    border-radius: 6px;
+                    background: #f4f8fc;
+                    border: 1px solid #e6eef6;
+                    font-family: sans-serif;
+                }
+
+                .step-scenario__badge {
+                    border-radius: 4px;
+                    padding: 2px 7px;
+                    background-color: rgba(53, 113, 163, 0.13);
+                    color: #3571a3;
+                    font-size: 8.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                }
+
+                .step-scenario__feature { font-size: 12.5px; font-weight: 600; color: #39404d; }
+                .step-scenario__name    { font-size: 12px; color: #6b7381; }
+                .step-scenario__file    { margin-left: auto; font-size: 10.5px; color: #a9b0ba; }
+
+                /* ---- What the test says about itself ---- */
+                .step-detail {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 9px;
+                    margin: 15px 0 4px 0;
+                }
+
+                .step-fact {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 12px;
+                }
+
+                .step-fact__label {
+                    flex: 0 0 108px;
+                    font-family: sans-serif;
+                    font-size: 9.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    color: #a9b0ba;
+                    text-align: right;
+                }
+
+                .step-fact__value {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                    font-family: sans-serif;
+                    font-size: 12px;
+                    color: #4a5160;
+                    line-height: 1.5;
+                }
+
+                .step-badge {
+                    border-radius: 4px;
+                    padding: 2px 8px;
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    font-weight: 600;
+                    background-color: rgba(107, 115, 129, 0.1);
+                    color: #6b7381;
+                }
+
+                /* A marker pytest itself acts on changes how the test runs; a
+                   marker someone invented only names it. They are not the same
+                   kind of fact, so they are not the same colour. */
+                .step-badge--builtin { background-color: rgba(230, 168, 0, 0.16); color: #8a6400; }
+                .step-badge--user    { background-color: rgba(53, 113, 163, 0.12); color: #3571a3; }
+                .step-badge--param   { background-color: rgba(122, 88, 161, 0.13); color: #7a58a1; }
+                .step-badge--fixture { background-color: rgba(36, 190, 170, 0.16); color: #2f8f86; }
+                .step-badge--gherkin {
+                    background-color: rgba(53, 113, 163, 0.13);
+                    color: #3571a3;
+                    text-transform: uppercase;
+                    font-size: 8.5px;
+                    letter-spacing: 0.07em;
+                    margin-right: 7px;
+                }
+
+                /* ---- The phases, and the steps under them ---- */
+                .step-phase {
+                    margin-top: 16px;
+                    border: 1px solid #eef1f5;
+                    border-radius: 6px;
+                    overflow: hidden;
+                }
+
+                .step-phase__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 8px 14px;
+                    background: #fcfcfd;
+                    border-bottom: 1px solid #f1f4f8;
+                    font-family: sans-serif;
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: #6b7381;
+                }
+
+                .step-phase__ms { color: #a9b0ba; letter-spacing: 0; }
+
+                .step-phase__none {
+                    display: none;
+                    padding: 11px 14px;
+                    font-family: sans-serif;
+                    font-size: 11.5px;
+                    color: #c3c9d2;
+                }
+
+                .step-phase--bare .step-phase__none { display: block; }
+
+                .step-line {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    padding: 8px 14px 8px 0;
+                    border-bottom: 1px solid #f6f8fb;
+                    /* The tree is drawn by indentation rather than by nesting
+                       the markup: a flat list of rows is what lets one step be
+                       filtered, measured and compared against its siblings. */
+                    padding-left: calc(14px + var(--step-depth, 0) * 19px);
+                }
+
+                .step-line:last-child { border-bottom: none; }
+
+                .step-line__rail {
+                    display: none;
+                }
+
+                .step-line__mark {
+                    flex: none;
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    background-color: #cfd6e0;
+                }
+
+                .step-line--PASS .step-line__mark { background-color: #98cc64; }
+                .step-line--FAIL .step-line__mark { background-color: #fc6766; }
+                .step-line--SKIP .step-line__mark { background-color: #ffd050; }
+
+                /* A failed step is the reason the tab was opened. */
+                .step-line--FAIL { background: #fff7f7; }
+
+                .step-line__main {
+                    flex: 1 1 240px;
+                    min-width: 0;
+                    display: flex;
+                    align-items: baseline;
+                    flex-wrap: wrap;
+                    gap: 4px 8px;
+                }
+
+                .step-line__title {
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                    color: #39404d;
+                    word-break: break-word;
+                }
+
+                .step-line--FAIL .step-line__title { font-weight: 600; color: #c9403f; }
+
+                .step-line__params {
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    color: #a9b0ba;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    max-width: 340px;
+                }
+
+                .step-line__attach {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    border-radius: 4px;
+                    padding: 1px 6px;
+                    background-color: rgba(36, 190, 170, 0.16);
+                    color: #2f8f86;
+                    font-family: sans-serif;
+                    font-size: 9.5px;
+                    font-weight: 700;
+                }
+
+                /* The bar is scaled within the test, so it answers "which part
+                   of this test was slow" rather than "which test was slow". */
+                .step-line__bar {
+                    flex: 0 0 96px;
+                    height: 4px;
+                    border-radius: 999px;
+                    background: #f0f3f7;
+                    overflow: hidden;
+                }
+
+                .step-line__bar i {
+                    display: block;
+                    height: 100%;
+                    border-radius: 999px;
+                    background: #cbd5e1;
+                }
+
+                .step-line--FAIL .step-line__bar i { background: #fca5a4; }
+
+                .step-line__ms {
+                    flex: 0 0 62px;
+                    text-align: right;
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    color: #6b7381;
+                }
+
+                .step-line__error {
+                    flex: 1 1 100%;
+                    margin: 7px 0 1px 0;
+                    padding: 9px 11px;
+                    border-radius: 5px;
+                    background: #fff1f1;
+                    border: 1px solid #f8dcdc;
+                    font-size: 11px;
+                    line-height: 1.5;
+                    color: #a1302f;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    max-height: 190px;
+                    overflow: auto;
+                }
+
+                /* ---- The teaching panel, only while nobody has named one ---- */
+                .step-guide { display: none; }
+                .step-page.is-bare .step-guide { display: block; margin-top: 26px; }
+
+                .step-page.is-empty .step-shell,
+                .step-page.is-empty .metrics-summary { display: none; }
+                .step-page.is-empty .step-guide { display: block; }
+
+                @media screen and (max-width: 1100px) {
+                    .step-body { flex-direction: column; height: auto; }
+                    .step-rail {
+                        flex: 1 1 auto;
+                        max-width: none;
+                        max-height: 260px;
+                        border-right: none;
+                        border-bottom: 1px solid #eef1f5;
+                    }
+                    .step-line__bar { display: none; }
+                }
+
                 /* ---- The setup guide ---- */
                 .setup-guide {
                     max-width: 760px;
@@ -4317,6 +4807,9 @@
             <a class="tablink" href="#test-metrics" onclick="openPage('testMetrics', this, 'white', '#565656', 'groove'); executeDataTable('#tm',3)">
                 <i class="fa fa-server" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Metrics
             </a>
+            <a class="tablink" href="#test-steps" onclick="openPage('testSteps', this, 'white', '#565656', 'groove'); refreshSteps();">
+                <i class="fa fa-list-ol" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Steps
+            </a>
             <a class="tablink" href="#archives" onclick="openPage('archives', this, 'white', '#565656', 'groove');">
                 <i class="fa fa-history" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Archives
             </a>
@@ -4821,6 +5314,7 @@
                                 <th class="th-left">Error Message</th>
                                 <th>Logs</th>
                                 <th>Data</th>
+                                <th>Steps</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -4832,6 +5326,120 @@
                      it would be searched, sorted and exported along with the
                      rest of the table. -->
                 <div id="logStore" hidden>%(test_logs)%</div>
+            </div>
+        </div>
+        <div class="tabcontent" id="testSteps">
+            <div class="metrics-page step-page %(step_state)%" id="stepPage">
+                <div class="metrics-page__head">
+                    <div>
+                        <div class="metrics-page__title"><i class="fa fa-list-ol"></i>Test Steps</div>
+                        <div class="metrics-page__subtitle">What each test did, step by step, and where its time went</div>
+                    </div>
+                    <div class="metrics-summary" id="stepSummary"></div>
+                </div>
+
+                <div class="metrics-card step-shell">
+                    <div class="metrics-toolbar step-toolbar">
+                        <div class="step-filters" id="stepFilters"></div>
+                        <div class="step-search">
+                            <input type="search" id="stepSearch" autocomplete="off" spellcheck="false"
+                                   placeholder="Search by test, step, marker or feature" oninput="filterSteps()" />
+                        </div>
+                    </div>
+                    <div class="step-body">
+                        <div class="step-rail" id="stepRail">
+                            %(step_tree)%
+                            <div class="step-rail__empty" id="stepRailEmpty" hidden>Nothing matches that search.</div>
+                        </div>
+                        <div class="step-view" id="stepView">
+                            <div class="step-view__head">
+                                <div class="step-view__heading">
+                                    <span class="step-view__title" id="stepViewTitle"></span>
+                                    <span class="step-view__suite" id="stepViewSuite"></span>
+                                </div>
+                                <div class="step-view__status" id="stepViewStatus"></div>
+                            </div>
+                            <div class="step-view__body" id="stepViewBody"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Only while nobody has named a step. The tree above is real
+                     either way - every test has three phases and its markers. -->
+                <div class="step-guide">
+                    <div class="attach-empty__head">
+                        <div class="attach-empty__icon"><i class="fa fa-list-ol"></i></div>
+                        <div class="attach-empty__title">No test named a step in this run</div>
+                        <div class="attach-empty__text">
+                          The tree above still works &mdash; every test has a set up, a body and a
+                          tear down, and each is timed. Naming the pieces inside them is what turns
+                          &ldquo;this test failed after 4 seconds&rdquo; into &ldquo;it failed
+                          charging the card, 3.2 seconds in&rdquo;.
+                        </div>
+                    </div>
+
+                    <div class="setup-guide">
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Name a step</div>
+                            <div class="setup-step__note">
+                                <b>step</b> is a <b>with</b> block or a decorator, and steps nest by
+                                being called from inside one another &mdash; nothing is passed between them.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>step</b>
+
+<span class="c">def</span> test_checkout():
+    <span class="c">with</span> <b>step</b>(<span class="s">"Add to cart"</span>, sku=<span class="s">"A-12"</span>):
+        cart.add(<span class="s">"A-12"</span>)
+
+    <span class="c">with</span> <b>step</b>(<span class="s">"Charge the card"</span>):
+        <span class="c">assert</span> gateway.charge(cart).ok</pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Or decorate the helper<span class="setup-step__badge">recommended</span></div>
+                            <div class="setup-step__note">
+                                A page object&rsquo;s methods are already the steps of the test. Decorating
+                                them once names every test that calls them, and the arguments of the call
+                                fill in the <b>{placeholders}</b> of the title.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">@step</span>(<span class="s">"Log in as {user}"</span>)
+<span class="c">def</span> login(user, password):
+    page.fill(<span class="s">"#user"</span>, user)
+    page.click(<span class="s">"#submit"</span>)</pre>
+                        </div>
+
+                        <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">3</span>Already writing Gherkin?</div>
+                            <div class="setup-step__note">
+                                Nothing to do. A <b>pytest-bdd</b> scenario is already a list of steps, so
+                                its Given / When / Then land here on their own &mdash; each timed, each
+                                carrying what it was called with.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">Scenario:</span> Add items to the cart
+    <span class="c">Given</span> a logged in user
+    <span class="c">When</span> I add 2 items to the cart
+    <span class="c">Then</span> the cart shows 2 items</pre>
+                        </div>
+                    </div>
+
+                    <div class="setup-foot">
+                        <i class="fa fa-paperclip" aria-hidden="true"></i>
+                        <span>
+                            Anything attached while a step is open is filed under that step &mdash;
+                            <b>attach_json</b>, <b>attach_api</b> and the rest need no extra argument
+                            to say which one they belong to.
+                        </span>
+                    </div>
+
+                    <div class="setup-links">
+                        <a href="https://github.com/prashanth-sams/pytest-html-reporter#test-steps" target="_blank" rel="noopener noreferrer">Full documentation<i class="fa fa-external-link"></i></a>
+                    </div>
+                </div>
+
+                <!-- The trees live here rather than in the rail: the rail is
+                     filtered and redrawn, and every test's step tree has no
+                     business being moved around with it. -->
+                <div id="stepStore" hidden>%(step_store)%</div>
             </div>
         </div>
         <div class="tabcontent" id="archives">
@@ -5722,6 +6330,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         'analytics': 'analytics',
                         'suites': 'suiteMetrics',
                         'test-metrics': 'testMetrics',
+                        'test-steps': 'testSteps',
                         'archives': 'archives',
                         'screenshots': 'screenshots',
                         'coverage': 'coverage',
@@ -7170,6 +7779,210 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 renderAttachmentFilters();
                 filterAttachments();
             }
+
+            // ---- Test Steps -------------------------------------------------
+            var stepSelected = '';
+            var stepKind = 'all';
+
+            var STEP_KINDS = [['all', 'All'], ['failed', 'Failed'], ['bdd', 'Scenarios'], ['plain', 'Tests']];
+
+            function stepItems() {
+                return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-test'));
+            }
+
+            function stepVisibleItems() {
+                return stepItems().filter(function(item) { return !item.hidden; });
+            }
+
+            function stepMatchesKind(item) {
+                if (stepKind === 'all') { return true; }
+                if (stepKind === 'failed') {
+                    var status = item.getAttribute('data-status');
+                    return status === 'FAIL' || status === 'ERROR';
+                }
+                return item.getAttribute('data-kind') === stepKind;
+            }
+
+            function toggleStepSuite(head) {
+                head.parentNode.classList.toggle('is-shut');
+            }
+
+            function renderStepFilters() {
+                var target = document.getElementById('stepFilters');
+                if (!target) { return; }
+
+                var counts = {};
+                stepItems().forEach(function(item) {
+                    var status = item.getAttribute('data-status');
+                    counts.all = (counts.all || 0) + 1;
+                    if (status === 'FAIL' || status === 'ERROR') { counts.failed = (counts.failed || 0) + 1; }
+                    var kind = item.getAttribute('data-kind');
+                    counts[kind] = (counts[kind] || 0) + 1;
+                });
+
+                // A filter that would empty the rail is not offered, and one
+                // that was selected before it stopped existing is let go.
+                if (!counts[stepKind]) { stepKind = 'all'; }
+
+                target.innerHTML = '';
+                STEP_KINDS.forEach(function(kind) {
+                    if (!counts[kind[0]]) { return; }
+                    // "Tests" beside nothing else is the whole rail, so it is
+                    // not a choice worth drawing.
+                    if (kind[0] === 'plain' && !counts.bdd) { return; }
+
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (stepKind === kind[0] ? ' is-active' : '');
+                    button.textContent = kind[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = counts[kind[0]];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        stepKind = kind[0];
+                        renderStepFilters();
+                        filterSteps();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            function renderStepSummary() {
+                var items = stepVisibleItems();
+                var failed = 0, scenarios = 0, steps = 0, slowest = 0;
+
+                items.forEach(function(item) {
+                    var status = item.getAttribute('data-status');
+                    if (status === 'FAIL' || status === 'ERROR') { failed += 1; }
+                    if (item.getAttribute('data-kind') === 'bdd') { scenarios += 1; }
+
+                    var payload = document.getElementById('step-' + item.getAttribute('data-sid'));
+                    if (payload) { steps += payload.querySelectorAll('.step-line').length; }
+                });
+
+                var chips = [{ color: '#565656', value: items.length,
+                               label: items.length === 1 ? 'test' : 'tests' }];
+
+                if (steps) { chips.push({ color: '#3571a3', value: steps, label: steps === 1 ? 'step' : 'steps' }); }
+                if (scenarios) { chips.push({ color: '#7a58a1', value: scenarios, label: 'scenarios' }); }
+                if (failed) { chips.push({ color: METRICS_COLORS.fail, value: failed, label: 'failed' }); }
+
+                renderMetricsChips($('#stepSummary'), chips);
+            }
+
+            function filterSteps() {
+                var box = document.getElementById('stepSearch');
+                var needle = box ? box.value.trim().toLowerCase() : '';
+                var shown = 0;
+                var stillVisible = false;
+
+                stepItems().forEach(function(item) {
+                    var matches = stepMatchesKind(item) &&
+                        (!needle || (item.getAttribute('data-search') || '').indexOf(needle) !== -1);
+
+                    item.hidden = !matches;
+                    if (matches) {
+                        shown += 1;
+                        if (item.getAttribute('data-sid') === stepSelected) { stillVisible = true; }
+                    }
+                });
+
+                // A suite whose every test was filtered away is not a heading
+                // over nothing; it goes with them.
+                Array.prototype.forEach.call(document.querySelectorAll('#stepRail .step-suite'), function(suite) {
+                    var left = suite.querySelectorAll('.step-test:not([hidden])').length;
+                    suite.hidden = left === 0;
+                });
+
+                var empty = document.getElementById('stepRailEmpty');
+                if (empty) { empty.hidden = shown !== 0; }
+
+                document.getElementById('stepView').hidden = shown === 0;
+
+                if (shown && !stillVisible) { showStep(stepVisibleItems()[0].getAttribute('data-sid')); }
+
+                renderStepSummary();
+            }
+
+            function showStep(sid) {
+                var source = document.getElementById('step-' + sid);
+                if (!source) { return; }
+
+                stepSelected = sid;
+
+                document.getElementById('stepViewTitle').textContent = source.getAttribute('data-test') || '';
+                document.getElementById('stepViewSuite').textContent = source.getAttribute('data-suite') || '';
+
+                var status = source.getAttribute('data-status') || '';
+                var pill = document.getElementById('stepViewStatus');
+                pill.innerHTML = '';
+
+                var badge = document.createElement('span');
+                badge.className = 'step-status step-status--' + status;
+                badge.textContent = status + ' · ' + (source.getAttribute('data-duration') || '');
+                pill.appendChild(badge);
+
+                var body = document.getElementById('stepViewBody');
+                body.innerHTML = '';
+                Array.prototype.forEach.call(source.childNodes, function(node) {
+                    body.appendChild(node.cloneNode(true));
+                });
+
+                stepItems().forEach(function(item) {
+                    item.classList.toggle('is-active', item.getAttribute('data-sid') === sid);
+                });
+
+                document.getElementById('stepView').hidden = false;
+            }
+
+            // The list icon on a Test Metrics row: cross to the tab with that
+            // one test already open, rather than dropping someone into a tree
+            // of every test the run produced.
+            function showStepsFor(runt) {
+                stepKind = 'all';
+
+                var search = document.getElementById('stepSearch');
+                if (search) { search.value = ''; }
+
+                var link = tabLinkFor('testSteps');
+                if (link) {
+                    openPage('testSteps', link, 'white', '#565656', 'groove');
+
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', link.getAttribute('href'));
+                    }
+                }
+
+                refreshSteps();
+                showStep(String(runt));
+
+                var item = document.getElementById('step-test-' + runt);
+                if (item) {
+                    // The suite it sits in may be collapsed, and scrolling to a
+                    // row inside a shut group lands on the group instead.
+                    var suite = item.closest ? item.closest('.step-suite') : null;
+                    if (suite) { suite.classList.remove('is-shut'); }
+                    if (item.scrollIntoView) { item.scrollIntoView({ block: 'nearest' }); }
+                }
+            }
+
+            function refreshSteps() {
+                var page = document.getElementById('stepPage');
+                if (!page) { return; }
+
+                var items = stepItems();
+                page.classList.toggle('is-empty', items.length === 0);
+                if (!items.length) { return; }
+
+                renderStepFilters();
+                filterSteps();
+            }
+
+            $(document).ready(function() { setTimeout(refreshSteps, 140); });
 
             $(document).ready(function() { setTimeout(refreshAttachments, 120); });
         </script>

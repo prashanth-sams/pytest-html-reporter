@@ -1,3 +1,5 @@
+import importlib
+import os
 import re
 from datetime import date
 
@@ -659,3 +661,48 @@ def test_template():
             and f"data : {tfail}" in script.text
             and f"data : {tskip}" in script.text
             ]
+
+
+def test_every_component_fills_every_placeholder_it_declares():
+    """A component that is handed all its fields must leave none behind.
+
+    The substitution is a plain string replace, so a field renamed in the
+    template and not in the caller leaves a raw `%(name)%` sitting on the page.
+    Nothing fails; the report just shows the placeholder to whoever opens it.
+    """
+    html_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "html_page", "html")
+
+    for entry in sorted(os.listdir(html_dir)):
+        # The page itself is filled from the reporter, field by field, and has
+        # its own tests above; these are its parts.
+        if not entry.endswith(".html") or entry == "template.html":
+            continue
+
+        module = importlib.import_module("html_page." + entry[:-5])
+        component = getattr(module, "".join(word.capitalize() for word in entry[:-5].split("_")))
+
+        names = re.findall(r"%\((.+?)\)%", open(os.path.join(html_dir, entry), encoding="utf-8").read())
+        rendered = str(component(**{name: "x" for name in names}))
+
+        assert "%(" not in rendered, entry
+
+
+def test_every_component_template_has_a_class_and_the_other_way_round():
+    """The two halves of a component have to exist together.
+
+    A template with no class is dead markup; a class with no template raises
+    only when something first tries to render it, which is at the end of a run
+    somebody has already waited for.
+    """
+    package_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "html_page")
+
+    templates = {entry[:-5] for entry in os.listdir(os.path.join(package_dir, "html"))
+                 if entry.endswith(".html")}
+    classes = {entry[:-3] for entry in os.listdir(package_dir)
+               if entry.endswith(".py") and entry not in ("__init__.py", "page_decor.py",
+                                                          "assets.py", "icon_styles.py")}
+
+    assert templates == classes

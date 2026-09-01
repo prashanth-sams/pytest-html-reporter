@@ -69,6 +69,16 @@ class ConfigVars:
     screen_img = None
     _attach_screenshot_details = ''
     _attachments = []
+    _steps = []
+    _step_local = None
+    _step_phase = 'call'
+    _step_limit = 500
+    _bdd = None
+    _step_tree = ''
+    _step_store = ''
+    _step_state = 'is-bare'
+    _step_named = '0'
+    _step_total = '0'
     _attachment_items = ''
     _attachment_store = ''
     _environment_rows = ''

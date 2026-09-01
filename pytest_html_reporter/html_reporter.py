@@ -41,6 +41,8 @@ from pytest_html_reporter.util import (
     count_log_lines,
     report_attachments_mode,
     report_attachment_limit,
+    report_steps_mode,
+    report_step_limit,
     archive_days,
     archive_since,
     archive_cutoff,
@@ -48,6 +50,7 @@ from pytest_html_reporter.util import (
     generate_report_links,
     generate_run_delta,
 )
+from pytest_html_reporter.step_report import generate_steps_view
 from pytest_html_reporter.coverage_report import (
     collect_coverage,
     generate_coverage_view,
@@ -62,6 +65,19 @@ from pytest_html_reporter.attachments import (
     human_size,
     take_attachments,
     trim_parts,
+)
+from pytest_html_reporter.bdd import (
+    after_step,
+    before_scenario,
+    before_step,
+    lookup_error,
+    step_error,
+    take_scenario,
+)
+from pytest_html_reporter.markers import describe
+from pytest_html_reporter.steps import (
+    set_phase,
+    take_steps,
 )
 from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
@@ -105,6 +121,17 @@ class HTMLReporter(object):
         self.log_limit = report_log_limit(config)
         self.attachments_mode = report_attachments_mode(config)
         self.attachment_limit = report_attachment_limit(config)
+
+        # step() is called by the test, long before anything here runs and with
+        # no way to reach this object, so the cap it honours is left where it
+        # can read it.
+        self.steps_mode = report_steps_mode(config)
+        ConfigVars._step_limit = report_step_limit(config)
+
+        # How long each of setup, call and teardown took, per test. This is
+        # what fills the Test Steps tab for a suite that never named a step of
+        # its own: every test has these three, whether or not it has any more.
+        self._phase_ms = {}
 
         # Age-based retention, alongside --archive-count. A run on a schedule
         # wants "the last 30 days": a build count has to be retuned every time
@@ -188,12 +215,56 @@ class HTMLReporter(object):
             'screenshot': None,
             'logs': [],
             'attachments': [],
+            'steps': [],
+            'phases': {},
+            'meta': {},
+            'bdd': None,
             'collect': True,
         })
+
+    # ---- pytest-bdd, if it is installed -------------------------------------
+    # Every one of these is optionalhook: pytest refuses to start when a plugin
+    # implements a hook nobody registered, so declaring them plainly would take
+    # down every run that does not have pytest-bdd - which is most of them.
+
+    @pytest.hookimpl(optionalhook=True)
+    def pytest_bdd_before_scenario(self, request, feature, scenario):
+        before_scenario(feature, scenario)
+
+    @pytest.hookimpl(optionalhook=True)
+    def pytest_bdd_before_step(self, request, feature, scenario, step, step_func):
+        before_step(step)
+
+    @pytest.hookimpl(optionalhook=True)
+    def pytest_bdd_after_step(self, request, feature, scenario, step, step_func, step_func_args):
+        after_step(step_func_args)
+
+    @pytest.hookimpl(optionalhook=True)
+    def pytest_bdd_step_error(self, request, feature, scenario, step, step_func,
+                              step_func_args, exception):
+        step_error(exception, step_func_args)
+
+    @pytest.hookimpl(optionalhook=True)
+    def pytest_bdd_step_func_lookup_error(self, request, feature, scenario, step, exception):
+        """A step the feature file names and the suite never defined.
+
+        No step function ran, so before_step never opened anything - the step
+        is recorded whole, so the tab says which line of the feature has no
+        implementation rather than simply ending early.
+        """
+        lookup_error(step, exception)
+
+    @pytest.hookimpl(hookwrapper=True)
+    def pytest_runtest_call(self, item):
+        """Steps opened from here belong to the test body rather than a fixture."""
+        set_phase('call')
+
+        yield
 
     @pytest.hookimpl(hookwrapper=True)
     def pytest_runtest_teardown(self, item, nextitem):
         ConfigVars._test_name = item.name
+        set_phase('teardown')
 
         _test_end_time = time.time()
         ConfigVars._duration = _test_end_time - ConfigVars._start_execution_time
@@ -211,6 +282,13 @@ class HTMLReporter(object):
     def pytest_runtest_setup(self, item):
         ConfigVars._start_execution_time = time.time()
         self._log_sections = {}
+
+        # A retry runs the whole protocol again, so these are emptied per
+        # attempt rather than per test: the attempt that sticks is the one the
+        # report shows, and it must not be shown carrying the previous
+        # attempt's timings.
+        self._phase_ms = {}
+        set_phase('setup')
 
     def pytest_sessionfinish(self, session):
         # A worker cannot write the report - it only ever saw its own slice of
@@ -373,6 +451,13 @@ class HTMLReporter(object):
         if self.logs_mode != 'none':
             merge_log_sections(self._log_sections, rep.sections)
 
+        # pytest times each phase for its own summary; the Test Steps tab shows
+        # the three of them, so a test with no steps of its own still says
+        # where its time went. Taken from the report rather than measured here
+        # because a wrapper around the phase would be timing itself as well.
+        if rep.when in ('setup', 'call', 'teardown'):
+            self._phase_ms[rep.when] = int(round(rep.duration * 1000))
+
         # Only the outcome of this one test is tracked here. Suite grouping and
         # every total are worked out at the end, from the merged records, so
         # that tests arriving interleaved from several workers still add up.
@@ -455,6 +540,11 @@ class HTMLReporter(object):
         if self.logs_mode != 'none':
             record['logs'] = self.collect_logs(record['status'])
 
+        # The teardown's own duration is only known once pytest has reported
+        # that phase, which is after the record was built - so the tab would
+        # otherwise show every test tearing down in no time at all.
+        record['phases'] = dict(self._phase_ms)
+
     def append_test_record(self, item):
         """Store one finished test as a plain dict.
 
@@ -475,6 +565,17 @@ class HTMLReporter(object):
             'screenshot': None,
             'logs': self.collect_logs(str(ConfigVars._test_status)),
             'attachments': self.collect_attachments(str(ConfigVars._test_status)),
+            'steps': self.collect_steps(str(ConfigVars._test_status)),
+            'phases': dict(self._phase_ms),
+            # What the test says about itself - its markers, its parameters,
+            # the fixtures it named and its docstring. Read from the item here,
+            # at teardown, because it is the only moment that sees all of it: a
+            # marker added mid-test is not there at collection.
+            'meta': describe(item),
+            # The feature and scenario this came from, when it came from one.
+            # None for a plain pytest test, which is what the tab keys off to
+            # show a scenario as a scenario rather than as a function.
+            'bdd': take_scenario(),
         }
 
         # Whatever the test did. A screenshot of a pass is a baseline, and one
@@ -518,6 +619,20 @@ class HTMLReporter(object):
             collected.append(attachment)
 
         return collected
+
+    def collect_steps(self, status):
+        """The steps this test ran through, ready to be rendered.
+
+        The buffer is drained whatever the mode says, for the same reason the
+        attachments one is: a step left in it would be picked up by the next
+        test to finish and shown as that test's own.
+        """
+        pending = take_steps()
+
+        if self.steps_mode == 'none': return []
+        if (self.steps_mode == 'failed') and (status not in ('FAIL', 'ERROR')): return []
+
+        return pending
 
     def store_record(self, record):
         """Store a record of either kind - a test that ran, or a file that did not."""
@@ -571,6 +686,13 @@ class HTMLReporter(object):
         if record['screenshot'] is None: record['screenshot'] = superseded['screenshot']
         if not record.get('attachments'): record['attachments'] = superseded.get('attachments') or []
 
+        # The steps of the attempt that stuck, not of the one it replaced: a
+        # retry that passed did so by running its own steps, and showing the
+        # failing attempt's tree beside a green test would describe a run that
+        # did not happen. An attempt that recorded none keeps what was there,
+        # which is what --report-steps failed leaves behind on a retry.
+        if not record.get('steps'): record['steps'] = superseded.get('steps') or []
+
         record['index'] = superseded['index']
         self._records[slot] = record
 
@@ -596,6 +718,10 @@ class HTMLReporter(object):
 
             self.append_suite_metrics_row(suite_index, suite_name, suite_records)
 
+        # The same grouping the table was built from, so a row's Steps button
+        # and the rail entry it crosses to cannot end up with different ids.
+        generate_steps_view(suites)
+
         self.update_counts(records)
 
     def append_test_metrics_row(self, record, row_id):
@@ -611,7 +737,8 @@ class HTMLReporter(object):
             msg=escape_report_text(record['message'][:50]),
             runt=row_id,
             log_count=str(self.attach_test_logs(record, row_id)),
-            attach_count=str(self.attach_test_data(record, row_id))
+            attach_count=str(self.attach_test_data(record, row_id)),
+            step_count=str(len(record.get('steps') or []))
         )
 
         # A row with nothing to say gets neither button: a passing test has no
@@ -1009,7 +1136,10 @@ class HTMLReporter(object):
             failure_delta_title=str(ConfigVars._failure_delta_title),
             failure_delta_figure=str(ConfigVars._failure_delta_figure),
             failure_delta_unit=str(ConfigVars._failure_delta_unit),
-            report_links=str(ConfigVars._report_links)
+            report_links=str(ConfigVars._report_links),
+            step_tree=str(ConfigVars._step_tree),
+            step_store=str(ConfigVars._step_store),
+            step_state=str(ConfigVars._step_state)
         )
 
         return str(template_text)
