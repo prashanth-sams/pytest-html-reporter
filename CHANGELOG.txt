@@ -33,6 +33,9 @@
 - The tab's search box is the one the other tables use, rather than a plain input that happened to sit in the same place
 - Larger type throughout, and the suite is drawn as a band with its file icon and count while its tests hang off a rule beneath it - at the old sizes the two rows read alike and the tree was hard to scan
 - tests/functional/test_gherkin.py is a runnable cucumber demo - a feature file, a Scenario Outline and a failing scenario - beside the plain-pytest one in tests/functional/test_steps.py
+- The summary counts the suites alongside the tests, steps, scenarios and failures, and counts the ones the rail is showing rather than the ones the run had, so it cannot disagree with the list under it
+- The rail opens with every suite shut, so a six-hundred-test run shows the shape of the suite rather than nine screens of test names, with Expand all / Collapse all beside the filters. The suite holding the open test is never left shut, and a search opens whatever holds a match
+- The card now runs down to the footer. The fifty pixels between them were the page's own bottom padding and the footer's top margin rather than anything the tab had put there; the tab takes that space back and gives it to the rail, and the page no longer scrolls to show a footer that was already on screen
 
 0.3.7 (31/08/2026)
 -------------------

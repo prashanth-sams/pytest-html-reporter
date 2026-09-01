@@ -706,6 +706,10 @@ gets a tree saying where its time went. Naming steps makes that tree deeper; it 
 
 A **How it works** button at the top opens the same cheatsheet the tab shows on a run where nobody named a
 step, so it is there when you go looking for it rather than only before you need it.
+The rail opens with every suite shut - a six-hundred-test run shows the shape of the suite rather than nine
+screens of test names - with **Expand all** and **Collapse all** beside the filters. Searching opens whatever
+holds a match, and the suite holding the open test is never left shut.
+
 
 It is a tab of its own rather than a panel inside ``Test Suites``, which is where Allure keeps the same information.
 The cost of folding it in is a high-level page you can no longer skim, and the high-level page is the one most people

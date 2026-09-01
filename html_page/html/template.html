@@ -3514,20 +3514,38 @@
                     gap: 6px;
                 }
 
+                .step-tree-actions {
+                    display: flex;
+                    gap: 6px;
+                    padding-left: 10px;
+                    margin-left: 10px;
+                    border-left: 1px solid #e6ecf3;
+                }
+
                 .step-search {
                     margin-left: auto;
                 }
 
-                /* A cap rather than a fixed height. The rail has to be able to
-                   scroll a suite of six hundred tests, which needs a bounded
-                   box - but pinning the height left a short step tree sitting
-                   in three hundred pixels of white. */
+                /* A cap rather than a fixed height, so the two cases both come
+                   out right: a long rail fills the space down to the footer,
+                   and a short step tree still gets a short card instead of
+                   sitting in three hundred pixels of white. The figure is what
+                   is above the card plus the footer under it. */
                 .step-body {
                     display: flex;
                     align-items: stretch;
-                    max-height: calc(100vh - 250px);
+                    max-height: calc(100vh - 216px);
                     min-height: 340px;
                 }
+
+                /* The card was stopping a long way short of the footer, and the
+                   fifty pixels between them were the page's own bottom padding
+                   and the footer's top margin rather than anything the tab had
+                   put there. This tab is a full-height pane, so it takes that
+                   space back and gives it to the rail. */
+                #testSteps .metrics-page { padding-bottom: 0.4rem; }
+
+                body[data-tab="testSteps"] .main > .page-footer { margin-top: 10px; }
 
                 /* ---- Left: the suite tree ---- */
                 .step-rail {
@@ -5434,6 +5452,10 @@
                 <div class="metrics-card step-shell">
                     <div class="metrics-toolbar step-toolbar">
                         <div class="step-filters" id="stepFilters"></div>
+                        <div class="step-tree-actions">
+                            <button type="button" class="attach-pill" onclick="toggleAllStepSuites(true)">Expand all</button>
+                            <button type="button" class="attach-pill" onclick="toggleAllStepSuites(false)">Collapse all</button>
+                        </div>
                         <div class="step-search">
                             <input type="search" id="stepSearch" autocomplete="off" spellcheck="false"
                                    placeholder="Search by test, step, marker or feature" oninput="filterSteps()" />
@@ -7904,6 +7926,24 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-test'));
             }
 
+            function stepSuites() {
+                return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-suite'));
+            }
+
+            // Every suite at once. A run of six hundred tests opens with the
+            // rail shut, so the first thing it shows is the shape of the suite
+            // rather than nine screens of test names.
+            function toggleAllStepSuites(open) {
+                stepSuites().forEach(function(suite) { suite.classList.toggle('is-shut', !open); });
+            }
+
+            function revealStepSuite(sid) {
+                var item = document.getElementById('step-test-' + sid);
+                var suite = item && item.closest ? item.closest('.step-suite') : null;
+
+                if (suite) { suite.classList.remove('is-shut'); }
+            }
+
             function stepVisibleItems() {
                 return stepItems().filter(function(item) { return !item.hidden; });
             }
@@ -7967,7 +8007,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
             function renderStepSummary() {
                 var items = stepVisibleItems();
-                var failed = 0, scenarios = 0, steps = 0, slowest = 0;
+                var failed = 0, scenarios = 0, steps = 0;
 
                 items.forEach(function(item) {
                     var status = item.getAttribute('data-status');
@@ -7978,7 +8018,14 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     if (payload) { steps += payload.querySelectorAll('.step-line').length; }
                 });
 
-                var chips = [{ color: '#565656', value: items.length,
+                // Suites the rail is actually showing, not every suite in the
+                // run - the same contract the counts under them keep, so the
+                // numbers can never disagree with the list.
+                var suites = stepSuites().filter(function(suite) { return !suite.hidden; }).length;
+
+                var chips = [{ color: '#8a97a8', value: suites,
+                               label: suites === 1 ? 'suite' : 'suites' },
+                             { color: '#565656', value: items.length,
                                label: items.length === 1 ? 'test' : 'tests' }];
 
                 if (steps) { chips.push({ color: '#3571a3', value: steps, label: steps === 1 ? 'step' : 'steps' }); }
@@ -8011,6 +8058,16 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     var left = suite.querySelectorAll('.step-test:not([hidden])').length;
                     suite.hidden = left === 0;
                 });
+
+                // A match inside a shut suite is a match nobody can see, so a
+                // search opens the groups that hold one. Clearing the box
+                // leaves them as they are rather than shutting a group the
+                // reader opened by hand.
+                if (needle || stepKind !== 'all') {
+                    stepSuites().forEach(function(suite) {
+                        if (suite.querySelector('.step-test:not([hidden])')) { suite.classList.remove('is-shut'); }
+                    });
+                }
 
                 var empty = document.getElementById('stepRailEmpty');
                 if (empty) { empty.hidden = shown !== 0; }
@@ -8071,6 +8128,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     item.classList.toggle('is-active', item.getAttribute('data-sid') === sid);
                 });
 
+                revealStepSuite(sid);
+
                 document.getElementById('stepView').hidden = false;
             }
 
@@ -8105,6 +8164,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 }
             }
 
+            var stepRailStarted = false;
+
             function refreshSteps() {
                 var page = document.getElementById('stepPage');
                 if (!page) { return; }
@@ -8112,6 +8173,13 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 var items = stepItems();
                 page.classList.toggle('is-empty', items.length === 0);
                 if (!items.length) { return; }
+
+                // Once, on the first visit. Doing it on every refresh would
+                // shut a group the reader had just opened.
+                if (!stepRailStarted) {
+                    stepRailStarted = true;
+                    toggleAllStepSuites(false);
+                }
 
                 renderStepFilters();
                 filterSteps();

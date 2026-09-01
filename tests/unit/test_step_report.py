@@ -324,3 +324,32 @@ def test_the_search_matches_a_test_name_typed_with_spaces(tmp_path):
     assert entry is not None
     assert any("fails deep in a step" in text for text in searches)
     assert any("fails_deep_in_a_step" in text for text in searches)
+
+
+def test_the_summary_counts_the_suites_the_rail_is_showing(tmp_path):
+    # Counted off the rail rather than off the run, so the number can never
+    # disagree with the list under it once a filter is on.
+    page = _run(tmp_path)
+
+    summary = page.split("function renderStepSummary()")[1].split("function ")[0]
+
+    assert "stepSuites()" in summary
+    assert "!suite.hidden" in summary
+    assert "'suite' : 'suites'" in summary
+
+
+def test_the_rail_opens_collapsed_with_controls_to_open_it(tmp_path):
+    # A run of six hundred tests opened with nine screens of test names. Shut,
+    # the first thing the rail shows is the shape of the suite.
+    page = _run(tmp_path)
+
+    assert 'onclick="toggleAllStepSuites(true)"' in page
+    assert 'onclick="toggleAllStepSuites(false)"' in page
+    assert "toggleAllStepSuites(false);" in page.split("function refreshSteps()")[1][:600]
+
+
+def test_the_selected_test_is_never_hidden_behind_a_shut_suite(tmp_path):
+    page = _run(tmp_path)
+
+    assert "function revealStepSuite(sid)" in page
+    assert "revealStepSuite(sid);" in page
