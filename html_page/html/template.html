@@ -707,9 +707,29 @@
                     flex: 0 0 auto;
                 }
 
+                :root {
+                    /* Shared with .tabcontent's scroll-margin below, which has
+                       to cancel exactly this much or the cancelling is visible. */
+                    --main-pad-top: 10px;
+                }
+
                 .main {
-                    padding: 10px 20px 20px 20px;
+                    padding: var(--main-pad-top) 20px 20px 20px;
                     margin-left: 180px;
+                }
+
+                /* Every nav link is a real href, and several of them -
+                   #dashboard, #analytics, #archives, #screenshots, #coverage -
+                   name a tab container that genuinely carries that id. So the
+                   browser scrolls that container to the top of the viewport the
+                   moment the link is followed, swallowing the padding above it,
+                   and openPage() scrolls back to 0 on the next tick. The tab
+                   lands ten pixels high for a frame and then drops: small, but
+                   it reads as a flinch every time one of those tabs is opened.
+                   Offsetting the scroll by the padding lands the browser where
+                   the page already was, so there is nothing left to undo. */
+                .tabcontent {
+                    scroll-margin-top: var(--main-pad-top);
                 }
 
 
@@ -7498,12 +7518,14 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 // The freshly shown tab now has real dimensions, so re-size its
                 // charts (e.g. the per-build archive charts) to make them visible.
                 setTimeout(resizeVisibleCharts, 0);
-                // A nav href that names a real container - #archives, #screenshots -
-                // makes the browser jump to it once this handler returns, landing
-                // the tab part-scrolled while the tabs whose hash matches nothing
-                // (#suites, #test-metrics, #api-logs) open at the top. Undo that
-                // jump so every tab opens the same way. The deep link to an
-                // archived build re-scrolls after this, on a longer timer.
+                // The tabs whose hash matches nothing in the page (#suites,
+                // #test-metrics, #api-logs) are not scrolled by the browser at
+                // all, so opening one from a scrolled tab would leave it
+                // part-scrolled; this is what opens every tab the same way. The
+                // ones the browser does scroll already land at the top, on
+                // .tabcontent's scroll-margin, and this is a no-op for them. The
+                // deep link to an archived build re-scrolls after this, on a
+                // longer timer.
                 setTimeout(function() { window.scrollTo(0, 0); }, 0);
             }
 
