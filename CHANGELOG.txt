@@ -14,7 +14,7 @@
 - Every one of those buttons now says what it did, once, in the middle of the page: `Error copied`, `Command copied`, `Link copied`, faded in and out again. The tick that replaces the icon says the same thing 22 pixels wide at the end of a row somebody is reading the other end of - and says the same tick whichever of the three was pressed
 - A browser that refused the clipboard - which is what `file://` gets in some of them - says `Press Ctrl+C to copy` there instead of leaving a button that did nothing and no reason why
 - It is a `role="status"`, so a screen reader reads the copy out; it takes no clicks, so the row underneath stays live while it is up; and a second copy restarts it rather than stacking a second one over the table
-- The buttons themselves are bigger and no longer drawn in the palette a disabled control gets: 27px rather than 22, with the glyph in `--text-muted` behind a `--border-strong` edge. At 22px in `--text-faint` they were a pale square holding a pale glyph, and read as decoration on the message rather than as the things that do the work
+- The buttons themselves are bigger and no longer drawn in the palette a disabled control gets: 24px rather than 22, with the glyph in `--text-muted` behind a `--border-strong` edge. At 22px in `--text-faint` they were a pale square holding a pale glyph, and read as decoration on the message rather than as the things that do the work. The box only had to come up enough to be aimed at - it is the glyph that carries the legibility, and past the mid twenties the button starts to out-weigh the message it belongs to
 
 0.3.9 (02/09/2026)
 -------------------
