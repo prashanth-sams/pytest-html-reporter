@@ -60,7 +60,7 @@ def _record(suite, name, status="FAIL", message="", index=0):
         "rerun": 0,
         "index": index,
         "worker": "",
-        "screenshot": None,
+        "screenshots": [],
         "logs": [],
         "attachments": [],
     }

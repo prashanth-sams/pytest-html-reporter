@@ -6,7 +6,7 @@ pytest-html-reporter
    :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
    :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.3.8
+.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.3.9
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
@@ -40,14 +40,16 @@ Features
 * Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
 * Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
 * Archives / History
-* Screenshots - works with Selenium, Playwright, or anything else that can produce a PNG
+* Screenshots - a failing Selenium or Playwright test is photographed automatically, with no hook, fixture or import; ``attach`` still takes an image of your own, from anything that can produce a PNG
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
+* Light and dark themes - a switch at the foot of the side nav, remembered per reader, following the operating system until it is touched
 * Custom side-nav links to any page of your own
 * Opens the finished report in a browser on a local run, and stays quiet on a build agent
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
+* Dedicated GitHub Action
 
 Installation
 ------------
@@ -331,6 +333,7 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_log_limit = 10000
     report_attachments = all
     report_attachment_limit = 20000
+    report_screenshots = failed
     report_coverage = auto
     report_coverage_limit = 500
     report_open = auto
@@ -341,7 +344,7 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
 ``report_logs`` takes the same values as ``--report-logs`` (``all`` / ``failed`` / ``none``) and ``report_log_limit``
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). ``report_attachments`` and
 ``report_attachment_limit`` mirror ``--report-attachments`` and ``--report-attachment-limit`` the same way, as do
-``report_coverage``, ``report_coverage_file`` and ``report_coverage_limit``.
+``report_screenshots``, ``report_coverage``, ``report_coverage_file`` and ``report_coverage_limit``.
 
 ``report_open`` takes the same values as ``--report-open`` (``auto`` / ``always`` / ``none``), and is the place to
 turn the browser off once for everybody rather than in every command.
@@ -360,16 +363,50 @@ place for it: set it once and every invocation, however it is started, keeps the
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
 ``--report-link`` entries are added to the ones set in the ini file the same way; ``--archive-count``,
 ``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``, ``--report-attachments``,
-``--report-attachment-limit``, ``--report-coverage``, ``--report-coverage-file`` and ``--report-coverage-limit``
-override their ini values
+``--report-attachment-limit``, ``--report-screenshots``, ``--report-coverage``, ``--report-coverage-file`` and
+``--report-coverage-limit`` override their ini values
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
 screenshots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Import ``attach`` from the library and hand it the PNG bytes of a screenshot. It takes the image itself rather than a
-browser, so it works with Selenium, Playwright, or anything else that can produce a PNG::
+A test that fails while holding a Selenium driver or a Playwright page is photographed for you. No hook to write, no
+fixture to add, nothing to import - this is an ordinary browser test, and its failure reaches the report with a
+picture of the page beside it::
+
+    def test_checkout(page):
+        page.goto("/cart")
+        assert page.locator("h1").inner_text() == "Cart"     # fails, and is photographed
+
+The picture is taken at the very end of the test, before the fixture that quits the browser has run. What makes
+something a browser is that it can hand over a PNG, so Selenium, Playwright, appium, splinter and a driver wrapper of
+your own are all covered - whatever the fixture happens to be called, ``page``, ``driver``, ``browser``, ``chrome`` or
+anything else. A test driving two browsers at once gets a picture of each.
+
+``--report-screenshots`` decides which tests are photographed:
+
+=========================  ==============================================================================
+Value                      Photographed
+=========================  ==============================================================================
+``failed`` *(default)*     Only ``FAIL`` and ``ERROR`` tests
+``all``                    Every test - a screenshot of a pass is a baseline worth having
+``none``                   None; ``attach`` below still works
+=========================  ==============================================================================
+
+::
+
+    $ pytest --html-report=./report --report-screenshots=all
+
+Every screenshot lands in two places: the ``Screenshots`` gallery, and the ``Screens`` column of the ``Test Metrics``
+row it belongs to - a thumbnail on the row itself, next to the error it explains, that opens full size when clicked.
+
+taking the picture yourself
+"""""""""""""""""""""""""""
+
+The automatic capture takes the page as it was when the test ended. When the moment matters - a page mid-test, a
+chart, a rendered PDF, an image diff - hand ``attach`` the PNG bytes yourself. It takes the image rather than the
+browser, so anything that can produce one reaches the report::
 
     from pytest_html_reporter import attach
 
@@ -377,13 +414,13 @@ browser, so it works with Selenium, Playwright, or anything else that can produc
     attach(data=page.screenshot())                     # Playwright
     attach(data=await page.screenshot())               # Playwright, async API
 
-**Note:** every image you attach is kept, whatever the test did - a screenshot of a pass is a baseline worth having.
-Only the tests that actually called ``attach`` appear in the gallery, so capturing on failure alone is a matter of
-deciding when to call it.
+**Note:** every image you attach is kept, whatever the test did and whatever ``--report-screenshots`` says - that
+option governs the pictures nobody asked for, and this one was asked for. A test that attaches its own is not
+photographed again on the way out, so a suite that already has a capture hook keeps exactly the images it always had.
 
 ``attach`` can be called from anywhere in the test's lifecycle: the test body, a ``unittest`` ``tearDown``, a pytest
-fixture's teardown, or a ``pytest_runtest_makereport`` hook. Capturing on failure only - the usual want - is the
-``rep_call.failed`` test in the fixture below; drop it to photograph every test::
+fixture's teardown, or a ``pytest_runtest_makereport`` hook. Capturing on failure only is the ``rep_call.failed`` test
+in the fixture below - the case the automatic capture now covers on its own::
 
     # conftest.py
     import pytest
@@ -401,63 +438,28 @@ fixture's teardown, or a ``pytest_runtest_makereport`` hook. Capturing on failur
         rep = outcome.get_result()
         setattr(item, "rep_" + rep.when, rep)
 
-**Running Selenium and Playwright side by side?** The browser is already in ``item.funcargs``, so one hook covers
-both at once - no fixture of its own, and nothing to remember in each test. Add a fixture name to the table and that
-framework is covered too::
+async tests, and unittest
+"""""""""""""""""""""""""""
 
-    # conftest.py
-    import pytest
-    from pytest_html_reporter import attach
+The automatic capture is synchronous, so an ``async`` Playwright page has nowhere to await - attach from the test body
+instead. And a ``unittest`` suite that quits its driver in ``tearDown`` has already closed the browser by the time the
+capture would run, so it attaches from there, before the quit::
 
-    CAPTURE = {
-        "driver": lambda driver: driver.get_screenshot_as_png(),  # Selenium
-        "page":   lambda page: page.screenshot(),                 # Playwright
-    }
+    async def test_home(page):                # Playwright, async API
+        try:
+            assert await page.title() == "Example Domain"
+        except AssertionError:
+            attach(data=await page.screenshot())
+            raise
 
-    @pytest.hookimpl(hookwrapper=True)
-    def pytest_runtest_makereport(item, call):
-        outcome = yield
-        report = outcome.get_result()
+    def tearDown(self):                       # unittest
+        attach(data=self.driver.get_screenshot_as_png())
+        self.driver.quit()                    # after, never before
 
-        if report.when != "call" or not report.failed:
-            return
-
-        for name, capture in CAPTURE.items():
-            handle = item.funcargs.get(name)
-            if handle is not None:
-                attach(data=capture(handle))
-                return
-
-This is what ``tests/functional/conftest.py`` in this repository does. Drop the ``report.failed`` check to photograph
-every test. The same guidance is printed on the ``Screenshots`` tab itself whenever a run captures nothing.
-
-Or attach straight from a hook of your own, which already has the browser in ``item.funcargs``::
-
-    # conftest.py
-    import pytest
-    from pytest_html_reporter import attach
-
-    @pytest.hookimpl(hookwrapper=True)
-    def pytest_runtest_makereport(item, call):
-        outcome = yield
-        rep = outcome.get_result()
-
-        if rep.when == "call" and rep.failed:
-            driver = item.funcargs.get("driver")
-            if driver is not None:
-                attach(data=driver.get_screenshot_as_png())
-
-**Note:** put the hook in ``conftest.py``. pytest does pick one up from a test module as well, but only for that
-module's own tests - a conftest covers every test under it, which is almost always what you want.
-
-The same hook covers Playwright by reaching for ``pytest-playwright``'s ``page`` fixture instead::
-
-    page = item.funcargs.get("page")
-    if page is not None:
-        attach(data=page.screenshot())
-
-**Note:** the hook is synchronous, so Playwright's async API cannot be photographed from it - there is nowhere to
-``await``. With ``async`` tests, call ``attach`` from the test body instead.
+``tests/functional`` in this repository has both halves: ``test_selenium.py`` and ``test_playwright.py`` are
+photographed automatically and say nothing about screenshots at all, while ``test_screenshot.py`` attaches its own
+from a ``unittest`` ``tearDown``. The same guidance is printed on the ``Screenshots`` tab itself whenever a run
+captures nothing.
 
 .. image:: https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white
    :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b

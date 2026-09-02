@@ -12,11 +12,13 @@ from pytest_html_reporter import attach
 
 
 class TestClass(unittest.TestCase):
-    """The ``unittest`` flavour of screenshot-on-failure.
+    """``attach`` from a ``unittest`` tearDown - the explicit half, kept.
 
-    ``tearDown`` is where a unittest suite attaches: unittest runs it as part
-    of the test call itself, so the driver is still open. The plain-pytest
-    tests capture theirs from a hook instead - see conftest.py.
+    The suites beside this one have no screenshot code at all; the reporter
+    photographs their browser for them. This one takes the picture itself,
+    which is what you reach for when the moment matters - here, before the
+    driver is quit, and generally wherever the automatic capture at the end of
+    the test would be a page too late.
 
     Has to be run through pytest: ``attach`` writes relative to a base path
     that only exists once the reporter plugin has been configured.

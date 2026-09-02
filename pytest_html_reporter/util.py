@@ -9,15 +9,20 @@ import time
 from collections import Counter
 from datetime import datetime
 from html import escape
-from io import BytesIO
 
 import pytest
-from PIL import Image
 
 from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
 from html_page.report_link import ReportLink
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.screenshots import MODES as SCREENSHOT_MODES
+
+# Re-exported: the package publishes this as ``attach``, and it was defined
+# here before the automatic captures gave it a module of its own. Anything that
+# already imports ``util.screenshot`` keeps working, and keeps getting the very
+# same function ``pytest_html_reporter.attach`` is.
+from pytest_html_reporter.screenshots import attach as screenshot  # noqa: F401
 
 
 def suite_highlights(data):
@@ -75,22 +80,6 @@ def is_xdist_worker(config):
 def xdist_worker_id(config):
     """The worker's id, or '' on the controller and on serial runs."""
     return str(getattr(config, "workerinput", {}).get("workerid", ""))
-
-
-def screenshot(data=None):
-    from pytest_html_reporter.html_reporter import HTMLReporter
-
-    # Pillow fails on a string with "cannot identify image file", which says
-    # nothing about the mistake actually made now that the package also has
-    # helpers that do take text.
-    if isinstance(data, str):
-        raise TypeError(
-            "attach() takes the bytes of an image; to attach text use "
-            "attach_text(), attach_json() or attach_api() instead"
-        )
-
-    ConfigVars.screen_base = HTMLReporter.base_path
-    ConfigVars.screen_img = Image.open(BytesIO(data))
 
 
 def clean_screenshots(path):
@@ -380,6 +369,24 @@ def report_attachment_limit(config):
         return ATTACHMENT_LIMIT_DEFAULT
 
     return max(limit, 0)
+
+
+def report_screenshots_mode(config):
+    """When the reporter photographs a browser by itself: 'failed', 'all', 'none'.
+
+    Not what is kept. An image handed to ``attach`` is kept whatever this says
+    - it was asked for - and this only governs the ones nobody asked for: the
+    picture taken of a live Selenium driver or Playwright page at the end of a
+    test that never mentioned screenshots at all.
+
+    'failed' by default, which is the shape almost every suite writes by hand:
+    photographing a run that passed is a lot of pictures of pages that were
+    fine, and every one of them costs a round trip to the browser.
+    """
+    mode = str(config.getoption("report_screenshots", None)
+               or _ini(config, "report_screenshots") or "failed").strip().lower()
+
+    return mode if mode in SCREENSHOT_MODES else "failed"
 
 
 STEP_MODES = ("all", "failed", "none")

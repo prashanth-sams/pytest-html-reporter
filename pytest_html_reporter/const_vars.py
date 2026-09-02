@@ -65,9 +65,8 @@ class ConfigVars:
     tskip = []
     _suite_error = 0
     _suite_fail = 0
-    screen_base = ''
-    screen_img = None
     _attach_screenshot_details = ''
+    _screenshots = []
     _attachments = []
     _steps = []
     _step_local = None

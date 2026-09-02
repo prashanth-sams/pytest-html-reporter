@@ -79,7 +79,7 @@ def _collect_record(nodeid, status="ERROR", worker="", **kwargs):
         "rerun": 0,
         "index": -1,
         "worker": worker,
-        "screenshot": None,
+        "screenshots": [],
         "logs": [],
         "attachments": [],
         "collect": True,
@@ -99,7 +99,7 @@ def _test_record(suite, name, status, index, worker="", **kwargs):
         "rerun": 0,
         "index": index,
         "worker": worker,
-        "screenshot": None,
+        "screenshots": [],
     }
     record.update(kwargs)
     return record

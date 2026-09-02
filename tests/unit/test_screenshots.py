@@ -54,13 +54,30 @@ def _run(tmp_path, body, conftest=None, *args):
 
 
 def _captions(page):
-    """The test name the report prints under each screenshot in the gallery."""
-    return re.findall(r'data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
+    """The test name the report prints under each screenshot in the gallery.
+
+    Anchored on the gallery's own fancybox group: the thumbnails on the Test
+    Metrics rows carry the same caption, and they are a different question.
+    """
+    return re.findall(
+        r'data-fancybox="images" data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
 
 
-def _tile_captions(page):
-    """The line each gallery tile prints under the suite name."""
-    return re.findall(r'<strong>.*?</strong><br />\n\s*(.*?)\n\s*</p>', page, re.S)
+def _row_shots(page):
+    """The test name against each thumbnail on a Test Metrics row."""
+    return re.findall(
+        r'data-fancybox="metrics" data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
+
+
+def _card_statuses(page):
+    """The status badge each gallery card wears."""
+    return re.findall(r'<figure class="shot-card" data-status="(.*?)"', page)
+
+
+def _card_notes(page):
+    """The error line each gallery card prints, blank ones included."""
+    return [note.strip() for note in
+            re.findall(r'<p class="shot-card__note">(.*?)</p>', page, re.S)]
 
 
 def _images(tmp_path):
@@ -140,12 +157,10 @@ def test_a_passing_test_keeps_its_screenshot(tmp_path):
     assert len(_images(tmp_path)) == 1
 
 
-def test_a_tile_with_no_error_says_how_the_test_ended(tmp_path):
-    """A passing tile would otherwise carry a blank caption.
-
-    The status has to be read out of the tile itself: the word "PASS" is all
-    over the page already, in the totals and in every row of the table.
-    """
+def test_a_card_says_how_the_test_ended(tmp_path):
+    """How the test ended is the card's badge, and the badge is what the
+    filter pills are keyed on - so a passing screenshot has to carry it even
+    though it has no error to print underneath."""
     page, _ = _run(tmp_path, PNG + '''
         from pytest_html_reporter import attach
 
@@ -154,7 +169,23 @@ def test_a_tile_with_no_error_says_how_the_test_ended(tmp_path):
             attach(data=PNG)
     ''')
 
-    assert _tile_captions(page) == ["PASS"]
+    assert _card_statuses(page) == ["pass"]
+    # No error, and no stand-in for one: the badge has already said PASS.
+    assert _card_notes(page) == [""]
+
+
+def test_a_failing_card_prints_the_error_it_belongs_to(tmp_path):
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert _card_statuses(page) == ["fail"]
+    assert "assert False" in _card_notes(page)[0]
 
 
 def test_a_screenshot_is_not_lent_to_the_next_test(tmp_path):
@@ -222,9 +253,11 @@ def test_a_test_that_attached_nothing_gets_no_screenshot(tmp_path):
     assert len(_images(tmp_path)) == 1
 
 
-def test_a_long_test_name_is_cut_from_its_tail(tmp_path):
-    """Keeping the last characters turned test_login_page_renders into
-    "ogin_page_renders", which names nothing and reads as a broken report."""
+def test_a_long_test_name_reaches_the_card_whole(tmp_path):
+    """It used to be cut to nineteen characters to fit a caption strip, which
+    left test_login_page_renders as "test_login_page_r.." on the one line that
+    was supposed to name it. The card gives it a line and an ellipsis of its
+    own, so the report keeps the whole name and lets CSS end it."""
     page, _ = _run(tmp_path, PNG + """
         from pytest_html_reporter import attach
 
@@ -232,4 +265,71 @@ def test_a_long_test_name_is_cut_from_its_tail(tmp_path):
             attach(data=PNG)
     """)
 
-    assert _captions(page) == ["test_a_name_far_t.."]
+    assert _captions(page) == ["test_a_name_far_too_long_for_the_caption_strip"]
+
+
+# --------------------------------------------------------------------------
+# the Screens column on Test Metrics
+# --------------------------------------------------------------------------
+
+def _shot_cells(page):
+    """How many pictures each Test Metrics row says it has."""
+    return re.findall(r'<td class="log-cell shot-cell" data-logs="(\d+)"', page)
+
+
+def test_the_row_carries_the_picture_the_test_took(tmp_path):
+    """Crossing to another tab to find out what the failure looked like is the
+    step the column removes: the thumbnail is on the row that failed."""
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert _row_shots(page) == ["test_fails"]
+    assert _shot_cells(page) == ["1"]
+
+
+def test_a_row_with_no_picture_says_so_rather_than_offering_one(tmp_path):
+    page, _ = _run(tmp_path, PNG + '''
+        def test_quiet_fail():
+            assert False
+    ''')
+
+    assert _row_shots(page) == []
+    assert _shot_cells(page) == ["0"]
+
+
+def test_the_row_thumbnails_open_a_strip_of_their_own(tmp_path):
+    """Not the gallery's. Arrowing off a row's screenshot and into one from a
+    tab the reader is not looking at is not what the arrow keys are for."""
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert 'data-fancybox="metrics"' in page
+    assert 'data-fancybox="images"' in page
+
+
+def test_every_picture_a_test_took_reaches_its_row(tmp_path):
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert _row_shots(page) == ["test_fails", "test_fails"]
+    assert _shot_cells(page) == ["2"]
+    assert len(_images(tmp_path)) == 2

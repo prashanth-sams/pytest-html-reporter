@@ -23,6 +23,7 @@ from html_page.template import HtmlTemplate
 from html_page.test_log import TestLog
 from html_page.test_log_section import TestLogSection
 from html_page.test_row import TestRow
+from html_page.test_shot import TestShot
 from .helper import get_random_number, get_random_string
 
 
@@ -145,28 +146,41 @@ def test_screenshot_details():
     tc = get_random_string()
     te = get_random_string()
 
-    screenshot_details = ScreenshotDetails(ts=ts, tc=tc, te=te,
+    screenshot_details = ScreenshotDetails(ts=ts, tc=tc, te=te, status="FAIL",
+                                           status_key="fail",
                                            screen_name=screen_name)
     soup = BeautifulSoup(str(screenshot_details), "html.parser")
 
-    screenshot_link = soup.find("a", class_="video")
     screen_path = f"pytest_screenshots/{screen_name}.png"
+
+    # The status is on the card, which is what the filter pills read.
+    card = soup.find("figure", class_="shot-card")
+    assert card["data-status"] == "fail"
+
+    screenshot_link = card.find("a", class_="shot-card__frame")
     assert screenshot_link["href"] == screen_path
-    assert screenshot_link["style"] == f"background-image: url('{screen_path}');"
     assert screenshot_link["data-caption"] == f"SUITE: {ts} :: SCENARIO: {tc}"
+    assert screenshot_link.find("img")["src"] == screen_path
 
-    tc_row = soup.find(class_="video-hover-desc video-hover-small")
-    assert tc_row.findAll("span")[0].text.strip() == tc
-    assert tc_row.findAll("span")[1].text.strip() == te
+    status = card.find("span", class_="shot-card__status")
+    assert status.text.strip() == "FAIL"
+    assert "shot-card__status--fail" in status["class"]
 
-    ts_p = soup.find("p", class_="text-desc")
-    assert re.search(rf"{ts}[\n\s]+{te}", ts_p.text.strip()), ts_p.text.strip()
-    assert ts_p.find("strong").text.strip() == ts
+    assert card.find("div", class_="shot-card__test").text.strip() == tc
+    assert card.find("div", class_="shot-card__suite").text.strip() == ts
+    assert card.find("p", class_="shot-card__note").text.strip() == te
 
-    video_description = soup.find("div", id="Video-desc-01")
-    assert video_description.find("h2").text.strip() == tc
-    assert re.search(rf"{ts}[\n\s]+{te}", video_description.find("p").text.strip())
-    assert video_description.find("strong").text.strip() == ts
+
+def test_screenshot_details_without_an_error():
+    # A test that passed has no error, and its card carries the paragraph
+    # empty rather than repeating the status the badge already shows.
+    screenshot_details = ScreenshotDetails(ts="s", tc="t", te="", status="PASS",
+                                           status_key="pass",
+                                           screen_name=get_random_string())
+    soup = BeautifulSoup(str(screenshot_details), "html.parser")
+
+    assert soup.find("p", class_="shot-card__note").text.strip() == ""
+    assert soup.find("figure", class_="shot-card")["data-status"] == "pass"
 
 
 def test_suite_row():
@@ -199,10 +213,11 @@ def test_test_row():
     rerun = str(get_random_number())
 
     attach_count = str(get_random_number())
+    shot_count = str(get_random_number())
 
     test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
                        floating_error_text=floating_error_text, log_count=log_count,
-                       attach_count=attach_count, runt=runt)
+                       attach_count=attach_count, shot_count=shot_count, runt=runt)
     soup = BeautifulSoup(str(test_row), "html.parser")
 
     cells = soup.findAll("td")
@@ -222,17 +237,47 @@ def test_test_row():
     assert attach_cell.find("button")["onclick"] == "showAttachmentsFor('%s')" % runt
     assert attach_count in attach_cell.find("button").text
 
+    # The pictures are in the cell rather than behind a button, so the count is
+    # what the column sorts on: every one of these cells has the same - empty -
+    # text, which is what DataTables would otherwise compare.
+    shot_cell = cells[9]
+    assert shot_cell["data-logs"] == shot_count
+    assert shot_cell["data-order"] == shot_count
+
 
 def test_test_row_without_logs_says_so():
     """The button is left in the row and hidden by `data-logs`, so a test that
     captured nothing shows a dash instead of opening an empty panel."""
     test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", rerun="0", msg="",
-                       floating_error_text="", log_count="0", attach_count="0", runt="0-0")
+                       floating_error_text="", log_count="0", attach_count="0",
+                       shot_count="0", runt="0-0")
     soup = BeautifulSoup(str(test_row), "html.parser")
 
-    for cell in soup.findAll("td")[6:8]:
+    for cell in soup.findAll("td")[6:8] + soup.findAll("td")[9:10]:
         assert cell["data-logs"] == "0"
         assert cell.find("span", class_="log-none") is not None
+
+
+def test_test_shot():
+    """A thumbnail on a Test Metrics row: the picture itself, and a link that
+    opens it in the same overlay the gallery uses."""
+    screen_name = get_random_string()
+    ts = get_random_string()
+    tc = get_random_string()
+
+    shot = TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc)
+    soup = BeautifulSoup(str(shot), "html.parser")
+
+    path = "pytest_screenshots/%s.png" % screen_name
+
+    link = soup.find("a", class_="shot-thumb")
+    assert link["href"] == path
+    assert link["data-caption"] == "SUITE: %s :: SCENARIO: %s" % (ts, tc)
+    # Its own group: arrowing off a row and into a screenshot from a tab the
+    # reader is not looking at is not what the arrow keys are for.
+    assert link["data-fancybox"] == "metrics"
+    assert link.find("img")["src"] == path
+    assert link.find("img")["loading"] == "lazy"
 
 
 def test_test_log_holds_every_section():
@@ -580,14 +625,16 @@ def test_template():
 
     ### Checking if code-behind parts are really interpolated
 
-    last_style_block = soup.findAll("style")[-1]
+    # Found by what it contains rather than by being the last block: the theme
+    # tokens and the vendor dark overrides are style blocks too.
+    progress_block = next(b for b in soup.find_all("style") if ".progress-bar.downloading" in b.text)
     style_block = f""".progress-bar.downloading {{
-                    background: -webkit-linear-gradient(left, #fc6665 {max_failure_percent}%,#50597b {max_failure_percent}%); /* Chrome10+,Safari5.1+ */
-                    background: -ms-linear-gradient(left, #fc6665 {max_failure_percent}%,#50597b {max_failure_percent}%); /* IE10+ */
-                    background: linear-gradient(to right, #fc6665 {max_failure_percent}%,#50597b {max_failure_percent}%); /* W3C */
+                    background: -webkit-linear-gradient(left, var(--status-fail) {max_failure_percent}%,var(--progress-bar) {max_failure_percent}%); /* Chrome10+,Safari5.1+ */
+                    background: -ms-linear-gradient(left, var(--status-fail) {max_failure_percent}%,var(--progress-bar) {max_failure_percent}%); /* IE10+ */
+                    background: linear-gradient(to right, var(--status-fail) {max_failure_percent}%,var(--progress-bar) {max_failure_percent}%); /* W3C */
                 }}"""
 
-    assert last_style_block.text.strip() == style_block
+    assert progress_block.text.strip() == style_block
 
     wrimagecard = soup.find("img", id="wrimagecard")
     assert wrimagecard["src"] == custom_logo
@@ -633,7 +680,7 @@ def test_template():
 
     # By class, not by position: the gallery is no longer the first child of
     # #main-content now that the tab has a heading above it.
-    attach_screenshot_details_label = soup.find("div", class_="bg-highlight").find("div", class_="row")
+    attach_screenshot_details_label = soup.find("div", id="shotGrid")
     assert attach_screenshot_details_label.text.strip() == attach_screenshot_details
 
     environment_grid = soup.find("div", class_="env-grid")

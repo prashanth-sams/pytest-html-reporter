@@ -1,3 +1,29 @@
+0.3.9 (02/09/2026)
+-------------------
+- Screenshots are taken automatically. A test that fails while holding a Selenium driver or a Playwright page is photographed with no hook, no fixture, no import and no conftest - the recipe this plugin has documented for years is now the default behaviour
+- The capture runs at the top of the reporter's own teardown wrapper, before the fixture finalizers it wraps: that is the last moment the browser is still open, and it is late enough that anything the suite attached for itself has already arrived
+- A browser is recognised by what it can do rather than by what it is, so nothing imports selenium or playwright. Anything answering get_screenshot_as_png() or handing bytes back from screenshot() is one, which covers appium, splinter and a driver wrapper of your own for free
+- The fixture name is a hint, not the test: page, driver, browser and context are looked at first, then every other fixture the test named, then the test class's own attributes - which is where a unittest suite keeps its driver
+- A Playwright context or browser is photographed through the pages inside it, and a page reached through three fixtures at once is photographed once: asking for page, context and browser together is the ordinary way to write those tests
+- splinter's Browser.screenshot() writes a file and hands back its path, so the driver underneath a wrapper is tried before the wrapper's own call, and a return value that is not the image itself is not treated as one
+- An async page hands back a coroutine, which is closed rather than left to warn against the test; a driver whose session has gone raises, which is caught. A report with no picture of one test beats a test that failed while being reported
+- A Mock is the one thing ruled out by what it is: it answers every call ever made to it, so it would be photographed on the strength of a method it does not have - and calling it records a call the test may be asserting on afterwards
+- --report-screenshots (failed / all / none), with a report_screenshots ini key. failed by default; an image handed to attach() is kept whatever it says, because that option governs the pictures nobody asked for
+- A test that took its own picture is not photographed again, so a suite already calling attach() from a hook of its own keeps exactly the images it always had rather than getting each one twice
+- attach() keeps every image a test hands over rather than only the last one: it appended to a buffer instead of overwriting a single slot, which is also what lets one test carry a picture of each of two browsers
+- A new Screens column on Test Metrics carries the pictures themselves - a thumbnail on the row, beside the error it explains, opening full size in the same overlay the gallery uses. It sorts on the count, since every one of those cells has the same empty text
+- Screenshot file names carry a counter as well as milliseconds and the worker id: two tests can finish inside the same millisecond, and the worker id only separates the processes rather than the tests inside one
+- tests/functional/conftest.py is gone. test_selenium.py and test_playwright.py now say nothing about screenshots at all and are photographed anyway, which is the feature demonstrating itself
+- A dark theme, and a switch at the foot of the side nav to reach it. The choice is remembered per reader; until it is touched the report follows the operating system's own light/dark setting
+- The theme is settled by a script in the head, before the stylesheets, so a report opened in dark never shows a white frame on the way in
+- Light mode is unchanged. Every colour in the stylesheet became a custom property whose light value is the one that shipped before, verified two ways - by expanding every var() back and diffing the CSS, and by comparing the rendered colour of 838 elements across all nine tabs. The worst difference either way is 1.94 CIEDE2000, which is below what an eye can see
+- The status language is deliberately carried across unchanged: pass is still #98cc64, fail #fc6766, skip #ffd050. Only ERROR moves, because #b13635 sits at 2.7:1 on a dark card; it is lifted far enough to clear AA while staying well clear of FAIL
+- The left rail stays warm charcoal while the page goes cool near-black, so the two are told apart by hue once they can no longer be told apart by luminance, with a hairline drawn as an inset shadow rather than a border so nothing shifts by a pixel
+- Chart.js copies the colours it is handed into its own model at construction, so a chart cannot follow a custom property. Each one is built through themedChart(), which resolves the tokens named on its config, and re-resolves them when the theme changes
+- Bootstrap and DataTables are vendored light-mode stylesheets and paint things the app CSS never opposed - the base text colour, card and list-group faces, table rules, the pager's gap marker, the spinner on an exporting button. Those are undone for dark only
+- Dark measures better than light on contrast: 5 elements below WCAG AA against 81, and each of those 5 is 2.5-3x more legible than the same element is in light today
+- The sort arrows, the search glyph and the select caret are drawn from SVG data URIs, which cannot hold a var(); each theme carries its own copy, base64 rather than percent-encoded, because the PDF export serialises the page into an SVG data URL without escaping it and a %3C would be decoded by the URL parser
+
 0.3.8 (01/09/2026)
 -------------------
 - New Test Steps tab: the named, timed pieces a test is actually made of, drilling down from the suite to the test to what it did. A status column says a test failed; this says where, and how long it had been running when it got there

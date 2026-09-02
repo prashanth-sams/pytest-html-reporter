@@ -25,6 +25,7 @@ from html_page.template import HtmlTemplate
 from html_page.test_log import TestLog
 from html_page.test_log_section import TestLogSection
 from html_page.test_row import TestRow
+from html_page.test_shot import TestShot
 from pytest_html_reporter.util import (
     suite_highlights,
     generate_suite_highlights,
@@ -43,6 +44,7 @@ from pytest_html_reporter.util import (
     report_attachment_limit,
     report_steps_mode,
     report_step_limit,
+    report_screenshots_mode,
     archive_days,
     archive_since,
     archive_cutoff,
@@ -75,6 +77,12 @@ from pytest_html_reporter.bdd import (
     take_scenario,
 )
 from pytest_html_reporter.markers import describe
+from pytest_html_reporter.screenshots import (
+    capture,
+    pending_count,
+    save,
+    take_screenshots,
+)
 from pytest_html_reporter.steps import (
     set_phase,
     take_steps,
@@ -82,9 +90,6 @@ from pytest_html_reporter.steps import (
 from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
 
-
-# What fits the caption strip under a gallery tile.
-SCREENSHOT_NAME_MAX = 19
 
 # Stand-ins for the test name of a file that never produced a test at all.
 COLLECT_ERROR_NAME = '(collection error)'
@@ -121,6 +126,16 @@ class HTMLReporter(object):
         self.log_limit = report_log_limit(config)
         self.attachments_mode = report_attachments_mode(config)
         self.attachment_limit = report_attachment_limit(config)
+
+        # When a browser the test was still holding is photographed without the
+        # suite asking. Nothing to do with the images handed to attach(), which
+        # are kept whatever this says.
+        self.screenshots_mode = report_screenshots_mode(config)
+
+        # Numbers every saved image apart. Milliseconds alone collided - two
+        # tests can finish inside the same one - and the worker id only
+        # separates the processes, not the tests inside one.
+        self._shot_count = 0
 
         # step() is called by the test, long before anything here runs and with
         # no way to reach this object, so the cap it honours is left where it
@@ -212,7 +227,7 @@ class HTMLReporter(object):
             # never loaded is the first thing worth seeing.
             'index': -1,
             'worker': self.worker_id,
-            'screenshot': None,
+            'screenshots': [],
             'logs': [],
             'attachments': [],
             'steps': [],
@@ -268,6 +283,13 @@ class HTMLReporter(object):
 
         _test_end_time = time.time()
         ConfigVars._duration = _test_end_time - ConfigVars._start_execution_time
+
+        # Before the yield, because the fixture finalizers run inside it and the
+        # one that quits the browser is usually the first of them. This is the
+        # last moment a Selenium driver or a Playwright page is still open, and
+        # it is late enough that anything the suite attached for itself has
+        # already arrived.
+        self.auto_screenshot(item)
 
         # A test's fixtures are finalized by the implementations this wraps, so
         # the record is built after them. That is what lets a screenshot
@@ -562,7 +584,7 @@ class HTMLReporter(object):
             'rerun': 0,
             'index': self._collected.get(item.nodeid, len(self._collected) + len(self._records)),
             'worker': self.worker_id,
-            'screenshot': None,
+            'screenshots': self.collect_screenshots(),
             'logs': self.collect_logs(str(ConfigVars._test_status)),
             'attachments': self.collect_attachments(str(ConfigVars._test_status)),
             'steps': self.collect_steps(str(ConfigVars._test_status)),
@@ -577,14 +599,6 @@ class HTMLReporter(object):
             # show a scenario as a scenario rather than as a function.
             'bdd': take_scenario(),
         }
-
-        # Whatever the test did. A screenshot of a pass is a baseline, and one
-        # of a skip says why it was skipped; keeping only the failures threw
-        # away images that had been deliberately attached. Every record claims
-        # the pending image, so none is left behind for a later test to pick up
-        # and present as its own.
-        if ConfigVars.screen_img is not None:
-            record['screenshot'] = self.generate_screenshot_data()
 
         self.store_test_record(record)
 
@@ -679,11 +693,12 @@ class HTMLReporter(object):
         # worker sends back - and the one being replaced is an attempt itself.
         record['rerun'] = int(superseded['rerun']) + int(record['rerun']) + 1
 
-        # A retry that attached no screenshot of its own keeps the one from the
-        # attempt it replaces, rather than dropping it from the report. The
+        # A retry that produced no screenshot of its own keeps the ones from the
+        # attempt it replaces, rather than dropping them from the report. The
         # same goes for its attachments: a flaky test that captured the failing
         # response on its first attempt should not lose it by then passing.
-        if record['screenshot'] is None: record['screenshot'] = superseded['screenshot']
+        if not record.get('screenshots'):
+            record['screenshots'] = superseded.get('screenshots') or []
         if not record.get('attachments'): record['attachments'] = superseded.get('attachments') or []
 
         # The steps of the attempt that stuck, not of the one it replaced: a
@@ -742,7 +757,9 @@ class HTMLReporter(object):
             sindex=row_id.split('-')[0],
             log_count=str(self.attach_test_logs(record, row_id)),
             attach_count=str(self.attach_test_data(record, row_id)),
-            step_count=str(len(record.get('steps') or []))
+            step_count=str(len(record.get('steps') or [])),
+            shot_count=str(len(record.get('screenshots') or [])),
+            shots=self.attach_test_shots(record)
         )
 
         # A row with nothing to say gets neither button: a passing test has no
@@ -761,14 +778,6 @@ class HTMLReporter(object):
             ))
 
         ConfigVars._test_metrics_content += str(test_row_text)
-
-        if record['screenshot'] is not None:
-            self.attach_screenshots(
-                record['screenshot']['name'],
-                record['screenshot']['suite'],
-                record['screenshot']['test'],
-                record['screenshot']['error'],
-            )
 
     def attach_test_logs(self, record, row_id):
         """Park a test's captured output outside the table, return its size.
@@ -797,6 +806,46 @@ class HTMLReporter(object):
         ))
 
         return count_log_lines(sections)
+
+    def attach_test_shots(self, record):
+        """The thumbnails for one row, and the gallery cards behind them.
+
+        Both are built off the same list, in the one place, so an image cannot
+        reach a row and miss the Screenshots tab - or the other way round.
+
+        The pictures themselves are not parked outside the table the way the
+        logs and the attachments are: a thumbnail is a link and an <img>, it
+        carries no text to be swept into the search index or the exports, and
+        seeing the screenshot on the row is the entire point of the column.
+        """
+        pending = record.get('screenshots') or []
+        shots = ''
+
+        for shot in pending:
+            self.attach_screenshots(shot['name'], shot['suite'], shot['test'],
+                                    shot['error'], record['status'])
+
+            shots += str(TestShot(
+                screen_name=escape_report_text(shot['name']),
+                ts=escape_report_text(shot['suite']),
+                tc=escape_report_text(shot['test']),
+                tip=escape_report_text(self.shot_tip(shot, len(pending)))
+            ))
+
+        return shots
+
+    def shot_tip(self, shot, count):
+        """What hovering a thumbnail says.
+
+        Where the picture came from, but only on a row carrying more than one:
+        two browsers in one test is the case where "which of these is which"
+        has an answer worth having, and on the ordinary single-picture row it
+        would be a tooltip saying what the row already says.
+        """
+        if (count < 2) or not shot.get('label'):
+            return shot['test']
+
+        return '%s \u2014 %s' % (shot['test'], shot['label'])
 
     def attach_test_data(self, record, row_id):
         """Park a test's attachments outside the table, return how many there are.
@@ -872,44 +921,86 @@ class HTMLReporter(object):
 
         return ' '.join(term for term in terms if term).lower()
 
-    def generate_screenshot_data(self):
-        """Save the attached image and describe it for the report.
+    def auto_screenshot(self, item):
+        """Photograph whatever browser this test was still holding.
 
-        The png is written by whichever process ran the test - workers share the
-        filesystem with the controller - but the markup is left to the
-        controller so every screenshot lands in the one report.
+        This is what makes a screenshot-on-failure suite need no code at all:
+        the browser is in the test's own fixtures, the reporter is already
+        standing in its teardown, and everything a hand-written hook would do
+        from a conftest can be done from here instead.
+
+        Skipped when the test produced an image of its own. A suite that
+        already calls attach() from a hook - the recipe this plugin has
+        documented for years - would otherwise get the same page twice, once
+        from each of us; the picture it asked for is the one it keeps.
         """
-        os.makedirs(ConfigVars.screen_base + '/pytest_screenshots', exist_ok=True)
+        if self.screenshots_mode == 'none': return
+        if pending_count(): return
 
-        # Two workers failing in the same second must not overwrite each other's
-        # image, so the name carries milliseconds and the worker id.
-        _screenshot_name = str(round(time.time() * 1000))
-        if self.worker_id: _screenshot_name += '-' + self.worker_id
+        if (self.screenshots_mode == 'failed') and (
+                ConfigVars._test_status not in ('FAIL', 'ERROR')):
+            return
 
-        _screenshot_suite_name = ConfigVars._suite_name.split('/')[-1:][0].replace('.py', '')
-        # The head of the name, not its tail. Keeping the last 17 characters
-        # turned test_login_page_renders into "ogin_page_renders", which names
-        # nothing and reads as a bug in the report.
-        _screenshot_test_name = ConfigVars._test_name
-        if len(_screenshot_test_name) > SCREENSHOT_NAME_MAX:
-            _screenshot_test_name = _screenshot_test_name[:SCREENSHOT_NAME_MAX - 2] + '..'
+        capture(item)
 
-        ConfigVars.screen_img.save(
-            ConfigVars.screen_base + '/pytest_screenshots/' + _screenshot_name + '.png'
-        )
+    def collect_screenshots(self):
+        """Save this test's images and describe them for the report.
 
-        # Consumed: without this the same image is saved again for every later
-        # failure that did not attach one of its own.
-        ConfigVars.screen_img = None
+        The pngs are written by whichever process ran the test - workers share
+        the filesystem with the controller - but the markup is left to the
+        controller so every screenshot lands in the one report.
 
-        return {
-            'name': _screenshot_name,
-            'suite': _screenshot_suite_name,
-            'test': _screenshot_test_name,
-            # Blank for anything that passed, so the tile says how the test
-            # ended rather than showing an empty caption.
-            'error': ConfigVars._current_error or str(ConfigVars._test_status),
-        }
+        The buffer is drained whatever the test did, for the same reason the
+        attachments one is: an image nobody claims must not be left lying
+        around for the next test to pick up and present as its own. And every
+        image is kept whatever the status - a screenshot of a pass is a
+        baseline, and one of a skip says why it was skipped.
+        """
+        pending = take_screenshots()
+        if not pending: return []
+
+        base = os.path.join(self.report_path[0], 'pytest_screenshots')
+        os.makedirs(base, exist_ok=True)
+
+        suite = ConfigVars._suite_name.split('/')[-1:][0].replace('.py', '')
+
+        shots = []
+        for entry in pending:
+            name = self.screenshot_name()
+            save(entry, os.path.join(base, name + '.png'))
+
+            shots.append({
+                'name': name,
+                'suite': suite,
+                # The whole test name. It used to be cut to nineteen characters
+                # to fit the caption strip a tile carried; the card the tile
+                # became gives the name a line of its own and lets CSS end it
+                # in an ellipsis, which at least stays a name.
+                'test': ConfigVars._test_name,
+                # How the test ended is the card's badge now, so this is the
+                # error and nothing else: a test that passed has none, and its
+                # card says so by not carrying the line at all.
+                'error': ConfigVars._current_error,
+                # Where the picture came from - the fixture it was taken
+                # through, or 'attached' when the test handed it over itself.
+                'label': entry.get('label', ''),
+            })
+
+        return shots
+
+    def screenshot_name(self):
+        """A file name no other image in this run can take.
+
+        Milliseconds alone collided: two tests can finish inside the same one,
+        and under xdist two workers certainly can. The counter settles the
+        first, the worker id the second.
+        """
+        self._shot_count += 1
+
+        name = str(round(time.time() * 1000))
+        if self.worker_id: name += '-' + self.worker_id
+
+        return name + '-' + str(self._shot_count)
 
     def append_suite_metrics_row(self, suite_index, name, records):
         self._test_suites(name)
@@ -1214,10 +1305,14 @@ class HTMLReporter(object):
 
     def load_archive(self, f, value):
         def state(data):
+            # The colour is written into a style attribute on the archive row,
+            # so it names a theme token rather than a hex: an inline var() is
+            # re-resolved by the browser when the theme switches, which a
+            # literal would not be.
             if data == 'fail':
-                return 'times', '#fc6766'
+                return 'times', 'var(--status-fail)'
             elif data == 'pass':
-                return 'check', '#98cc64'
+                return 'check', 'var(--status-pass)'
 
         for i, val in enumerate(f):
             with open(val) as json_file:
@@ -1337,15 +1432,23 @@ class HTMLReporter(object):
 
                 if i == 4: break
 
-    def attach_screenshots(self, screen_name, test_suite, test_case, test_error):
+    def attach_screenshots(self, screen_name, test_suite, test_case, test_error, test_status=''):
 
         # The suite and test names land in a data-caption attribute as well as
-        # in the tile's text, so they are escaped for both.
+        # in the card's text, so they are escaped for both.
+        #
+        # The status goes in twice: once as the badge's text, and once folded to
+        # lower case as the key the tint and the filter pills are keyed on.
+        # xPASS and xFAIL differ from PASS and FAIL only in case, so the key is
+        # taken from the whole word rather than by trimming it.
+        _status = str(test_status or '')
         _screenshot_details = ScreenshotDetails(
             screen_name=escape_report_text(screen_name),
             ts=escape_report_text(test_suite),
             tc=escape_report_text(test_case),
-            te=escape_report_text(test_error)
+            te=escape_report_text(test_error),
+            status=escape_report_text(_status),
+            status_key=escape_report_text(_status.lower() or 'unknown')
         )
 
         ConfigVars._attach_screenshot_details += str(_screenshot_details)

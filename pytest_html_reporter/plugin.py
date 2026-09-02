@@ -109,6 +109,17 @@ def pytest_addoption(parser):
     )
 
     group.addoption(
+        "--report-screenshots",
+        action="store",
+        dest="report_screenshots",
+        default=None,
+        choices=("failed", "all", "none"),
+        help="when to photograph a live Selenium driver or Playwright page "
+             "without the suite asking: failed (default), all or none; images "
+             "handed to attach() are always kept",
+    )
+
+    group.addoption(
         "--report-steps",
         action="store",
         dest="report_steps",
@@ -254,6 +265,13 @@ def pytest_addoption(parser):
     parser.addini(
         "report_open",
         help="whether to open the finished report in a browser: auto, always or none",
+        default="",
+    )
+
+    parser.addini(
+        "report_screenshots",
+        help="when to photograph a live browser without the suite asking: "
+             "failed, all or none",
         default="",
     )
 
