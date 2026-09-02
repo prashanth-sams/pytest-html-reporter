@@ -83,9 +83,6 @@ from pytest_html_reporter.time_converter import time_converter
 from pytest_html_reporter.const_vars import ConfigVars
 
 
-# What fits the caption strip under a gallery tile.
-SCREENSHOT_NAME_MAX = 19
-
 # Stand-ins for the test name of a file that never produced a test at all.
 COLLECT_ERROR_NAME = '(collection error)'
 COLLECT_SKIP_NAME = '(module skipped)'
@@ -768,6 +765,7 @@ class HTMLReporter(object):
                 record['screenshot']['suite'],
                 record['screenshot']['test'],
                 record['screenshot']['error'],
+                record['status'],
             )
 
     def attach_test_logs(self, record, row_id):
@@ -887,12 +885,11 @@ class HTMLReporter(object):
         if self.worker_id: _screenshot_name += '-' + self.worker_id
 
         _screenshot_suite_name = ConfigVars._suite_name.split('/')[-1:][0].replace('.py', '')
-        # The head of the name, not its tail. Keeping the last 17 characters
-        # turned test_login_page_renders into "ogin_page_renders", which names
-        # nothing and reads as a bug in the report.
+        # The whole name. It used to be cut to nineteen characters to fit the
+        # caption strip a tile carried; the card the tile became gives the name
+        # a line of its own and lets CSS end it in an ellipsis, which at least
+        # stays a name.
         _screenshot_test_name = ConfigVars._test_name
-        if len(_screenshot_test_name) > SCREENSHOT_NAME_MAX:
-            _screenshot_test_name = _screenshot_test_name[:SCREENSHOT_NAME_MAX - 2] + '..'
 
         ConfigVars.screen_img.save(
             ConfigVars.screen_base + '/pytest_screenshots/' + _screenshot_name + '.png'
@@ -906,9 +903,10 @@ class HTMLReporter(object):
             'name': _screenshot_name,
             'suite': _screenshot_suite_name,
             'test': _screenshot_test_name,
-            # Blank for anything that passed, so the tile says how the test
-            # ended rather than showing an empty caption.
-            'error': ConfigVars._current_error or str(ConfigVars._test_status),
+            # How the test ended is the card's badge now, so this is the error
+            # and nothing else: a test that passed has none, and its card says
+            # so by not carrying the line at all.
+            'error': ConfigVars._current_error,
         }
 
     def append_suite_metrics_row(self, suite_index, name, records):
@@ -1341,15 +1339,23 @@ class HTMLReporter(object):
 
                 if i == 4: break
 
-    def attach_screenshots(self, screen_name, test_suite, test_case, test_error):
+    def attach_screenshots(self, screen_name, test_suite, test_case, test_error, test_status=''):
 
         # The suite and test names land in a data-caption attribute as well as
-        # in the tile's text, so they are escaped for both.
+        # in the card's text, so they are escaped for both.
+        #
+        # The status goes in twice: once as the badge's text, and once folded to
+        # lower case as the key the tint and the filter pills are keyed on.
+        # xPASS and xFAIL differ from PASS and FAIL only in case, so the key is
+        # taken from the whole word rather than by trimming it.
+        _status = str(test_status or '')
         _screenshot_details = ScreenshotDetails(
             screen_name=escape_report_text(screen_name),
             ts=escape_report_text(test_suite),
             tc=escape_report_text(test_case),
-            te=escape_report_text(test_error)
+            te=escape_report_text(test_error),
+            status=escape_report_text(_status),
+            status_key=escape_report_text(_status.lower() or 'unknown')
         )
 
         ConfigVars._attach_screenshot_details += str(_screenshot_details)

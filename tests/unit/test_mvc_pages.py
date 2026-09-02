@@ -145,28 +145,41 @@ def test_screenshot_details():
     tc = get_random_string()
     te = get_random_string()
 
-    screenshot_details = ScreenshotDetails(ts=ts, tc=tc, te=te,
+    screenshot_details = ScreenshotDetails(ts=ts, tc=tc, te=te, status="FAIL",
+                                           status_key="fail",
                                            screen_name=screen_name)
     soup = BeautifulSoup(str(screenshot_details), "html.parser")
 
-    screenshot_link = soup.find("a", class_="video")
     screen_path = f"pytest_screenshots/{screen_name}.png"
+
+    # The status is on the card, which is what the filter pills read.
+    card = soup.find("figure", class_="shot-card")
+    assert card["data-status"] == "fail"
+
+    screenshot_link = card.find("a", class_="shot-card__frame")
     assert screenshot_link["href"] == screen_path
-    assert screenshot_link["style"] == f"background-image: url('{screen_path}');"
     assert screenshot_link["data-caption"] == f"SUITE: {ts} :: SCENARIO: {tc}"
+    assert screenshot_link.find("img")["src"] == screen_path
 
-    tc_row = soup.find(class_="video-hover-desc video-hover-small")
-    assert tc_row.findAll("span")[0].text.strip() == tc
-    assert tc_row.findAll("span")[1].text.strip() == te
+    status = card.find("span", class_="shot-card__status")
+    assert status.text.strip() == "FAIL"
+    assert "shot-card__status--fail" in status["class"]
 
-    ts_p = soup.find("p", class_="text-desc")
-    assert re.search(rf"{ts}[\n\s]+{te}", ts_p.text.strip()), ts_p.text.strip()
-    assert ts_p.find("strong").text.strip() == ts
+    assert card.find("div", class_="shot-card__test").text.strip() == tc
+    assert card.find("div", class_="shot-card__suite").text.strip() == ts
+    assert card.find("p", class_="shot-card__note").text.strip() == te
 
-    video_description = soup.find("div", id="Video-desc-01")
-    assert video_description.find("h2").text.strip() == tc
-    assert re.search(rf"{ts}[\n\s]+{te}", video_description.find("p").text.strip())
-    assert video_description.find("strong").text.strip() == ts
+
+def test_screenshot_details_without_an_error():
+    # A test that passed has no error, and its card carries the paragraph
+    # empty rather than repeating the status the badge already shows.
+    screenshot_details = ScreenshotDetails(ts="s", tc="t", te="", status="PASS",
+                                           status_key="pass",
+                                           screen_name=get_random_string())
+    soup = BeautifulSoup(str(screenshot_details), "html.parser")
+
+    assert soup.find("p", class_="shot-card__note").text.strip() == ""
+    assert soup.find("figure", class_="shot-card")["data-status"] == "pass"
 
 
 def test_suite_row():
@@ -635,7 +648,7 @@ def test_template():
 
     # By class, not by position: the gallery is no longer the first child of
     # #main-content now that the tab has a heading above it.
-    attach_screenshot_details_label = soup.find("div", class_="bg-highlight").find("div", class_="row")
+    attach_screenshot_details_label = soup.find("div", id="shotGrid")
     assert attach_screenshot_details_label.text.strip() == attach_screenshot_details
 
     environment_grid = soup.find("div", class_="env-grid")

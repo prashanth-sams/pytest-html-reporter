@@ -268,10 +268,8 @@
                     --brand-ink-hover: #000000;
 
                     /* Screenshot hover caption */
-                    --video-scrim:       rgba(35,72,133,0.82);
-                    --video-scrim-fade:  rgba(35,72,133,0);
-                    --video-scrim-solid: #234885;
-                    --video-fg:          white;
+                    --shot-scrim:        rgba(16, 21, 29, 0.58);
+                    --shot-scrim-fg:     #ffffff;
 
                     /* Full-screen screenshot viewer */
                     --lightbox-scrim:        rgba(24, 27, 32, 0.92);
@@ -579,10 +577,8 @@
                     --brand-ink-hover: #ffffff;
 
                     /* Screenshot hover caption */
-                    --video-scrim:       rgba(35,72,133,0.82);
-                    --video-scrim-fade:  rgba(35,72,133,0);
-                    --video-scrim-solid: #234885;
-                    --video-fg:          white;
+                    --shot-scrim:        rgba(16, 21, 29, 0.58);
+                    --shot-scrim-fg:     #ffffff;
 
                     /* Full-screen screenshot viewer */
                     --lightbox-scrim:        rgba(24, 27, 32, 0.92);
@@ -1442,13 +1438,6 @@
                     float: right;
                 }
 
-                .desc-video h2 {
-                     margin-top: 0px;
-                }
-                 .desc-video-none {
-                     display: none;
-                }
-
                 /* A lightbox of the report's own. The screenshots used to open
                    in fancybox, which is licensed GPL and so cannot travel
                    inside an MIT-licensed package - and had to be fetched from a
@@ -1540,69 +1529,224 @@
                 .shot-box.is-single .shot-box__count {
                     display: none;
                 }
-                 .video {
-                     display: block;
-                     position: relative;
-                     padding-top: 60%;
-                     overflow: hidden;
-                     background-repeat: no-repeat;
-                     background-position: center center;
-                     background-size: cover;
+                /* ---- The gallery ----
+                   A screenshot on its own says very little: the same login page
+                   is a pass in one test and the whole story in another. So each
+                   one is a card that carries what the picture cannot - which
+                   test took it, out of which suite, how that test ended, and the
+                   error if it failed - and the toolbar above lets a run that
+                   attached fifty of them be narrowed to the ones that matter. */
+                .shot-toolbar {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    padding: 12px 16px;
+                    margin-bottom: 16px;
+                    background-color: var(--surface-card);
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px var(--shadow-card), 0 10px 22px var(--shadow-card-ambient);
                 }
-                 /* Tabbing to a tile must not box it in the browser's blue
-                    focus ring; keyboard focus still shows, as the hover
-                    treatment the tile already has. */
-                 .video:focus {
-                     outline: none;
+
+                .shot-filters {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
                 }
-                 .video:hover .video-hover-desc,
-                 .video:focus-visible .video-hover-desc {
-                     margin-top: -170px;
-                     height: 170px;
+
+                /* A run whose screenshots all ended the same way gets no pills,
+                   and a search box pushed to the far end of an otherwise empty
+                   bar reads as something missing. Left with nothing beside it,
+                   it takes the near end instead. */
+                .shot-toolbar.is-bare .attach-search {
+                    margin-left: 0;
                 }
-                 .video:hover .video-hover-desc:before,
-                 .video:focus-visible .video-hover-desc:before {
-                     background: linear-gradient(to top,var(--video-scrim),var(--video-scrim-fade));
-                     transition: .3s;
+
+                /* A run with one screenshot and a run with fifty are the same
+                   markup, so the track sizes itself rather than being told how
+                   many columns to draw. */
+                .shot-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+                    gap: 18px;
                 }
-                 .img-hover .text-desc {
-                     display: none;
+
+                .shot-card {
+                    display: flex;
+                    flex-direction: column;
+                    margin: 0;
+                    overflow: hidden;
+                    background-color: var(--surface-card);
+                    border: 1px solid var(--border-subtle);
+                    border-radius: 8px;
+                    box-shadow: 0 1px 2px var(--shadow-card), 0 10px 22px var(--shadow-card-ambient);
+                    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
                 }
-                 .below-desc {
-                     display: block;
-                     height: 70px;
-                     width: 100%;
-                     padding: 10px;
+
+                .shot-card.is-hidden {
+                    display: none;
                 }
-                 .video-hover-desc {
-                     display: block;
-                     padding: 10px 20px;
-                     background-color: var(--video-scrim-solid);
-                     background-color: var(--video-scrim);
-                     height: 90px;
-                     margin-top: -90px;
-                     transition: .3s;
-                     color: var(--video-fg);
-                     text-shadow: none;
+
+                .shot-card:hover,
+                .shot-card:focus-within {
+                    transform: translateY(-2px);
+                    border-color: var(--border-strong);
+                    box-shadow: 0 2px 4px var(--shadow-card), 0 16px 30px var(--shadow-card-ambient);
                 }
-                 .video-hover-desc:before {
-                     display: block;
-                     position: absolute;
-                     content: '';
-                     left: 0;
-                     right: 0;
-                     height: 116px;
-                     transition: .3s;
-                     margin-top: -126px;
+
+                .shot-card__frame {
+                    display: block;
+                    position: relative;
+                    overflow: hidden;
+                    /* A fixed ratio, not the image's own: a gallery of browser
+                       captures at three different window sizes reads as a
+                       mistake, and every one of them is legible cropped. */
+                    aspect-ratio: 16 / 10;
+                    background-color: var(--surface-sunken);
+                    border-bottom: 1px solid var(--border-hairline);
                 }
-                 .video-hover-desc h2 {
-                     color: var(--video-fg);
-                     margin-top: 0px;
-                     height: 50px;
+
+                /* Fallback for browsers without aspect-ratio: the same 10:16 as
+                   a percentage of the width. */
+                @supports not (aspect-ratio: 1 / 1) {
+                    .shot-card__frame { height: 0; padding-top: 62.5%; }
                 }
-                 .video-hover-desc.video-hover-small {
-                     height: 50px;
-                     margin-top: -50px;
+
+                .shot-card__frame:focus {
+                    outline: none;
+                }
+
+                .shot-card__shot {
+                    position: absolute;
+                    inset: 0;
+                    width: 100%;
+                    height: 100%;
+                    /* Anchored to the top, because a screenshot of a page puts
+                       what went wrong near the top of it far more often than in
+                       the middle. */
+                    object-fit: cover;
+                    object-position: top center;
+                    transition: transform 0.25s ease;
+                }
+
+                .shot-card:hover .shot-card__shot {
+                    transform: scale(1.03);
+                }
+
+                /* The picture is the button; this says so on hover rather than
+                   leaving the reader to try. */
+                .shot-card__open {
+                    position: absolute;
+                    inset: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    background: var(--shot-scrim);
+                    color: var(--shot-scrim-fg);
+                    font-size: 20px;
+                    transition: opacity 0.16s ease;
+                }
+
+                .shot-card:hover .shot-card__open,
+                .shot-card__frame:focus-visible .shot-card__open {
+                    opacity: 1;
+                }
+
+                .shot-card__status {
+                    position: absolute;
+                    top: 8px;
+                    left: 8px;
+                    padding: 3px 9px;
+                    border-radius: 6px;
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    background-color: var(--surface-card);
+                    color: var(--text-faint);
+                    /* The badge sits on a photograph, not on a surface of the
+                       report's own, so it carries its own edge to stay readable
+                       over whatever happens to be underneath it. */
+                    box-shadow: 0 1px 3px var(--shadow-card-ambient);
+                }
+
+                .shot-card__status:empty {
+                    display: none;
+                }
+
+                .shot-card__status--pass  { background-color: var(--status-pass-tint);  color: var(--status-pass-fg); }
+                .shot-card__status--fail  { background-color: var(--status-fail-tint);  color: var(--status-fail-fg); }
+                .shot-card__status--skip  { background-color: var(--status-skip-tint);  color: var(--status-skip-fg); }
+                .shot-card__status--xpass { background-color: var(--status-xpass-tint); color: var(--status-xpass-fg); }
+                .shot-card__status--xfail { background-color: var(--status-xfail-tint); color: var(--status-xfail-fg); }
+                .shot-card__status--error { background-color: var(--status-error-tint); color: var(--status-error-fg); }
+                .shot-card__status--rerun { background-color: var(--status-rerun-tint); color: var(--status-rerun-fg-heavy); }
+
+                .shot-card__body {
+                    padding: 12px 14px 13px 14px;
+                    font-family: sans-serif;
+                    min-width: 0;
+                }
+
+                .shot-card__test {
+                    font-size: 13.5px;
+                    font-weight: 600;
+                    color: var(--text-body);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .shot-card__suite {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    margin-top: 4px;
+                    font-size: 11.5px;
+                    color: var(--text-faint);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .shot-card__suite i {
+                    flex: 0 0 auto;
+                    font-size: 10.5px;
+                    color: var(--icon-faint);
+                }
+
+                /* Two lines of the error, not all of it: enough to recognise
+                   which failure this is, and the row on Test Metrics is where
+                   the whole thing lives. */
+                .shot-card__note {
+                    margin: 9px 0 0 0;
+                    padding-top: 9px;
+                    border-top: 1px solid var(--border-hairline);
+                    font-size: 11.5px;
+                    line-height: 1.5;
+                    color: var(--text-muted);
+                    overflow: hidden;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    word-break: break-word;
+                }
+
+                .shot-card__note:empty {
+                    display: none;
+                }
+
+                .shot-blank {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                    padding: 46px 20px;
+                    font-family: sans-serif;
+                    font-size: 0.9rem;
+                    color: var(--text-faintest);
                 }
 
                 /* ---- Screenshots tab with nothing attached ---- */
@@ -1623,9 +1767,11 @@
                     display: block;
                 }
 
-                /* The hover caption strip only has a job once there are
-                   thumbnails to hover over. */
-                .bg-highlight.is-empty .below-desc {
+                /* Nothing to search, nothing to filter, and no grid gap to
+                   leave under the placeholder. */
+                .bg-highlight.is-empty .shot-toolbar,
+                .bg-highlight.is-empty .shot-grid,
+                .bg-highlight.is-empty .shot-blank {
                     display: none;
                 }
 
@@ -3424,7 +3570,8 @@
 
                 .metrics-card .dataTables_filter input,
                 .metrics-card .step-search input,
-                .metrics-card .attach-search input {
+                .metrics-card .attach-search input,
+                .shot-toolbar .attach-search input {
                     margin: 0;
                     width: 250px;
                     max-width: 100%;
@@ -3443,13 +3590,15 @@
 
                 .metrics-card .dataTables_filter input::placeholder,
                 .metrics-card .step-search input::placeholder,
-                .metrics-card .attach-search input::placeholder {
+                .metrics-card .attach-search input::placeholder,
+                .shot-toolbar .attach-search input::placeholder {
                     color: var(--text-faintest);
                 }
 
                 .metrics-card .dataTables_filter input:focus,
                 .metrics-card .step-search input:focus,
-                .metrics-card .attach-search input:focus {
+                .metrics-card .attach-search input:focus,
+                .shot-toolbar .attach-search input:focus {
                     outline: none;
                     border-color: var(--border-focus);
                     box-shadow: 0 0 0 3px var(--ring-focus);
@@ -3861,6 +4010,17 @@
 
                 .attach-pill:hover {
                     border-color: var(--border-strong);
+                }
+
+                /* A filter the search has emptied stays where it is so the row
+                   does not resize under the cursor, but stops offering itself. */
+                .attach-pill:disabled {
+                    opacity: 0.45;
+                    cursor: default;
+                }
+
+                .attach-pill:disabled:hover {
+                    border-color: var(--border-subtle);
                 }
 
                 .attach-pill:focus {
@@ -6701,11 +6861,25 @@
                             <div class="metrics-page__title"><i class="fa fa-camera"></i>Screenshots</div>
                             <div class="metrics-page__subtitle">Images attached while the tests ran, beside the suite and the error they belong to</div>
                         </div>
+                        <div class="metrics-summary" id="shotSummary"></div>
                     </div>
-                    <div class="bg-highlight p-4 mt-3">
-                      <div class="row">
+                    <div class="bg-highlight">
+                      <div class="shot-toolbar">
+                        <div class="shot-filters" id="shotFilters"></div>
+                        <div class="attach-search">
+                            <input type="search" id="shotSearch" autocomplete="off" spellcheck="false"
+                                   placeholder="Search by test, suite or error" oninput="filterScreenshots()" />
+                        </div>
+                      </div>
+                      <div class="shot-grid" id="shotGrid">
                         %(attach_screenshot_details)%
-                        <div class="below-desc"></div>
+                      </div>
+                      <!-- The search finding nothing is not the same as the run
+                           attaching nothing, and the setup guide below would be
+                           a strange answer to a typo. -->
+                      <div class="shot-blank" id="shotBlank" hidden>
+                        <i class="fa fa-camera" aria-hidden="true"></i>
+                        <span>No screenshot matches what you asked for.</span>
                       </div>
                       <div class="screenshot-empty">
                         <div class="screenshot-empty__head">
@@ -8469,21 +8643,167 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             }
         </script>
         <script>
+            // ---- The screenshot gallery ----
+            // The cards are baked in at report-generation time; everything here
+            // reads them back off the page, so nothing has to be handed to the
+            // browser twice.
+            var shotStatus = 'all';
+
+            // The order the pills appear in, and the label each one wears. Only
+            // the statuses a run actually attached get a pill, so a suite that
+            // only photographs failures does not carry six empty filters.
+            var SHOT_STATUSES = [
+                ['fail', 'Failed'], ['error', 'Error'], ['pass', 'Passed'],
+                ['skip', 'Skipped'], ['xpass', 'xPassed'], ['xfail', 'xFailed'],
+                ['rerun', 'Rerun']
+            ];
+
+            function shotCards() {
+                return [].slice.call(document.querySelectorAll('#shotGrid .shot-card'));
+            }
+
+            // Test, suite and error are the card's own text, so the haystack is
+            // read from it rather than repeated into an attribute.
+            function shotHaystack(card) {
+                if (!card.shotText) {
+                    card.shotText = (card.textContent || '').replace(/\s+/g, ' ').toLowerCase();
+                }
+                return card.shotText;
+            }
+
+            function shotQuery() {
+                var box = document.getElementById('shotSearch');
+                return box ? box.value.trim().toLowerCase() : '';
+            }
+
+            function filterScreenshots() {
+                var query = shotQuery();
+                var shown = 0;
+
+                shotCards().forEach(function (card) {
+                    var status = card.getAttribute('data-status') || '';
+                    var hit = (!query || shotHaystack(card).indexOf(query) !== -1)
+                              && (shotStatus === 'all' || status === shotStatus);
+
+                    card.classList.toggle('is-hidden', !hit);
+                    if (hit) { shown++; }
+                });
+
+                var blank = document.getElementById('shotBlank');
+                if (blank) { blank.hidden = shown !== 0 || !shotCards().length; }
+
+                renderShotFilters();
+                renderShotSummary();
+            }
+
+            // Counted against the search, not against the status: a pill has to
+            // say how many it would show, which is not a number it can give if
+            // it is counting what the pill beside it has already excluded.
+            function shotSearchMatches() {
+                var query = shotQuery();
+                return shotCards().filter(function (card) {
+                    return !query || shotHaystack(card).indexOf(query) !== -1;
+                });
+            }
+
+            // Which pills exist is decided by the gallery, not by the search:
+            // a row that gained and lost pills as the reader typed would move
+            // the search box out from under the cursor. Only the counts move,
+            // and a pill the search has emptied goes quiet rather than away.
+            function renderShotFilters() {
+                var target = document.getElementById('shotFilters');
+                if (!target) { return; }
+
+                var present = {};
+                shotCards().forEach(function (card) {
+                    present[card.getAttribute('data-status') || ''] = true;
+                });
+
+                var counts = {};
+                var matches = shotSearchMatches();
+                matches.forEach(function (card) {
+                    var status = card.getAttribute('data-status') || '';
+                    counts[status] = (counts[status] || 0) + 1;
+                });
+
+                var pills = [['all', 'All', matches.length]];
+                SHOT_STATUSES.forEach(function (status) {
+                    if (present[status[0]]) { pills.push([status[0], status[1], counts[status[0]] || 0]); }
+                });
+
+                // One pill is not a choice; it is the whole gallery with a label
+                // on it, so the row is left off entirely.
+                var toolbar = target.closest ? target.closest('.shot-toolbar') : null;
+                if (toolbar) { toolbar.classList.toggle('is-bare', pills.length < 3); }
+
+                target.innerHTML = '';
+                if (pills.length < 3) { return; }
+
+                pills.forEach(function (pill) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (shotStatus === pill[0] ? ' is-active' : '');
+                    button.textContent = pill[1];
+                    button.disabled = pill[2] === 0 && pill[0] !== shotStatus;
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = pill[2];
+                    button.appendChild(count);
+
+                    button.onclick = function () {
+                        shotStatus = pill[0];
+                        filterScreenshots();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            // Totals for what the grid is currently showing, so the numbers
+            // never disagree with the cards under them - the same contract the
+            // Suites and API Logs summaries keep.
+            function renderShotSummary() {
+                var cards = shotCards();
+
+                // A run that attached nothing has the setup guide to show; "0
+                // screenshots" over the top of it is a number nobody asked for.
+                if (!cards.length) { renderMetricsChips($('#shotSummary'), []); return; }
+
+                var visible = cards.filter(function (card) {
+                    return !card.classList.contains('is-hidden');
+                });
+
+                var suites = {}, failed = 0;
+                visible.forEach(function (card) {
+                    var suite = card.querySelector('.shot-card__suite');
+                    if (suite) { suites[suite.getAttribute('title') || suite.textContent] = true; }
+
+                    var status = card.getAttribute('data-status');
+                    if (status === 'fail' || status === 'error') { failed++; }
+                });
+
+                var suiteCount = Object.keys(suites).length;
+                var chips = [
+                    { color: themeValue('--chip-count-fg'), value: visible.length,
+                      label: visible.length === 1 ? 'screenshot' : 'screenshots' },
+                    { color: themeValue('--text-caret'), value: suiteCount,
+                      label: suiteCount === 1 ? 'suite' : 'suites' }
+                ];
+                if (failed) { chips.push({ color: themeValue('--status-fail'), value: failed, label: 'failed' }); }
+
+                renderMetricsChips($('#shotSummary'), chips);
+            }
+
             function failureScreenshots() {
-                // The grid is baked in at report-generation time, so a run that
-                // attached nothing leaves the tab as a blank slab. Flag the empty
-                // case here and let the stylesheet swap in the placeholder.
+                // A run that attached nothing leaves the tab as a blank slab.
+                // Flag the empty case here and let the stylesheet swap in the
+                // placeholder and its setup guide.
                 $('#screenshots .bg-highlight').each(function () {
-                    $(this).toggleClass('is-empty', $(this).find('.img-hover').length === 0);
+                    $(this).toggleClass('is-empty', $(this).find('.shot-card').length === 0);
                 });
 
-                $('.video').hover(function (e) {
-                  var hoverText = $(this).siblings('.text-desc').html();
-
-                  $(e.target).closest('.bg-highlight').find('.below-desc').first().html(hoverText);
-                }, function (e) {
-                  $(e.target).closest('.bg-highlight').find('.below-desc').first().html('');
-                });
+                filterScreenshots();
             }
 
             // The screenshot lightbox. The tiles still carry the attributes
@@ -8504,7 +8824,14 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
             function openShotBox(link) {
                 var group = link.getAttribute('data-fancybox');
-                shotLinks = [].slice.call(document.querySelectorAll('[data-fancybox="' + group + '"]'));
+                shotLinks = [].slice.call(document.querySelectorAll('[data-fancybox="' + group + '"]'))
+                    // Arrowing out of the filtered set and into a screenshot the
+                    // reader has just filtered away would undo the filter for
+                    // them, so the strip is the gallery as it now stands.
+                    .filter(function (candidate) {
+                        var card = candidate.closest ? candidate.closest('.shot-card') : null;
+                        return !card || !card.classList.contains('is-hidden');
+                    });
 
                 var box = document.getElementById('shotBox');
                 box.classList.toggle('is-single', shotLinks.length < 2);

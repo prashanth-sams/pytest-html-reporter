@@ -89,10 +89,10 @@ def test_every_token_the_page_uses_is_declared_in_both_themes():
 
     used = set(re.findall(r"var\(\s*(--[a-z0-9-]+)", page))
     used |= set(re.findall(r"themeValue\('(--[a-z0-9-]+)'\)", page))
-    # `--fa-*` are the icon glyphs and `--step-depth` is a layout value set on
-    # the element itself; neither is a colour and neither belongs to a theme.
+    # `--fa-*` are the icon glyphs; `--step-depth` and `--main-pad-top` are
+    # layout lengths. None of them is a colour, and none belongs to a theme.
     used -= {name for name in used if name.startswith("--fa-")}
-    used -= {"--step-depth"}
+    used -= {"--step-depth", "--main-pad-top"}
 
     assert used <= set(light)
     assert used <= set(dark)
