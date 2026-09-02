@@ -87,6 +87,11 @@ def _record(suite, name, status="FAIL", message="", index=0):
 
 
 def _rows(records):
+    # Rows are appended to one string on the class, and a test here builds two
+    # reports to compare them - so the second starts where the first left off
+    # unless the string is put back first.
+    ConfigVars._test_metrics_content = ""
+
     reporter = HTMLReporter(".", "", _FakeConfig())
     reporter._records = list(records)
     reporter.build_report()
@@ -241,14 +246,14 @@ def test_a_message_shaped_like_a_placeholder_is_not_substituted():
     assert _actions(soup)[0]["data-error"] == message
 
 
-def test_the_controls_add_only_an_ellipsis_to_the_cell_the_table_exports():
+def test_the_controls_add_nothing_at_all_to_the_cell_the_table_exports():
     """Search, CSV, Excel and print are all built from cell text. The error
-    rides in an attribute, so all four get the cut message and the ellipsis
-    that says it was cut - not a traceback per row."""
+    rides in an attribute and every button is an icon, so all four get the cut
+    message and the marker that says it was cut - not a traceback per row."""
     soup = _rows([_record("tests/test_a.py", "test_one", message=LONG)])
     cell = soup.findAll("td")[5]
 
-    assert _actions(soup)[0].get_text(strip=True) == "…"
+    assert _actions(soup)[0].get_text(strip=True) == ""
     assert LONG not in cell.get_text()
     assert cell.get_text(strip=True).endswith("…")
 
@@ -336,16 +341,6 @@ def test_they_come_out_one_after_another():
     assert ".msg-actions.is-open .msg-btn--action:nth-of-type(5) { transition-delay: 0.09s; }" in page
 
 
-def test_the_ellipsis_opens_them_as_well_as_the_button():
-    """The `...` is where the eye already is when a message has been cut, so it
-    is what a reader goes to press; the button beside it is what keeps the same
-    thing reachable by keyboard and on rows that were never cut."""
-    page = _template()
-
-    assert "event.target.closest('.msg-more')" in page
-    assert "cursor: pointer;" in _template().split(".msg-actions .msg-more {", 1)[1].split("}", 1)[0]
-
-
 def test_only_one_row_is_ever_open():
     """Four strips left open down a page is the clutter they were folded away to
     avoid. A click anywhere else, or Escape, shuts them all."""
@@ -365,3 +360,67 @@ def test_the_toggle_says_whether_it_is_open():
     assert 'aria-expanded="false"' in str(FloatingError(full_msg="boom", has_full="", cmd="", sname="s", name="n"))
     assert "setAttribute('aria-expanded', 'true')" in page
     assert "setAttribute('aria-expanded', 'false')" in page
+
+
+# --------------------------------------------------------------------------
+# a message that was cut says so by fading out
+# --------------------------------------------------------------------------
+
+def test_the_tail_of_a_cut_message_is_split_off_to_be_faded():
+    """A gradient can only be painted onto an element, so the characters that
+    fade have to be one of their own."""
+    soup = _rows([_record("tests/test_a.py", "test_one", message=LONG)])
+    cell = soup.findAll("td")[5]
+
+    faded = cell.find("span", class_="msg-fade").text
+
+    assert len(faded) == HTMLReporter.FADE_TAIL
+    # Head and tail are the fifty characters the cell has always held, split -
+    # nothing is dropped between them and nothing is shown twice.
+    assert cell.get_text().split("…")[0].strip() == LONG[:50].strip()
+
+
+def test_a_message_that_fits_fades_nowhere():
+    """Nothing was cut, so there is nothing to say has been."""
+    soup = _rows([_record("tests/test_a.py", "test_one", message="boom")])
+    cell = soup.findAll("td")[5]
+
+    assert cell.find("span", class_="msg-fade").text == ""
+    assert cell.find("span", class_="msg-cut").text == ""
+    assert "…" not in cell.get_text()
+
+
+def test_the_exports_still_carry_a_marker_the_fade_cannot_travel_as():
+    """A CSV and a print-out hold the cell's text, and a message cut short with
+    nothing to say so is a trap in a file somebody reads a week later."""
+    soup = _rows([_record("tests/test_a.py", "test_one", message=LONG)])
+    marker = soup.findAll("td")[5].find("span", class_="msg-cut")
+
+    assert marker.text == "…"
+    # Text for the exports, never drawn: the fade is what says it on screen.
+    assert ".metrics-card td .msg-cut {\n                    display: none;" in _template()
+
+
+def test_the_fade_and_the_expand_button_agree_on_what_was_cut():
+    """Or a message fades out and then opens the panel on the same fifty
+    characters it was already showing."""
+    fits = _rows([_record("tests/test_a.py", "test_one", message="x" * 40)])
+    cut = _rows([_record("tests/test_a.py", "test_one", message="x" * 400)])
+
+    assert fits.findAll("td")[5].find("span", class_="msg-fade").text == ""
+    assert _actions(fits)[0]["data-full"] == ""
+
+    assert cut.findAll("td")[5].find("span", class_="msg-fade").text != ""
+    assert _actions(cut)[0]["data-full"] == "1"
+
+
+def test_the_gradient_names_its_colour_rather_than_saying_currentcolor():
+    """Painting text with a background means `color: transparent`, and
+    `currentcolor` inside the gradient then resolves to exactly that - a fade
+    from nothing to nothing, which is a message that stops eight characters
+    early with no sign it was ever cut."""
+    rule = _template().split(".metrics-card td .msg-fade {", 1)[1].split("}", 1)[0]
+
+    assert "var(--text-body)" in rule
+    assert "currentcolor" not in rule
+    assert "background-clip: text;" in rule

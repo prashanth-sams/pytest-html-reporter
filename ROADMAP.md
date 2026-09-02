@@ -72,10 +72,17 @@ nothing and no reason why. It takes no clicks, so the row underneath stays live 
 The four of them also fold away. At one button per action a table of forty failures carries 160 of
 them for the one somebody wants, so they collapse behind the `...` — width and opacity rather than
 `display: none`, which cannot be transitioned and leaves nothing to animate — and unfold along the
-row a tenth of a second apart when it is pressed. The `...` is the handle because it is already
-where the eye goes on a cut message; the button beside it is what keeps that reachable by keyboard
-and on the rows whose message was never cut. One row is open at a time, and a click anywhere else
-or Escape shuts it: this is the set of actions on one failure, not a mode the table stays in.
+row a tenth of a second apart when it is pressed. One row is open at a time, and a click anywhere
+else or Escape shuts it: this is the set of actions on one failure, not a mode the table stays in.
+
+The cut message itself no longer ends in an ellipsis either — its last eight characters fade out,
+which is the answer the report title already gave to the same question and costs none of a narrow
+cell's width. Painted on those characters rather than as a mask down the cell's right-hand edge, so
+it lands on the end of the text wherever the line wraps; and the gradient names `--text-body`
+rather than `currentcolor`, because painting text with a background means `color: transparent` and
+`currentcolor` would then fade from nothing to nothing. The ellipsis stays in the cell, hidden: the
+CSV, Excel and print exports are built from cell text, they cannot carry a gradient, and a message
+cut short with nothing to say so is a trap in a file read a week later.
 
 ### 5. Deep-linkable rows — SHIPPED
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an

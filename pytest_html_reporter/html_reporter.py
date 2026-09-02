@@ -773,7 +773,20 @@ class HTMLReporter(object):
 
         return anchor if seen == 1 else '%s-%d' % (anchor, seen)
 
+    # How much of a cut message fades out at the end of the cell. Enough to
+    # read as a fade rather than as a colour the last word was written in.
+    FADE_TAIL = 8
+
     def append_test_metrics_row(self, record, row_id):
+        # The cell holds the first fifty characters. A message that ran past
+        # them ends in a fade rather than in an ellipsis, so the last few
+        # characters are split off here to be drawn in the gradient - split
+        # before escaping, or the cut lands in the middle of an entity and puts
+        # half of one on the page.
+        cut = record['message'][:50]
+        faded = cut[-self.FADE_TAIL:] if self.was_cut(record) else ''
+        cut = cut[:len(cut) - len(faded)]
+
         # Escaped here rather than in the record: output.json carries the same
         # text and wants it raw. The message is cut to length first, so the cut
         # cannot land in the middle of an entity and leave "&a" on the page.
@@ -783,7 +796,13 @@ class HTMLReporter(object):
             stat=str(record['status']),
             dur=str(record['duration']),
             rerun=str(record['rerun']),
-            msg=escape_report_text(record['message'][:50]),
+            msg=escape_report_text(cut),
+            msg_tail=escape_report_text(faded),
+            # What a CSV, an Excel sheet and a print-out carry in place of the
+            # gradient they cannot draw. Hidden on screen, where the fade says
+            # it; a cut message with nothing at all to say so is a trap in a
+            # file somebody reads a week later.
+            msg_cut='&hellip;' if faded else '',
             runt=row_id,
             # The row's own address, for the link the copy button hands out.
             # Unlike `runt` - which numbers the rows for the buttons that open
@@ -802,15 +821,15 @@ class HTMLReporter(object):
 
         # A row with nothing to say gets neither button: a passing test has no
         # error to copy, and offering to copy an empty string reads as a bug.
+        # (The fade above and the expand button below ask `was_cut` the one
+        # question, so a message cannot fade out and then open to the same
+        # fifty characters.)
         if not record['message'].strip():
             test_row_text.floating_error_text = ''
         else:
-            # The raw length, not the escaped one: this asks whether the message
-            # was cut short, and escaping it first would make a message full of
-            # angle brackets look long enough to need the panel it does not need.
             test_row_text.floating_error_text = str(FloatingError(
                 full_msg=escape_report_text(record['message']),
-                has_full='' if len(record['message']) < 49 else '1',
+                has_full='1' if self.was_cut(record) else '',
                 # The line that runs this one test again. Empty for a record
                 # that never had a node id of its own, which is what hides the
                 # button rather than offering a command that runs everything.
@@ -820,6 +839,16 @@ class HTMLReporter(object):
             ))
 
         ConfigVars._test_metrics_content += str(test_row_text)
+
+    @staticmethod
+    def was_cut(record):
+        """Whether the cell is showing less of the message than there is.
+
+        The raw length, not the escaped one: this asks whether the message was
+        cut short, and escaping it first would make a message full of angle
+        brackets look long enough to need a fade and a panel it does not need.
+        """
+        return len(record['message']) >= 49
 
     def attach_test_logs(self, record, row_id):
         """Park a test's captured output outside the table, return its size.

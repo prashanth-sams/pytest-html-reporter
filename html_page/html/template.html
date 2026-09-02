@@ -3088,6 +3088,34 @@
                     display: none;
                 }
 
+                /* ---- A cut message fades out at the end ---- */
+                /* The same answer the report title gives to the same question:
+                   a tail that fades says "there is more of this" without
+                   spending three characters of a narrow cell saying it, and
+                   without the `...` sitting next to the `...` button that opens
+                   the rest. Only the last few characters carry the gradient, so
+                   it lands on the end of the text wherever the line happens to
+                   wrap rather than down the right-hand edge of the cell.
+
+                   The gradient names `--text-body` outright rather than saying
+                   `currentcolor`: painting text with a background means setting
+                   `color: transparent`, and `currentcolor` inside the gradient
+                   then resolves to that - a fade from nothing to nothing, which
+                   is a message that simply stops eight characters early. */
+                .metrics-card td .msg-fade {
+                    background: linear-gradient(to right, var(--text-body) 30%, transparent 100%);
+                    -webkit-background-clip: text;
+                    background-clip: text;
+                    color: transparent;
+                }
+
+                /* What the exports carry in place of a gradient. Present in the
+                   cell's text - which is what the CSV, Excel and print buttons
+                   read - and never drawn. */
+                .metrics-card td .msg-cut {
+                    display: none;
+                }
+
                 /* ---- Full error: an ellipsis, an expand and a copy ---- */
                 .metrics-card td .msg-actions {
                     display: inline-flex;
@@ -3102,21 +3130,6 @@
                    they are opened. */
                 .msg-actions .msg-btn {
                     margin-left: 5px;
-                }
-
-                /* The ellipsis is the only part of this that is text, so it is
-                   also the only part a CSV or a print-out carries - which is
-                   right, because those hold the cut message and nothing says
-                   so otherwise. */
-                .msg-actions .msg-more {
-                    color: var(--text-faintest);
-                    margin-right: 2px;
-                    /* It opens the strip too. The `...` is where the eye
-                       already is when a message has been cut, so it is the
-                       thing a reader goes to press - the button beside it is
-                       what keeps that reachable by keyboard and on the rows
-                       whose message was never cut. */
-                    cursor: pointer;
                 }
 
                 /* Sized and coloured to be found rather than to keep out of
@@ -3214,10 +3227,10 @@
                 }
 
                 /* A message that fits is already all there: there is nothing
-                   to expand to, and an ellipsis would claim a tail that does
-                   not exist. The copy button stays either way. */
-                .msg-actions[data-full=""] .msg-open,
-                .msg-actions[data-full=""] .msg-more {
+                   to expand to, and a panel that opens on the same fifty
+                   characters reads as a broken button. The copy, the command
+                   and the link stay either way. */
+                .msg-actions[data-full=""] .msg-open {
                     display: none;
                 }
 
@@ -6753,14 +6766,6 @@
                     document.addEventListener('click', function(event) {
                         var near = event.target.closest ? event.target.closest('.msg-actions') : null;
                         var button = event.target.closest ? event.target.closest('.msg-btn') : null;
-
-                        // The cut-message ellipsis is the other half of the
-                        // toggle - same strip, same click, no second idea to
-                        // learn.
-                        if (!button && near && event.target.closest('.msg-more')) {
-                            toggleRowActions(near);
-                            return;
-                        }
 
                         // Anywhere else on the page shuts the open strip: it is
                         // the set of actions on one failure, not a mode the

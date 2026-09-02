@@ -122,9 +122,9 @@ def test_floating_error():
 
     # The one button the row rests as, then - once it is pressed - an expand, a
     # copy, the command that runs this one test again and the link that opens
-    # the report on this row, in that order. None of them carries any text: the
-    # ellipsis is all the cell contributes to the table's search index and to
-    # its CSV, Excel and print exports.
+    # the report on this row, in that order. None of them carries any text, so
+    # the cluster adds nothing at all to the table's search index or to its CSV,
+    # Excel and print exports.
     assert [button["title"] for button in actions.findAll("button")] \
         == ["Show what can be done with this failure",
             "Show the full error", "Copy the full error",
@@ -135,7 +135,7 @@ def test_floating_error():
     folding = [button for button in actions.findAll("button")
                if "msg-btn--action" in button["class"]]
     assert len(folding) == 4
-    assert actions.get_text(strip=True) == "\u2026"
+    assert actions.get_text(strip=True) == ""
 
 
 def test_floating_error_offers_no_expand_when_nothing_was_cut():
@@ -223,6 +223,7 @@ def test_test_row():
     stat = get_random_string()
     dur = str(get_random_number())
     msg = get_random_string()
+    msg_tail = get_random_string()
     floating_error_text = get_random_string()
     log_count = str(get_random_number())
     runt = get_random_string()
@@ -234,6 +235,7 @@ def test_test_row():
     anchor = "test-" + get_random_string()
 
     test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
+                       msg_tail=msg_tail, msg_cut="&hellip;",
                        floating_error_text=floating_error_text, log_count=log_count,
                        attach_count=attach_count, shot_count=shot_count, runt=runt,
                        anchor=anchor)
@@ -247,7 +249,11 @@ def test_test_row():
     for node, expected in zip(cells, [sname, name, stat, dur, rerun]):
         assert node.text.strip() == expected
 
-    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[5].text.strip())
+    # The message, the few characters of it that fade out, the ellipsis the
+    # exports carry in place of that fade, then the buttons.
+    assert re.search(rf"{msg}{msg_tail}\u2026[\s\n]*{floating_error_text}", cells[5].text.strip())
+    assert cells[5].find("span", class_="msg-fade").text == msg_tail
+    assert cells[5].find("span", class_="msg-cut").text == "\u2026"
 
     log_cell = cells[6]
     assert log_cell["data-logs"] == log_count
