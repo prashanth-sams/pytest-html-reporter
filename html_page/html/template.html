@@ -3169,17 +3169,24 @@
                    and come back out along the row when it is pressed.
 
                    Collapsed by width and opacity, not by `display: none`: a
-                   `display` change cannot be transitioned, and the buttons have
-                   to be in the layout for their widths to animate at all. */
+                   `display` change cannot be transitioned, and a button with no
+                   box cannot slide out of anywhere.
+
+                   The width is taken in one step and only the opacity and the
+                   transform are animated. Growing the widths instead reflowed
+                   the cell on every frame of the animation, so a strip with no
+                   room left on the line jumped to the next one part-way
+                   through, at whichever frame it stopped fitting. Settling the
+                   layout in one go means there is a single move to make, and
+                   `slideRowActions` animates that one. */
                 .msg-actions .msg-btn--action {
                     width: 0;
                     margin-left: 0;
                     border-width: 0;
                     opacity: 0;
-                    transform: scale(0.6);
+                    transform: translateX(-10px) scale(0.7);
                     pointer-events: none;
-                    transition: width 0.16s ease, margin 0.16s ease, opacity 0.14s ease,
-                                transform 0.16s ease, border-width 0.16s ease,
+                    transition: opacity 0.16s ease, transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1),
                                 background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
                 }
 
@@ -3190,6 +3197,14 @@
                     opacity: 1;
                     transform: none;
                     pointer-events: auto;
+                }
+
+                /* The strip itself, on its way to wherever the new line put it.
+                   Set by `slideRowActions` frame by frame; the class is only
+                   here so the movement can be turned off with everything else
+                   below. */
+                .msg-actions.is-sliding {
+                    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
                 }
 
                 /* Out one after another rather than all at once - a tenth of a
@@ -3216,6 +3231,7 @@
                     }
 
                     .msg-actions.is-open .msg-btn--action { transition-delay: 0s; }
+                    .msg-actions.is-sliding { transition: none; }
                 }
 
                 .msg-actions .msg-btn:hover,
@@ -3282,9 +3298,11 @@
                     left: 50%;
                     z-index: 2400;
                     display: inline-flex;
-                    align-items: center;
+                    flex-direction: column;
+                    align-items: stretch;
                     gap: 9px;
-                    padding: 11px 18px;
+                    max-width: min(520px, 76vw);
+                    padding: 11px 14px;
                     border: 1px solid var(--border-subtle);
                     border-radius: 10px;
                     background: var(--surface-overlay);
@@ -3293,7 +3311,6 @@
                     font-family: sans-serif;
                     font-size: 0.86rem;
                     font-weight: 600;
-                    white-space: nowrap;
                     opacity: 0;
                     /* Nothing to click and nothing to click through: it sits
                        over the middle of the table for a moment, and the row
@@ -3314,9 +3331,50 @@
                     transition: opacity 0.14s ease, transform 0.14s ease, visibility 0s;
                 }
 
+                .copy-toast__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 9px;
+                    white-space: nowrap;
+                    padding: 0 4px;
+                }
+
                 .copy-toast .fa {
                     font-size: 14px;
                     color: var(--notice-ok-fg);
+                }
+
+                /* The text itself, in the face it was written in. Four lines of
+                   it: enough to recognise the traceback that was copied, and
+                   not so much that the panel becomes the thing being read. */
+                .copy-toast__body {
+                    display: none;
+                    margin: 0;
+                    padding: 9px 11px;
+                    max-height: 5.9em;
+                    overflow: hidden;
+                    border-radius: 7px;
+                    background: var(--surface-hover);
+                    color: var(--text-muted);
+                    font-family: monospace;
+                    font-size: 11.5px;
+                    font-weight: 400;
+                    line-height: 1.45;
+                    text-align: left;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                }
+
+                .copy-toast.has-body .copy-toast__body {
+                    display: block;
+                }
+
+                /* More than fits: the rest is not cut off flat, which reads as
+                   the end of the message, but faded out - the same thing a cut
+                   error message does in the table it was copied from. */
+                .copy-toast__body.is-clipped {
+                    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+                    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
                 }
 
                 .copy-toast.is-failed .fa {
@@ -6809,12 +6867,49 @@
                     // the reader is only ever acting on one failure.
                     function toggleRowActions(actions) {
                         var opening = !actions.classList.contains('is-open');
+                        var from = actions.getBoundingClientRect();
 
                         closeRowActions();
-                        if (!opening) return;
+                        if (opening) {
+                            actions.classList.add('is-open');
+                            actions.querySelector('.msg-toggle').setAttribute('aria-expanded', 'true');
+                        }
 
-                        actions.classList.add('is-open');
-                        actions.querySelector('.msg-toggle').setAttribute('aria-expanded', 'true');
+                        slideRowActions(actions, from);
+                    }
+
+                    // Four buttons wider than the line has left, and the strip
+                    // goes to the next one - which is the right thing to do and
+                    // a jump to watch happen. The widths are already settled by
+                    // the time this runs, so the move is known: put the strip
+                    // back where it was with a transform and let it travel to
+                    // where it now belongs.
+                    //
+                    // The row's height still changes in one step. Only the
+                    // strip can be animated - it is what moved, and following
+                    // it is what makes the new line read as somewhere it went
+                    // rather than somewhere it reappeared.
+                    function slideRowActions(actions, from) {
+                        var to = actions.getBoundingClientRect();
+                        var dx = from.left - to.left;
+                        var dy = from.top - to.top;
+
+                        if (!dx && !dy) return;
+
+                        actions.classList.remove('is-sliding');
+                        actions.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+
+                        // Read a layout value back, or the browser coalesces the
+                        // two writes and the strip is simply where it ended up.
+                        void actions.offsetWidth;
+
+                        actions.classList.add('is-sliding');
+                        actions.style.transform = '';
+
+                        window.clearTimeout(actions.slideTimer);
+                        actions.slideTimer = window.setTimeout(function() {
+                            actions.classList.remove('is-sliding');
+                        }, 260);
                     }
 
                     // Every open strip, or none - called on a click outside one
@@ -6837,7 +6932,12 @@
                     // all of them, so this is what says which - and it says it
                     // where the pointer already is rather than at the end of
                     // the row.
-                    function showCopyToast(text, copied) {
+                    // Only ever a few lines of it are on screen, so there is
+                    // no point handing the panel a megabyte of traceback to lay
+                    // out and then hide.
+                    var COPY_TOAST_PREVIEW = 600;
+
+                    function showCopyToast(text, copied, content) {
                         var toast = document.getElementById('copyToast');
                         if (!toast) return;
 
@@ -6845,15 +6945,30 @@
                         document.getElementById('copyToastIcon').className =
                             'fa ' + (copied ? 'fa-check' : 'fa-info-circle');
                         toast.classList.toggle('is-failed', !copied);
+
+                        var body = document.getElementById('copyToastBody');
+                        var preview = copied ? String(content || '').replace(/\s+$/, '') : '';
+
+                        body.textContent = preview.slice(0, COPY_TOAST_PREVIEW);
+                        body.classList.remove('is-clipped');
+                        toast.classList.toggle('has-body', !!preview);
                         toast.classList.add('is-on');
+
+                        // Asked once it is on screen and laid out: whether the
+                        // text overran the four lines is not a question the
+                        // markup can answer, only the box it ended up in.
+                        body.classList.toggle('is-clipped',
+                            !!preview && body.scrollHeight > body.clientHeight + 1);
 
                         // Restarted rather than queued: a second copy while the
                         // first is still up is news about the second one, and
-                        // two of these stacking would cover the table.
+                        // two of these stacking would cover the table. A panel
+                        // with something to read in it is given longer than one
+                        // that only says a word.
                         window.clearTimeout(copyToastTimer);
                         copyToastTimer = window.setTimeout(function() {
                             toast.classList.remove('is-on');
-                        }, 1400);
+                        }, preview ? 2200 : 1400);
                     }
 
                     // The error behind a row, the command that runs that row
@@ -6882,7 +6997,7 @@
                             // reader with a button that did nothing and no idea
                             // why; this is the one place there is room to say
                             // what to press instead.
-                            showCopyToast(copied ? (label || 'Copied') : 'Press Ctrl+C to copy', copied);
+                            showCopyToast(copied ? (label || 'Copied') : 'Press Ctrl+C to copy', copied, text);
                         }
 
                         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -7600,8 +7715,16 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
              screen reader read out that the copy landed, which the tick on the
              button never said to anyone not looking at it. -->
         <div class="copy-toast" id="copyToast" role="status" aria-live="polite">
-            <i class="fa fa-check" id="copyToastIcon" aria-hidden="true"></i>
-            <span id="copyToastText"></span>
+            <span class="copy-toast__head">
+                <i class="fa fa-check" id="copyToastIcon" aria-hidden="true"></i>
+                <span id="copyToastText"></span>
+            </span>
+            <!-- What went onto the clipboard, so the click is confirmed by the
+                 thing itself rather than by a word about it. `aria-hidden`
+                 because the panel is a live region: a screen reader announcing
+                 "Error copied" is the news, and forty lines of traceback read
+                 out after it is not. -->
+            <pre class="copy-toast__body" id="copyToastBody" aria-hidden="true"></pre>
         </div>
 
         <!-- The cheatsheet is written once, in the tab. This shows the same

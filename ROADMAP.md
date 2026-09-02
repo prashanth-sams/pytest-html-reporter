@@ -67,13 +67,23 @@ copied`, `Link copied`, faded in and gone in a second and a half. That is both t
 legible from wherever the pointer is, 22 pixels of button at the end of a long row not being it,
 and the half that says *which* of the three landed. A refused clipboard — which is what `file://`
 gets in some browsers — says `Press Ctrl+C to copy` there rather than leaving a button that did
-nothing and no reason why. It takes no clicks, so the row underneath stays live while it is up.
+nothing and no reason why. It takes no clicks, so the row underneath stays live while it is up. It
+also shows what went onto the clipboard rather than only a word about it, four lines of it, with
+anything past that faded out rather than cut off square — the preview is `aria-hidden`, because the
+panel is a live region and a traceback read out after `Error copied` is not the news.
 
 The four of them also fold away. At one button per action a table of forty failures carries 160 of
 them for the one somebody wants, so they collapse behind the `...` — width and opacity rather than
 `display: none`, which cannot be transitioned and leaves nothing to animate — and unfold along the
 row a tenth of a second apart when it is pressed. One row is open at a time, and a click anywhere
 else or Escape shuts it: this is the set of actions on one failure, not a mode the table stays in.
+
+Their widths are taken in **one step**, with only the opacity and the transform animated. Growing
+the widths reflowed the cell on every frame of the animation, so a strip with no room left on its
+line jumped to the next one part-way through, at whichever frame it stopped fitting. Settling the
+layout in one go leaves a single known move, which `slideRowActions` animates by putting the strip
+back where it was and letting it travel — the row's height still changes in one step, but following
+the strip is what makes the new line read as somewhere it went rather than somewhere it reappeared.
 
 The cut message itself no longer ends in an ellipsis either — its last eight characters fade out,
 which is the answer the report title already gave to the same question and costs none of a narrow

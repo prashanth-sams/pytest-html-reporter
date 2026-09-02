@@ -279,6 +279,48 @@ def test_a_browser_that_refused_the_clipboard_says_what_to_press_instead():
     assert "'Press Ctrl+C to copy'" in _template()
 
 
+def test_the_panel_shows_what_went_onto_the_clipboard():
+    """The click is confirmed by the thing itself rather than by a word about
+    it - the error, the command or the link, in the face it was written in."""
+    page = _template()
+
+    assert 'id="copyToastBody"' in page
+    assert "body.textContent = preview.slice(0, COPY_TOAST_PREVIEW);" in page
+    # `text` is what was put on the clipboard, so the panel and the clipboard
+    # cannot end up showing two different things.
+    assert "showCopyToast(copied ? (label || 'Copied') : 'Press Ctrl+C to copy', copied, text);" in page
+
+
+def test_more_than_fits_fades_out_rather_than_stopping_flat():
+    """A traceback cut off square reads as the end of the message. The panel
+    holds four lines and dissolves the rest - the same thing a cut error message
+    does in the table it was copied from."""
+    page = _template()
+    rule = page.split(".copy-toast__body {", 1)[1].split("}", 1)[0]
+
+    assert "max-height: 5.9em;" in rule
+    assert "overflow: hidden;" in rule
+    assert "mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);" in page
+    # Whether it overran is a question only the laid-out box can answer.
+    assert "body.scrollHeight > body.clientHeight + 1" in page
+
+
+def test_the_traceback_is_not_read_out_over_the_news():
+    """The panel is a live region: "Error copied" is what a screen reader should
+    announce, not the forty lines that follow it."""
+    page = _template()
+
+    assert '<pre class="copy-toast__body" id="copyToastBody" aria-hidden="true">' in page
+
+
+def test_a_failed_copy_shows_no_content_at_all():
+    """Nothing reached the clipboard, so showing what did not go there beside
+    "Press Ctrl+C" would say two opposite things at once."""
+    page = _template()
+
+    assert "var preview = copied ? String(content || '').replace(/\\s+$/, '') : '';" in page
+
+
 def test_the_message_takes_itself_away_and_a_second_copy_restarts_it():
     """Two of these stacking would cover the table, and a message left up would
     claim the clipboard still holds what that row put there."""
@@ -330,6 +372,32 @@ def test_the_four_are_in_the_markup_the_whole_time():
     assert "display: none" not in rule
     # And nothing to tab into or click while they are folded away.
     assert "pointer-events: none;" in rule
+
+
+def test_the_strip_travels_to_the_next_line_rather_than_reappearing_on_it():
+    """Four buttons wider than the line has left, and the strip wraps - which is
+    the right thing to do and a jump to watch happen. The widths settle in one
+    step, so the move is known before it is made and can be animated."""
+    page = _template()
+
+    assert "function slideRowActions(actions, from) {" in page
+    assert "var dx = from.left - to.left;" in page
+    assert "actions.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';" in page
+    # A layout read between the two writes, or the browser coalesces them and
+    # the strip is simply where it ended up.
+    assert "void actions.offsetWidth;" in page
+
+
+def test_the_widths_are_taken_in_one_step_so_the_line_only_wraps_once():
+    """Growing them reflowed the cell on every frame, so a strip with no room
+    left jumped to the next line part-way through the animation, at whichever
+    frame it stopped fitting."""
+    rule = _template().split(".msg-actions .msg-btn--action {", 1)[1].split("}", 1)[0]
+    transition = rule.split("transition:", 1)[1]
+
+    assert "opacity" in transition
+    assert "transform" in transition
+    assert "width" not in transition
 
 
 def test_they_come_out_one_after_another():
