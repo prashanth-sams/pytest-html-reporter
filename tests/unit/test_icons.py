@@ -74,7 +74,11 @@ def test_template_carries_the_icons_and_no_font_awesome_request():
     assert "FontAwesome" not in page
     assert "%(icon_styles)%" not in page
     shipped = [f for f in os.listdir(os.path.join(os.path.dirname(HTML_DIR), "icons")) if f.endswith(".svg")]
-    assert page.count('url("data:image/svg+xml;base64,') == len(shipped)
+    # Counted by their own `--fa-*` declarations rather than by every inlined
+    # SVG on the page: the theme tokens carry a few of their own (the sort
+    # arrows, the search glyph, the select caret), one per theme.
+    inlined = re.findall(r'--fa-[a-z0-9-]+: url\("data:image/svg\+xml;base64,', page)
+    assert len(inlined) == len(shipped)
 
 
 def test_every_icon_takes_its_colour_from_the_text_around_it():

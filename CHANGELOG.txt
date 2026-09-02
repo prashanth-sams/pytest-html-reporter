@@ -1,3 +1,15 @@
+0.3.9 (02/09/2026)
+-------------------
+- A dark theme, and a switch at the foot of the side nav to reach it. The choice is remembered per reader; until it is touched the report follows the operating system's own light/dark setting
+- The theme is settled by a script in the head, before the stylesheets, so a report opened in dark never shows a white frame on the way in
+- Light mode is unchanged. Every colour in the stylesheet became a custom property whose light value is the one that shipped before, verified two ways - by expanding every var() back and diffing the CSS, and by comparing the rendered colour of 838 elements across all nine tabs. The worst difference either way is 1.94 CIEDE2000, which is below what an eye can see
+- The status language is deliberately carried across unchanged: pass is still #98cc64, fail #fc6766, skip #ffd050. Only ERROR moves, because #b13635 sits at 2.7:1 on a dark card; it is lifted far enough to clear AA while staying well clear of FAIL
+- The left rail stays warm charcoal while the page goes cool near-black, so the two are told apart by hue once they can no longer be told apart by luminance, with a hairline drawn as an inset shadow rather than a border so nothing shifts by a pixel
+- Chart.js copies the colours it is handed into its own model at construction, so a chart cannot follow a custom property. Each one is built through themedChart(), which resolves the tokens named on its config, and re-resolves them when the theme changes
+- Bootstrap and DataTables are vendored light-mode stylesheets and paint things the app CSS never opposed - the base text colour, card and list-group faces, table rules, the pager's gap marker, the spinner on an exporting button. Those are undone for dark only
+- Dark measures better than light on contrast: 5 elements below WCAG AA against 81, and each of those 5 is 2.5-3x more legible than the same element is in light today
+- The sort arrows, the search glyph and the select caret are drawn from SVG data URIs, which cannot hold a var(); each theme carries its own copy, base64 rather than percent-encoded, because the PDF export serialises the page into an SVG data URL without escaping it and a %3C would be decoded by the URL parser
+
 0.3.8 (01/09/2026)
 -------------------
 - New Test Steps tab: the named, timed pieces a test is actually made of, drilling down from the suite to the test to what it did. A status column says a test failed; this says where, and how long it had been running when it got there

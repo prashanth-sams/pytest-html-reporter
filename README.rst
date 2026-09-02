@@ -6,7 +6,7 @@ pytest-html-reporter
    :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
    :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.3.8
+.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.3.9
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
@@ -44,6 +44,7 @@ Features
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
+* Light and dark themes - a switch at the foot of the side nav, remembered per reader, following the operating system until it is touched
 * Custom side-nav links to any page of your own
 * Opens the finished report in a browser on a local run, and stays quiet on a build agent
 * Test Rerun support

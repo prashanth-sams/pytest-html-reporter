@@ -1214,10 +1214,14 @@ class HTMLReporter(object):
 
     def load_archive(self, f, value):
         def state(data):
+            # The colour is written into a style attribute on the archive row,
+            # so it names a theme token rather than a hex: an inline var() is
+            # re-resolved by the browser when the theme switches, which a
+            # literal would not be.
             if data == 'fail':
-                return 'times', '#fc6766'
+                return 'times', 'var(--status-fail)'
             elif data == 'pass':
-                return 'check', '#98cc64'
+                return 'check', 'var(--status-pass)'
 
         for i, val in enumerate(f):
             with open(val) as json_file:

@@ -580,14 +580,16 @@ def test_template():
 
     ### Checking if code-behind parts are really interpolated
 
-    last_style_block = soup.findAll("style")[-1]
+    # Found by what it contains rather than by being the last block: the theme
+    # tokens and the vendor dark overrides are style blocks too.
+    progress_block = next(b for b in soup.find_all("style") if ".progress-bar.downloading" in b.text)
     style_block = f""".progress-bar.downloading {{
-                    background: -webkit-linear-gradient(left, #fc6665 {max_failure_percent}%,#50597b {max_failure_percent}%); /* Chrome10+,Safari5.1+ */
-                    background: -ms-linear-gradient(left, #fc6665 {max_failure_percent}%,#50597b {max_failure_percent}%); /* IE10+ */
-                    background: linear-gradient(to right, #fc6665 {max_failure_percent}%,#50597b {max_failure_percent}%); /* W3C */
+                    background: -webkit-linear-gradient(left, var(--status-fail) {max_failure_percent}%,var(--progress-bar) {max_failure_percent}%); /* Chrome10+,Safari5.1+ */
+                    background: -ms-linear-gradient(left, var(--status-fail) {max_failure_percent}%,var(--progress-bar) {max_failure_percent}%); /* IE10+ */
+                    background: linear-gradient(to right, var(--status-fail) {max_failure_percent}%,var(--progress-bar) {max_failure_percent}%); /* W3C */
                 }}"""
 
-    assert last_style_block.text.strip() == style_block
+    assert progress_block.text.strip() == style_block
 
     wrimagecard = soup.find("img", id="wrimagecard")
     assert wrimagecard["src"] == custom_logo
