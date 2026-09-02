@@ -77,7 +77,6 @@
                     --rail-text-faint-hover: #8f8c8c;
                     --rail-brand:            #dcdcdc;
                     --rail-brand-hover:      #ffffff;
-                    --rail-logo-mat:         #f8f9fa;
                     --rail-switch-track:     rgba(255, 255, 255, 0.14);
                     --rail-switch-track-on:  rgba(255, 255, 255, 0.14);
                     --rail-switch-thumb:     #a2a2a2;
@@ -389,7 +388,6 @@
                     --rail-text-faint-hover: #bcc1c9;
                     --rail-brand:            #dcdcdc;
                     --rail-brand-hover:      #ffffff;
-                    --rail-logo-mat:         #f8f9fa;
                     --rail-switch-track:     rgba(255, 255, 255, 0.16);
                     --rail-switch-track-on:  rgba(255, 255, 255, 0.30);
                     --rail-switch-thumb:     #a4aab4;
@@ -742,12 +740,15 @@
                     }
                 }
 
+                /* The logo is a transparent PNG and sits straight on the rail.
+                   It used to be given a near-white mat to sit on, which read as
+                   a white card the artwork does not have - and it was never
+                   needed: the wordmark's blue and gold both carry against the
+                   rail in either theme. */
                 .wrimagecard {
                     margin-top: 0;
                     margin-bottom: 0.6rem;
-                    border-radius: 5px;
                     transition: all 0.3s ease;
-                    background-color: var(--rail-logo-mat);
                     max-width: 90%;
                     max-height: 50px;
                 }
