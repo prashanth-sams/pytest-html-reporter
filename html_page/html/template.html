@@ -5923,9 +5923,24 @@
                    a colour of its own. */
                 :root[data-theme="dark"] body { color: var(--text-body); }
 
+                /* `:not(.active)` because the selected build in the archive
+                   rail already has a colour of its own, on a selector of the
+                   same weight as this one - and this one comes later in the
+                   sheet, so without the exclusion it wins the tie and the rail
+                   loses its selection in dark. */
                 :root[data-theme="dark"] .card,
-                :root[data-theme="dark"] .list-group-item {
+                :root[data-theme="dark"] .list-group-item:not(.active) {
                     background-color: var(--surface-card);
+                }
+
+                /* Only .card. The one list-group in the report is the archive
+                   rail, and the app gives its items `border: 5px solid
+                   var(--border-none)` - a transparent border used as spacing,
+                   not an edge, which the negative margin below then pulls back
+                   together. Colouring it here drew a five-pixel frame round
+                   every build in the rail, so the column read as a stack of
+                   separate slabs instead of the one list it is in light. */
+                :root[data-theme="dark"] .card {
                     border-color: var(--border-subtle);
                 }
 
