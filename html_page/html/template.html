@@ -375,22 +375,27 @@
                     --surface-group-chip:  #262c37;
                     --surface-selected:    #2b3444;
 
-                    /* Left rail and theme switch */
-                    --rail-bg:               #262322;
+                    /* Left rail and theme switch. Every value here sits on
+                       the same blue-grey axis as the surfaces above: the rail
+                       used to be a warm charcoal, which put the one brown slab
+                       on a page that is cool neutral everywhere else. Only the
+                       hue moved - the lightness steps, and so the contrast of
+                       the text against the rail, are the ones it always had. */
+                    --rail-bg:               #22262f;
                     --rail-edge:             rgba(255,255,255,0.10);
-                    --rail-text:             #b6b3b1;
-                    --rail-divider:          #3a3634;
-                    --rail-text-faint:       #949089;
-                    --rail-text-faint-hover: #c2bebc;
+                    --rail-text:             #b4b9c2;
+                    --rail-divider:          #363c47;
+                    --rail-text-faint:       #8d94a0;
+                    --rail-text-faint-hover: #bcc1c9;
                     --rail-brand:            #dcdcdc;
                     --rail-brand-hover:      #ffffff;
                     --rail-logo-mat:         #f8f9fa;
                     --rail-switch-track:     rgba(255, 255, 255, 0.16);
                     --rail-switch-track-on:  rgba(255, 255, 255, 0.30);
-                    --rail-switch-thumb:     #a2a2a2;
-                    --rail-switch-thumb-on:  #f0efee;
+                    --rail-switch-thumb:     #a4aab4;
+                    --rail-switch-thumb-on:  #eef0f3;
                     --rail-switch-focus:     #8cbdec;
-                    --rail-active-bg:        #565250;
+                    --rail-active-bg:        #515866;
                     --rail-active-text:      #ffffff;
 
                     /* Borders and rules */
@@ -678,11 +683,11 @@
                     left: 0;
                     background-color: var(--rail-bg);
                     /* In light the rail is the darkest thing on screen and needs
-                       no edge. In dark it is a warm charcoal against a cool
-                       near-black page, and hue alone is a thin seam; this adds a
-                       hairline without a border, which would shift the layout by
-                       a pixel. The token is transparent in light, so the rule
-                       costs nothing there. */
+                       no edge. In dark it is a charcoal a few steps above the
+                       near-black page, and that difference alone is a thin seam;
+                       this adds a hairline without a border, which would shift
+                       the layout by a pixel. The token is transparent in light,
+                       so the rule costs nothing there. */
                     box-shadow: inset -1px 0 0 0 var(--rail-edge);
                     overflow-x: hidden;
                     /* Column layout so the theme switch and the sponsor block
