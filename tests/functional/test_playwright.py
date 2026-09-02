@@ -1,9 +1,10 @@
-"""The Playwright flavour of screenshot-on-failure.
+"""The Playwright flavour of screenshot-on-failure - with nothing wired up.
 
-``attach`` takes PNG bytes rather than a driver, so Playwright's
-``page.screenshot()`` feeds it exactly the way Selenium's
-``get_screenshot_as_png()`` does. The capture itself lives in conftest.py,
-which is what leaves this file looking like an ordinary Playwright test.
+Same as the Selenium suite beside it, and for the same reason: the reporter
+recognises a browser by what it can do rather than by what it is, so
+Playwright's ``page.screenshot()`` is found exactly the way Selenium's
+``get_screenshot_as_png()`` is. This file is an ordinary Playwright test and
+nothing else.
 
 Needs ``pip install pytest-playwright`` and ``playwright install chromium``.
 """
@@ -29,5 +30,6 @@ class TestClass:
 
     def test_heading_mismatch(self, page):
         # Fails on purpose. Screenshots are only captured for failures, so this
-        # is the test that puts one in the report - see conftest.py.
+        # is the test that puts one in the report - and it says nothing about
+        # screenshots to do it.
         assert page.locator("h1").inner_text() == "Not the heading"

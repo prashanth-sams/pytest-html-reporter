@@ -1,4 +1,8 @@
-"""The plain-pytest flavour of screenshot-on-failure.
+"""The plain-pytest flavour of screenshot-on-failure - with nothing wired up.
+
+There is no conftest here, no hook and no call to ``attach``: the reporter
+photographs the driver itself when a test fails, because the driver is in the
+test's own fixtures and the reporter is already standing in its teardown.
 
 Needs ``pip install selenium`` and a local Chrome; Selenium Manager
 resolves the matching chromedriver itself.
@@ -38,5 +42,6 @@ class TestClass:
 
     def test_heading_mismatch(self, driver):
         # Fails on purpose. Screenshots are only captured for failures, so this
-        # is the test that puts one in the report - see conftest.py.
+        # is the test that puts one in the report - and it says nothing about
+        # screenshots to do it.
         assert driver.find_element(By.CSS_SELECTOR, "h1").text == "Not the heading"

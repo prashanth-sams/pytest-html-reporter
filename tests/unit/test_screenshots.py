@@ -54,8 +54,19 @@ def _run(tmp_path, body, conftest=None, *args):
 
 
 def _captions(page):
-    """The test name the report prints under each screenshot in the gallery."""
-    return re.findall(r'data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
+    """The test name the report prints under each screenshot in the gallery.
+
+    Anchored on the gallery's own fancybox group: the thumbnails on the Test
+    Metrics rows carry the same caption, and they are a different question.
+    """
+    return re.findall(
+        r'data-fancybox="images" data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
+
+
+def _row_shots(page):
+    """The test name against each thumbnail on a Test Metrics row."""
+    return re.findall(
+        r'data-fancybox="metrics" data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
 
 
 def _card_statuses(page):
@@ -255,3 +266,70 @@ def test_a_long_test_name_reaches_the_card_whole(tmp_path):
     """)
 
     assert _captions(page) == ["test_a_name_far_too_long_for_the_caption_strip"]
+
+
+# --------------------------------------------------------------------------
+# the Screens column on Test Metrics
+# --------------------------------------------------------------------------
+
+def _shot_cells(page):
+    """How many pictures each Test Metrics row says it has."""
+    return re.findall(r'<td class="log-cell shot-cell" data-logs="(\d+)"', page)
+
+
+def test_the_row_carries_the_picture_the_test_took(tmp_path):
+    """Crossing to another tab to find out what the failure looked like is the
+    step the column removes: the thumbnail is on the row that failed."""
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert _row_shots(page) == ["test_fails"]
+    assert _shot_cells(page) == ["1"]
+
+
+def test_a_row_with_no_picture_says_so_rather_than_offering_one(tmp_path):
+    page, _ = _run(tmp_path, PNG + '''
+        def test_quiet_fail():
+            assert False
+    ''')
+
+    assert _row_shots(page) == []
+    assert _shot_cells(page) == ["0"]
+
+
+def test_the_row_thumbnails_open_a_strip_of_their_own(tmp_path):
+    """Not the gallery's. Arrowing off a row's screenshot and into one from a
+    tab the reader is not looking at is not what the arrow keys are for."""
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert 'data-fancybox="metrics"' in page
+    assert 'data-fancybox="images"' in page
+
+
+def test_every_picture_a_test_took_reaches_its_row(tmp_path):
+    page, _ = _run(tmp_path, PNG + '''
+        from pytest_html_reporter import attach
+
+
+        def test_fails():
+            attach(data=PNG)
+            attach(data=PNG)
+            assert False
+    ''')
+
+    assert _row_shots(page) == ["test_fails", "test_fails"]
+    assert _shot_cells(page) == ["2"]
+    assert len(_images(tmp_path)) == 2

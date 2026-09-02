@@ -3046,6 +3046,48 @@
                     display: inline;
                 }
 
+                /* ---- Screenshots: the pictures themselves, on the row ---- */
+                .shot-strip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                .shot-thumb {
+                    display: block;
+                    width: 84px;
+                    height: 52px;
+                    border: 1px solid var(--border-subtle);
+                    border-radius: 5px;
+                    overflow: hidden;
+                    background: var(--surface-hover);
+                    transition: border-color 0.15s ease, transform 0.15s ease;
+                }
+
+                .shot-thumb:hover,
+                .shot-thumb:focus-visible {
+                    border-color: var(--control-selected-bg);
+                    transform: scale(1.08);
+                    outline: none;
+                }
+
+                .shot-thumb__shot {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    /* The top of the page, not the middle of it: a screenshot
+                       cropped to a strip this size is a thumbnail of whatever
+                       is under the browser chrome, and that is where the thing
+                       being asserted on usually is. */
+                    object-fit: cover;
+                    object-position: top center;
+                }
+
+                .log-cell[data-logs="0"] .shot-strip,
+                .log-cell[data-logs=""] .shot-strip {
+                    display: none;
+                }
+
                 /* ---- Full error: an ellipsis, an expand and a copy ---- */
                 .metrics-card td .msg-actions {
                     display: inline-flex;
@@ -6724,6 +6766,7 @@
                                 <th>Logs</th>
                                 <th>Data</th>
                                 <th>Steps</th>
+                                <th>Screens</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -6881,7 +6924,7 @@
                     <div class="metrics-page__head screenshot-head">
                         <div>
                             <div class="metrics-page__title"><i class="fa fa-camera"></i>Screenshots</div>
-                            <div class="metrics-page__subtitle">Images attached while the tests ran, beside the suite and the error they belong to</div>
+                            <div class="metrics-page__subtitle">The page each test was looking at, beside the suite and the error it belongs to</div>
                         </div>
                         <div class="metrics-summary" id="shotSummary"></div>
                     </div>
@@ -6908,18 +6951,39 @@
                           <div class="screenshot-empty__icon"><i class="fa fa-camera"></i></div>
                           <div class="screenshot-empty__title">No screenshots in this run</div>
                           <div class="screenshot-empty__text">
-                            Hand <b>attach</b> the PNG bytes of a screenshot and it is kept against the
-                            test that took it, with the suite and the error it belongs to beside it.
+                            A test that fails holding a Selenium driver or a Playwright page is
+                            photographed for you - no hook, no fixture, nothing to import. This run
+                            was holding neither, and attached nothing of its own.
                           </div>
                         </div>
 
                         <div class="setup-guide">
                           <div class="setup-step">
-                            <div class="setup-step__head"><span class="setup-step__num">1</span>Attach an image</div>
+                            <div class="setup-step__head"><span class="setup-step__num">1</span>Nothing to write<span class="setup-step__badge">automatic</span></div>
                             <div class="setup-step__note">
-                              <b>attach</b> takes the picture, not the browser, so every framework goes
-                              through the same call - Selenium, Playwright, or anything else that can
-                              produce a PNG.
+                              The browser is already in the test&rsquo;s own fixtures and the reporter is
+                              already standing in its teardown, so the picture is taken there - the last
+                              moment before the driver is quit. What makes something a browser is that it
+                              can hand over a PNG, so Selenium, Playwright, appium, splinter and a wrapper
+                              of your own all work, whatever the fixture is called.
+                            </div>
+                            <pre class="setup-step__code"><span class="c">def</span> test_checkout(page):                <span class="c"># or driver, or whatever you called it</span>
+    page.goto(<span class="s">"/cart"</span>)
+    <span class="c">assert</span> page.locator(<span class="s">"h1"</span>).inner_text() == <span class="s">"Cart"</span>   <span class="c"># fails, and is photographed</span></pre>
+                            <div class="setup-step__note setup-step__note--last">
+                              Failures only, by default. <b>--report-screenshots=all</b> photographs every
+                              test, <b>none</b> turns the automatic capture off - and <b>attach</b> below
+                              keeps working either way.
+                            </div>
+                          </div>
+
+                          <div class="setup-step">
+                            <div class="setup-step__head"><span class="setup-step__num">2</span>Or take the picture yourself</div>
+                            <div class="setup-step__note">
+                              <b>attach</b> takes the image rather than the browser, so anything that can
+                              produce a PNG reaches the report - a page mid-test, a chart, a rendered PDF,
+                              an image diff. A test that attaches its own picture is not photographed
+                              again on the way out.
                             </div>
                             <pre class="setup-step__code"><span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach</b>
 
@@ -6929,48 +6993,12 @@
                           </div>
 
                           <div class="setup-step">
-                            <div class="setup-step__head"><span class="setup-step__num">2</span>Better: one hook, both drivers, failures only<span class="setup-step__badge">recommended</span></div>
-                            <div class="setup-step__note">
-                              The browser is already in <b>item.funcargs</b>, so a single hook covers
-                              Selenium and Playwright at once - no fixture of its own, and nothing to
-                              remember in each test. Running both? Add the fixture name to the table and
-                              that framework is covered too.
-                            </div>
-                            <pre class="setup-step__code"><span class="c"># conftest.py</span>
-<span class="c">import</span> pytest
-<span class="c">from</span> pytest_html_reporter <span class="c">import</span> <b>attach</b>
-
-CAPTURE = {
-    <span class="s">"driver"</span>: <span class="c">lambda</span> driver: driver.get_screenshot_as_png(),  <span class="c"># Selenium</span>
-    <span class="s">"page"</span>:   <span class="c">lambda</span> page: page.screenshot(),                 <span class="c"># Playwright</span>
-}
-
-<span class="c">@pytest.hookimpl</span>(hookwrapper=True)
-<span class="c">def</span> pytest_runtest_makereport(item, call):
-    outcome = <span class="c">yield</span>
-    report = outcome.get_result()
-
-    <span class="c">if</span> report.when != <span class="s">"call"</span> <span class="c">or not</span> report.failed:
-        <span class="c">return</span>
-
-    <span class="c">for</span> name, capture <span class="c">in</span> CAPTURE.items():
-        handle = item.funcargs.get(name)
-        <span class="c">if</span> handle <span class="c">is not None</span>:
-            <b>attach</b>(data=capture(handle))
-            <span class="c">return</span></pre>
-                            <div class="setup-step__note setup-step__note--last">
-                              Put the hook in <b>conftest.py</b>. pytest picks one up from a test module
-                              too, but only for that module's own tests - a conftest covers every test
-                              under it. Drop the <b>report.failed</b> check to photograph every test.
-                            </div>
-                          </div>
-
-                          <div class="setup-step">
                             <div class="setup-step__head"><span class="setup-step__num">3</span>Async tests, and unittest</div>
                             <div class="setup-step__note">
-                              The hook above is synchronous, so an <b>async</b> Playwright test has nowhere
-                              to await - attach from the body instead. A <b>unittest</b> suite attaches
-                              from <b>tearDown</b>, which still runs while the driver is open.
+                              The automatic capture is synchronous, so an <b>async</b> Playwright page has
+                              nowhere to await - attach from the body instead. A <b>unittest</b> suite that
+                              quits its driver in <b>tearDown</b> has already closed the browser by the time
+                              the capture would run, so it attaches from there, before the quit.
                             </div>
                             <pre class="setup-step__code"><span class="c">async def</span> test_home(page):                <span class="c"># Playwright, async API</span>
     <span class="c">try</span>:
@@ -6988,9 +7016,9 @@ CAPTURE = {
                         <div class="setup-foot">
                           <i class="fa fa-info-circle" aria-hidden="true"></i>
                           <span>
-                            Every image you attach is kept, whatever the test did - a screenshot of a pass
-                            is a baseline worth having. Only the tests that called <b>attach</b> show up
-                            here, so capturing failures alone is a matter of when you call it.
+                            Every image is kept whatever the test did - a screenshot of a pass is a
+                            baseline worth having. Each one also lands on the <b>Screens</b> column of the
+                            Test Metrics row it belongs to, next to the error it explains.
                           </span>
                         </div>
 

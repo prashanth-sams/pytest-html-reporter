@@ -30,4 +30,11 @@
         </button>
         <span class="log-none">&mdash;</span>
     </td>
+    <!-- data-order is what the column sorts on: the cell is a strip of
+         pictures, and its text - which is what DataTables would otherwise
+         compare - is the same empty string on every row. -->
+    <td class="log-cell shot-cell" data-logs="%(shot_count)%" data-order="%(shot_count)%">
+        <div class="shot-strip">%(shots)%</div>
+        <span class="log-none">&mdash;</span>
+    </td>
 </tr>

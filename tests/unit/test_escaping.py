@@ -75,7 +75,7 @@ def _record(suite, name, status="FAIL", index=0, message="", **kwargs):
         "rerun": 0,
         "index": index,
         "worker": "",
-        "screenshot": None,
+        "screenshots": [],
         "logs": [],
         "attachments": [],
     }
@@ -165,7 +165,7 @@ def test_the_panel_is_offered_on_the_raw_length_not_the_escaped_one():
 def test_a_screenshot_caption_holding_markup_is_written_as_text():
     shot = {"name": "1234", "suite": "test_a", "test": "test_<b>one</b>", "error": "went <wrong>"}
     reporter = _reporter()
-    reporter._records = [_record("tests/test_a.py", "test_one", screenshot=shot)]
+    reporter._records = [_record("tests/test_a.py", "test_one", screenshots=[shot])]
 
     reporter.build_report()
 

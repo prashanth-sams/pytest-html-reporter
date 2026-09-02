@@ -55,7 +55,7 @@ def _record(name, status, index=0, worker="", **kwargs):
         "rerun": 0,
         "index": index,
         "worker": worker,
-        "screenshot": None,
+        "screenshots": [],
     }
     record.update(kwargs)
     return record
@@ -98,14 +98,14 @@ def test_the_attempt_that_stuck_is_the_one_reported():
     assert [(r["status"], r["rerun"]) for r in reporter._records] == [("PASS", 2)]
 
 
-def test_a_retry_keeps_the_screenshot_of_the_attempt_it_replaces():
+def test_a_retry_keeps_the_screenshots_of_the_attempt_it_replaces():
     reporter = _reporter()
     shot = {"name": "1", "suite": "test_a", "test": "test_one", "error": "boom"}
 
-    reporter.store_test_record(_record("test_one", "FAIL", screenshot=shot))
+    reporter.store_test_record(_record("test_one", "FAIL", screenshots=[shot]))
     reporter.store_test_record(_record("test_one", "PASS"))
 
-    assert reporter._records[0]["screenshot"] == shot
+    assert reporter._records[0]["screenshots"] == [shot]
 
 
 def test_a_retry_that_took_its_own_screenshot_keeps_that_one():
@@ -113,10 +113,10 @@ def test_a_retry_that_took_its_own_screenshot_keeps_that_one():
     first = {"name": "1", "suite": "test_a", "test": "test_one", "error": "boom"}
     second = {"name": "2", "suite": "test_a", "test": "test_one", "error": "boom again"}
 
-    reporter.store_test_record(_record("test_one", "FAIL", screenshot=first))
-    reporter.store_test_record(_record("test_one", "FAIL", screenshot=second))
+    reporter.store_test_record(_record("test_one", "FAIL", screenshots=[first]))
+    reporter.store_test_record(_record("test_one", "FAIL", screenshots=[second]))
 
-    assert reporter._records[0]["screenshot"] == second
+    assert reporter._records[0]["screenshots"] == [second]
 
 
 def test_a_retried_test_keeps_its_place_in_collection_order():

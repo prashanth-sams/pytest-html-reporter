@@ -23,6 +23,7 @@ from html_page.template import HtmlTemplate
 from html_page.test_log import TestLog
 from html_page.test_log_section import TestLogSection
 from html_page.test_row import TestRow
+from html_page.test_shot import TestShot
 from .helper import get_random_number, get_random_string
 
 
@@ -212,10 +213,11 @@ def test_test_row():
     rerun = str(get_random_number())
 
     attach_count = str(get_random_number())
+    shot_count = str(get_random_number())
 
     test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
                        floating_error_text=floating_error_text, log_count=log_count,
-                       attach_count=attach_count, runt=runt)
+                       attach_count=attach_count, shot_count=shot_count, runt=runt)
     soup = BeautifulSoup(str(test_row), "html.parser")
 
     cells = soup.findAll("td")
@@ -235,17 +237,47 @@ def test_test_row():
     assert attach_cell.find("button")["onclick"] == "showAttachmentsFor('%s')" % runt
     assert attach_count in attach_cell.find("button").text
 
+    # The pictures are in the cell rather than behind a button, so the count is
+    # what the column sorts on: every one of these cells has the same - empty -
+    # text, which is what DataTables would otherwise compare.
+    shot_cell = cells[9]
+    assert shot_cell["data-logs"] == shot_count
+    assert shot_cell["data-order"] == shot_count
+
 
 def test_test_row_without_logs_says_so():
     """The button is left in the row and hidden by `data-logs`, so a test that
     captured nothing shows a dash instead of opening an empty panel."""
     test_row = TestRow(sname="s", name="n", stat="PASS", dur="0.1", rerun="0", msg="",
-                       floating_error_text="", log_count="0", attach_count="0", runt="0-0")
+                       floating_error_text="", log_count="0", attach_count="0",
+                       shot_count="0", runt="0-0")
     soup = BeautifulSoup(str(test_row), "html.parser")
 
-    for cell in soup.findAll("td")[6:8]:
+    for cell in soup.findAll("td")[6:8] + soup.findAll("td")[9:10]:
         assert cell["data-logs"] == "0"
         assert cell.find("span", class_="log-none") is not None
+
+
+def test_test_shot():
+    """A thumbnail on a Test Metrics row: the picture itself, and a link that
+    opens it in the same overlay the gallery uses."""
+    screen_name = get_random_string()
+    ts = get_random_string()
+    tc = get_random_string()
+
+    shot = TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc)
+    soup = BeautifulSoup(str(shot), "html.parser")
+
+    path = "pytest_screenshots/%s.png" % screen_name
+
+    link = soup.find("a", class_="shot-thumb")
+    assert link["href"] == path
+    assert link["data-caption"] == "SUITE: %s :: SCENARIO: %s" % (ts, tc)
+    # Its own group: arrowing off a row and into a screenshot from a tab the
+    # reader is not looking at is not what the arrow keys are for.
+    assert link["data-fancybox"] == "metrics"
+    assert link.find("img")["src"] == path
+    assert link.find("img")["loading"] == "lazy"
 
 
 def test_test_log_holds_every_section():
