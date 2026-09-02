@@ -3092,8 +3092,8 @@
                 .metrics-card td .msg-actions {
                     display: inline-flex;
                     align-items: center;
-                    gap: 4px;
-                    margin-left: 4px;
+                    gap: 6px;
+                    margin-left: 6px;
                     vertical-align: middle;
                 }
 
@@ -3106,18 +3106,27 @@
                     margin-right: 2px;
                 }
 
+                /* Sized and coloured to be found rather than to keep out of
+                   the way. These sat at 22px in `--text-faint` behind a
+                   `--border-subtle` edge, which is the palette a disabled
+                   control is drawn in: on a white row the button was a pale
+                   square holding a pale glyph, and the three of them read as
+                   decoration on the message rather than as the things that do
+                   the work. The glyph carries the contrast - it is what says
+                   which button this is - and the border is what says there is a
+                   button here at all. */
                 .msg-actions .msg-btn {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    width: 22px;
-                    height: 22px;
+                    width: 27px;
+                    height: 27px;
                     padding: 0;
-                    border: 1px solid var(--border-subtle);
-                    border-radius: 6px;
+                    border: 1px solid var(--border-strong);
+                    border-radius: 7px;
                     background: var(--surface-hover);
-                    color: var(--text-faint);
-                    font-size: 11px;
+                    color: var(--text-muted);
+                    font-size: 13px;
                     line-height: 1;
                     cursor: pointer;
                     transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
