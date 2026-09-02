@@ -120,14 +120,21 @@ def test_floating_error():
     assert actions["data-test"] == name
     assert actions["data-full"] == "1"
 
-    # An expand, a copy, the command that runs this one test again and the link
-    # that opens the report on this row, in that order, and none of them carries
-    # any text: the ellipsis is all the cell contributes to the table's search
-    # index and to its CSV, Excel and print exports.
+    # The one button the row rests as, then - once it is pressed - an expand, a
+    # copy, the command that runs this one test again and the link that opens
+    # the report on this row, in that order. None of them carries any text: the
+    # ellipsis is all the cell contributes to the table's search index and to
+    # its CSV, Excel and print exports.
     assert [button["title"] for button in actions.findAll("button")] \
-        == ["Show the full error", "Copy the full error",
+        == ["Show what can be done with this failure",
+            "Show the full error", "Copy the full error",
             "Copy the command that runs this test again",
             "Copy a link to this test"]
+
+    # The four that fold away are the four that are marked as folding away.
+    folding = [button for button in actions.findAll("button")
+               if "msg-btn--action" in button["class"]]
+    assert len(folding) == 4
     assert actions.get_text(strip=True) == "\u2026"
 
 
@@ -146,6 +153,7 @@ def test_floating_error_offers_no_expand_when_nothing_was_cut():
     assert actions.find("button", class_="msg-copy") is not None
     assert actions.find("button", class_="msg-rerun") is not None
     assert actions.find("button", class_="msg-link") is not None
+    assert actions.find("button", class_="msg-toggle") is not None
 
 
 def test_screenshot_details():

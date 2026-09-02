@@ -69,6 +69,14 @@ and the half that says *which* of the three landed. A refused clipboard — whic
 gets in some browsers — says `Press Ctrl+C to copy` there rather than leaving a button that did
 nothing and no reason why. It takes no clicks, so the row underneath stays live while it is up.
 
+The four of them also fold away. At one button per action a table of forty failures carries 160 of
+them for the one somebody wants, so they collapse behind the `...` — width and opacity rather than
+`display: none`, which cannot be transitioned and leaves nothing to animate — and unfold along the
+row a tenth of a second apart when it is pressed. The `...` is the handle because it is already
+where the eye goes on a cut message; the button beside it is what keeps that reachable by keyboard
+and on the rows whose message was never cut. One row is open at a time, and a click anywhere else
+or Escape shuts it: this is the set of actions on one failure, not a mode the table stays in.
+
 ### 5. Deep-linkable rows — SHIPPED
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an
 anchor id so a failure can be pasted into Slack and open directly. Pairs with #4.

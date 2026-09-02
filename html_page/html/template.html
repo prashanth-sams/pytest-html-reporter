@@ -3092,9 +3092,16 @@
                 .metrics-card td .msg-actions {
                     display: inline-flex;
                     align-items: center;
-                    gap: 5px;
                     margin-left: 4px;
                     vertical-align: middle;
+                }
+
+                /* The spacing is a margin per button rather than a `gap` on the
+                   row of them: a gap is drawn between the closed buttons too,
+                   which would leave 15px of nothing beside the ellipsis until
+                   they are opened. */
+                .msg-actions .msg-btn {
+                    margin-left: 5px;
                 }
 
                 /* The ellipsis is the only part of this that is text, so it is
@@ -3104,6 +3111,12 @@
                 .msg-actions .msg-more {
                     color: var(--text-faintest);
                     margin-right: 2px;
+                    /* It opens the strip too. The `...` is where the eye
+                       already is when a message has been cut, so it is the
+                       thing a reader goes to press - the button beside it is
+                       what keeps that reachable by keyboard and on the rows
+                       whose message was never cut. */
+                    cursor: pointer;
                 }
 
                 /* Sized and coloured to be found rather than to keep out of
@@ -3133,6 +3146,63 @@
                     line-height: 1;
                     cursor: pointer;
                     transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                /* ---- Four of them, behind the ellipsis ---- */
+                /* A row that has an error has four things you can do with it,
+                   and on a table of forty rows that is 160 buttons on screen
+                   for the one somebody wants. They fold behind the `...`, which
+                   is where the eye already goes when a message has been cut,
+                   and come back out along the row when it is pressed.
+
+                   Collapsed by width and opacity, not by `display: none`: a
+                   `display` change cannot be transitioned, and the buttons have
+                   to be in the layout for their widths to animate at all. */
+                .msg-actions .msg-btn--action {
+                    width: 0;
+                    margin-left: 0;
+                    border-width: 0;
+                    opacity: 0;
+                    transform: scale(0.6);
+                    pointer-events: none;
+                    transition: width 0.16s ease, margin 0.16s ease, opacity 0.14s ease,
+                                transform 0.16s ease, border-width 0.16s ease,
+                                background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+                }
+
+                .msg-actions.is-open .msg-btn--action {
+                    width: 22px;
+                    margin-left: 5px;
+                    border-width: 1px;
+                    opacity: 1;
+                    transform: none;
+                    pointer-events: auto;
+                }
+
+                /* Out one after another rather than all at once - a tenth of a
+                   second apart, so the four read as a strip unfolding rather
+                   than as four things appearing under the pointer. The delays
+                   are only on the way out; shutting them is one movement. */
+                .msg-actions.is-open .msg-btn--action:nth-of-type(3) { transition-delay: 0.03s; }
+                .msg-actions.is-open .msg-btn--action:nth-of-type(4) { transition-delay: 0.06s; }
+                .msg-actions.is-open .msg-btn--action:nth-of-type(5) { transition-delay: 0.09s; }
+
+                /* The one button the row rests as. It turns into the shut
+                   version of itself while the others are out, so the strip has
+                   a beginning and pressing it again is the obvious way back. */
+                .msg-actions.is-open .msg-toggle {
+                    background: var(--control-selected-bg);
+                    border-color: var(--control-selected-bg);
+                    color: var(--text-inverse);
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .msg-actions .msg-btn--action {
+                        transform: none;
+                        transition: none;
+                    }
+
+                    .msg-actions.is-open .msg-btn--action { transition-delay: 0s; }
                 }
 
                 .msg-actions .msg-btn:hover,
@@ -6567,6 +6637,7 @@
 
                         toggleEnvironment(false);
                         toggleLogs(false);
+                        closeRowActions();
                     });
 
                     // One panel serves two things: a test's captured output,
@@ -6680,12 +6751,29 @@
                     // search and page change, so listeners bound to the buttons
                     // themselves would go with the rows that held them.
                     document.addEventListener('click', function(event) {
+                        var near = event.target.closest ? event.target.closest('.msg-actions') : null;
                         var button = event.target.closest ? event.target.closest('.msg-btn') : null;
-                        if (!button) return;
+
+                        // The cut-message ellipsis is the other half of the
+                        // toggle - same strip, same click, no second idea to
+                        // learn.
+                        if (!button && near && event.target.closest('.msg-more')) {
+                            toggleRowActions(near);
+                            return;
+                        }
+
+                        // Anywhere else on the page shuts the open strip: it is
+                        // the set of actions on one failure, not a mode the
+                        // table stays in once the reader has moved on.
+                        if (!button) {
+                            if (!near) closeRowActions();
+                            return;
+                        }
 
                         var actions = button.closest('.msg-actions');
                         if (!actions) return;
 
+                        if (button.classList.contains('msg-toggle')) { toggleRowActions(actions); return; }
                         if (button.classList.contains('msg-open')) showError(actions);
                         else if (button.classList.contains('msg-rerun'))
                             copyFromRow(button, actions.getAttribute('data-cmd'), 'Command copied');
@@ -6709,6 +6797,31 @@
                         if (!row || !row.id) return '';
 
                         return window.location.href.split('#')[0] + '#' + row.id;
+                    }
+
+                    // One row at a time. Four of these strips left open down a
+                    // page is the clutter they were folded away to avoid, and
+                    // the reader is only ever acting on one failure.
+                    function toggleRowActions(actions) {
+                        var opening = !actions.classList.contains('is-open');
+
+                        closeRowActions();
+                        if (!opening) return;
+
+                        actions.classList.add('is-open');
+                        actions.querySelector('.msg-toggle').setAttribute('aria-expanded', 'true');
+                    }
+
+                    // Every open strip, or none - called on a click outside one
+                    // and on Escape as well as from the toggle.
+                    function closeRowActions() {
+                        Array.prototype.forEach.call(
+                            document.querySelectorAll('.msg-actions.is-open'),
+                            function(open) {
+                                open.classList.remove('is-open');
+                                open.querySelector('.msg-toggle').setAttribute('aria-expanded', 'false');
+                            }
+                        );
                     }
 
                     var copyToastTimer;

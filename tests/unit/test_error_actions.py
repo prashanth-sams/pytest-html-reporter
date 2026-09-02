@@ -13,6 +13,10 @@ Whichever was pressed says so twice: a tick where its icon was, and a word in
 the middle of the page naming which of the three things is now on the clipboard
 - because the tick is the same tick for all of them, and it is 22 pixels wide at
 the end of a row somebody is reading the other end of.
+
+All four fold behind the `...`, and come back out along the row when it is
+pressed: forty rows of four buttons is 160 of them on screen for the one
+somebody wants.
 """
 
 import os
@@ -20,6 +24,7 @@ import os
 import pytest
 from bs4 import BeautifulSoup
 
+from html_page.floating_error import FloatingError
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.html_reporter import HTMLReporter
 
@@ -290,3 +295,73 @@ def test_the_message_cannot_be_clicked_and_cannot_be_clicked_through():
     rule = _template().split(".copy-toast {", 1)[1].split("}", 1)[0]
 
     assert "pointer-events: none;" in rule
+
+
+# --------------------------------------------------------------------------
+# folded away until they are asked for
+# --------------------------------------------------------------------------
+
+def test_the_row_rests_as_one_button():
+    """A table of forty failures would otherwise carry 160 buttons for the one
+    somebody wants."""
+    soup = _rows([_record("tests/test_a.py", "test_one", message=LONG)])
+    actions = _actions(soup)[0]
+
+    folded = actions.findAll("button", class_="msg-btn--action")
+
+    assert actions.find("button", class_="msg-toggle") is not None
+    assert [button["title"] for button in folded] == [
+        "Show the full error", "Copy the full error",
+        "Copy the command that runs this test again", "Copy a link to this test"]
+
+
+def test_the_four_are_in_the_markup_the_whole_time():
+    """Hidden by width and opacity rather than by `display`, which cannot be
+    transitioned - and a button with no box has no width to animate."""
+    rule = _template().split(".msg-actions .msg-btn--action {", 1)[1].split("}", 1)[0]
+
+    assert "width: 0;" in rule
+    assert "opacity: 0;" in rule
+    assert "display: none" not in rule
+    # And nothing to tab into or click while they are folded away.
+    assert "pointer-events: none;" in rule
+
+
+def test_they_come_out_one_after_another():
+    """Four buttons appearing together under the pointer reads as a flicker; a
+    strip unfolding reads as one movement."""
+    page = _template()
+
+    assert ".msg-actions.is-open .msg-btn--action:nth-of-type(3) { transition-delay: 0.03s; }" in page
+    assert ".msg-actions.is-open .msg-btn--action:nth-of-type(5) { transition-delay: 0.09s; }" in page
+
+
+def test_the_ellipsis_opens_them_as_well_as_the_button():
+    """The `...` is where the eye already is when a message has been cut, so it
+    is what a reader goes to press; the button beside it is what keeps the same
+    thing reachable by keyboard and on rows that were never cut."""
+    page = _template()
+
+    assert "event.target.closest('.msg-more')" in page
+    assert "cursor: pointer;" in _template().split(".msg-actions .msg-more {", 1)[1].split("}", 1)[0]
+
+
+def test_only_one_row_is_ever_open():
+    """Four strips left open down a page is the clutter they were folded away to
+    avoid. A click anywhere else, or Escape, shuts them all."""
+    page = _template()
+    body = page.split("function toggleRowActions(actions) {", 1)[1].split("function closeRowActions", 1)[0]
+
+    assert "closeRowActions();" in body
+    assert "if (!near) closeRowActions();" in page
+    assert "toggleLogs(false);\n                        closeRowActions();" in page
+
+
+def test_the_toggle_says_whether_it_is_open():
+    """A button that changes what is on screen has to say so to a reader who
+    cannot see the change."""
+    page = _template()
+
+    assert 'aria-expanded="false"' in str(FloatingError(full_msg="boom", has_full="", cmd="", sname="s", name="n"))
+    assert "setAttribute('aria-expanded', 'true')" in page
+    assert "setAttribute('aria-expanded', 'false')" in page
