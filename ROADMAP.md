@@ -50,8 +50,12 @@ it is string concatenation.
 
 *Why:* removes the most repeated manual step in day-to-day triage.
 *Effort:* ~20 lines.
-*Shipped as:* the copy half only - the rerun-command button was built and then dropped as unwanted.
-`FloatingError` now renders an expand and a copy button carrying the error in `data-` attributes,
+*Shipped as:* both halves, the copy button first and the rerun command after it.
+`FloatingError` now renders an expand, a copy and a rerun button carrying the error and the command
+in `data-` attributes. The command is built from the test's node id rather than by concatenating the
+two names in the row: those are what a person reads, and a test inside a class is listed under its
+own name where pytest wants the class in front of it. A node id a shell would not read as one word
+is quoted, since a parametrised test's brackets are a glob pattern to zsh.
 and the `(...)` link and its per-row Bootstrap modal are gone: the full error opens in the same
 overlay the `Logs` column uses, which gave the dialog a `Copy` button and a `<pre>` body for free.
 The old modal's `<p>` had been collapsing every traceback into one run-on line. One delegated click

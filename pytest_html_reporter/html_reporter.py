@@ -38,6 +38,7 @@ from pytest_html_reporter.util import (
     merge_log_sections,
     format_log_sections,
     escape_report_text,
+    rerun_command,
     js_literal,
     count_log_lines,
     report_attachments_mode,
@@ -773,6 +774,10 @@ class HTMLReporter(object):
             test_row_text.floating_error_text = str(FloatingError(
                 full_msg=escape_report_text(record['message']),
                 has_full='' if len(record['message']) < 49 else '1',
+                # The line that runs this one test again. Empty for a record
+                # that never had a node id of its own, which is what hides the
+                # button rather than offering a command that runs everything.
+                cmd=escape_report_text(rerun_command(record.get('nodeid'))),
                 sname=escape_report_text(record['suite_name']),
                 name=escape_report_text(record['test_name'])
             ))

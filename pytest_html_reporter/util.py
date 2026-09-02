@@ -521,6 +521,30 @@ def escape_report_text(value):
     return escape(str(value)).replace("%(", "%&#40;")
 
 
+# A node id made only of these characters can be pasted into a shell as it
+# stands. Anything else is quoted: a parametrised id can hold a space, and the
+# brackets one always holds are a glob pattern to zsh, which is the shell most
+# of these get pasted into.
+_BARE_NODEID = re.compile(r"^[A-Za-z0-9_@%+=:,./-]+$")
+
+
+def rerun_command(nodeid):
+    """The shell line that runs one test again, ready to paste.
+
+    Built from the node id rather than from the suite and test names the row
+    shows: those are what a person reads, and a test inside a class is listed
+    as ``test_login`` where pytest wants ``TestAuth::test_login``.
+    """
+    target = str(nodeid or "").strip()
+    if not target:
+        return ""
+
+    if not _BARE_NODEID.match(target):
+        target = "'" + target.replace("'", "'\\''") + "'"
+
+    return "pytest " + target
+
+
 def js_literal(value):
     """Render a value as a literal for the chart scripts inside the page.
 

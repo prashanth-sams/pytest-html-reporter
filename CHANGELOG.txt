@@ -1,3 +1,10 @@
+0.4.0 (02/09/2026)
+-------------------
+- A third button beside a failure message copies the command that runs that one test again - `pytest tests/test_a.py::test_one` - which is the step that followed reading the error often enough to be worth a click of its own
+- The command is built from the test's node id rather than from the suite and test names the row shows: those are what a person reads, and a test inside a class is listed under its own name where pytest wants the class in front of it
+- A node id a shell would not read as one word is quoted, so a parametrised test's brackets are not a glob pattern to zsh and a space between them is not a second argument
+- A row with no node id of its own - a file that failed to import - offers no command rather than a bare `pytest` that would run the whole suite
+
 0.3.9 (02/09/2026)
 -------------------
 - Screenshots are taken automatically. A test that fails while holding a Selenium driver or a Playwright page is photographed with no hook, no fixture, no import and no conftest - the recipe this plugin has documented for years is now the default behaviour

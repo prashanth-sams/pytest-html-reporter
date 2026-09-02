@@ -3139,6 +3139,14 @@
                     display: none;
                 }
 
+                /* A row that came from something other than a test - a file
+                   that failed to import, say - has no node id to build a
+                   command out of, and a `pytest` with nothing after it would
+                   run the whole suite. */
+                .msg-actions[data-cmd=""] .msg-rerun {
+                    display: none;
+                }
+
                 /* The tick takes the icon's place rather than a space of its
                    own: the message cell is the narrowest thing on the page to
                    be pushing a second glyph into. */
@@ -6570,7 +6578,7 @@
                         return copied;
                     }
 
-                    // Both of a row's buttons answer to one handler on the
+                    // A row's buttons all answer to one handler on the
                     // document. DataTables rebuilds the rows on every sort,
                     // search and page change, so listeners bound to the buttons
                     // themselves would go with the rows that held them.
@@ -6582,11 +6590,16 @@
                         if (!actions) return;
 
                         if (button.classList.contains('msg-open')) showError(actions);
-                        else copyRowError(button, actions);
+                        else if (button.classList.contains('msg-rerun'))
+                            copyFromRow(button, actions.getAttribute('data-cmd'));
+                        else copyFromRow(button, actions.getAttribute('data-error'));
                     });
 
-                    function copyRowError(button, actions) {
-                        var text = actions.getAttribute('data-error') || '';
+                    // The error behind a row, or the command that runs that row
+                    // again. Both land on the clipboard the same way, and both
+                    // say so on the button that was pressed.
+                    function copyFromRow(button, text) {
+                        text = text || '';
                         if (!text) return;
 
                         function settle(copied) {
@@ -6596,7 +6609,7 @@
                             // The row keeps no state of its own, so the tick has
                             // to time itself out - a redraw would drop it anyway,
                             // and a button left on a tick would claim the
-                            // clipboard still holds this row's error.
+                            // clipboard still holds what this row put there.
                             window.clearTimeout(button.copyTimer);
                             button.copyTimer = window.setTimeout(function() {
                                 button.classList.remove('msg-btn--done', 'msg-btn--failed');

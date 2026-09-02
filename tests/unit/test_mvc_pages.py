@@ -108,36 +108,42 @@ def test_floating_error():
     sname = get_random_string()
     name = get_random_string()
 
-    floating_error = FloatingError(full_msg=full_msg, has_full="1", sname=sname, name=name)
+    cmd = "pytest tests/test_a.py::test_one"
+
+    floating_error = FloatingError(full_msg=full_msg, has_full="1", cmd=cmd, sname=sname, name=name)
     soup = BeautifulSoup(str(floating_error), "html.parser")
 
     actions = soup.find("span", class_="msg-actions")
     assert actions["data-error"] == full_msg
+    assert actions["data-cmd"] == cmd
     assert actions["data-suite"] == sname
     assert actions["data-test"] == name
     assert actions["data-full"] == "1"
 
-    # An expand and a copy, in that order, and neither carries any text: the
-    # ellipsis is all the cell contributes to the table's search index and to
-    # its CSV, Excel and print exports.
+    # An expand, a copy and the command that runs this one test again, in that
+    # order, and none of them carries any text: the ellipsis is all the cell
+    # contributes to the table's search index and to its CSV, Excel and print
+    # exports.
     assert [button["title"] for button in actions.findAll("button")] \
-        == ["Show the full error", "Copy the full error"]
+        == ["Show the full error", "Copy the full error",
+            "Copy the command that runs this test again"]
     assert actions.get_text(strip=True) == "\u2026"
 
 
 def test_floating_error_offers_no_expand_when_nothing_was_cut():
     """The message fits in the cell, so there is nothing to open a panel for -
     but it is still worth copying."""
-    floating_error = FloatingError(full_msg="boom", has_full="", sname="s", name="n")
+    floating_error = FloatingError(full_msg="boom", has_full="", cmd="pytest s::n", sname="s", name="n")
     soup = BeautifulSoup(str(floating_error), "html.parser")
 
     actions = soup.find("span", class_="msg-actions")
 
-    # Both buttons stay in the markup and `data-full` hides the expand one, the
+    # Every button stays in the markup and `data-full` hides the expand one, the
     # same way `data-logs` hides the Logs button on a test that captured nothing.
     assert actions["data-full"] == ""
     assert actions.find("button", class_="msg-open") is not None
     assert actions.find("button", class_="msg-copy") is not None
+    assert actions.find("button", class_="msg-rerun") is not None
 
 
 def test_screenshot_details():

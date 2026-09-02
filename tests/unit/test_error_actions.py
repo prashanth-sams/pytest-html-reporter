@@ -1,10 +1,12 @@
-"""Cover the two controls that sit beside a failure message.
+"""Cover the controls that sit beside a failure message.
 
 The cell has room for about fifty characters of an error, so a row on its own
 has never been enough to triage from: the rest of the message had to be opened,
 and then selected by hand before it could be pasted anywhere. The expand button
 opens the whole thing in the report's own panel and the copy button puts it on
-the clipboard without opening anything at all.
+the clipboard without opening anything at all. The third button copies the
+`pytest` line that runs that one test again, which is the step that followed
+reading the error often enough to be worth a click of its own.
 """
 
 import pytest
@@ -110,6 +112,48 @@ def test_every_failing_row_carries_its_own_error():
     ])
 
     assert [node["data-error"] for node in _actions(soup)] == ["first " + LONG, "third " + LONG]
+
+
+# --------------------------------------------------------------------------
+# the command that runs the row again
+# --------------------------------------------------------------------------
+
+def test_the_row_carries_the_command_that_runs_that_test_again():
+    soup = _rows([_record("tests/test_a.py", "test_one", message=LONG)])
+
+    assert _actions(soup)[0]["data-cmd"] == "pytest tests/test_a.py::test_one"
+
+
+def test_the_command_comes_from_the_node_id_not_from_the_two_names_on_show():
+    """A test inside a class is listed under its own name; pytest wants the
+    class in front of it, and the node id is the only place that has it."""
+    record = _record("tests/test_a.py", "test_one", message=LONG)
+    record["nodeid"] = "tests/test_a.py::TestAuth::test_one"
+
+    soup = _rows([record])
+
+    assert _actions(soup)[0]["data-cmd"] == "pytest tests/test_a.py::TestAuth::test_one"
+
+
+def test_a_parametrised_test_is_quoted_so_a_shell_cannot_read_its_brackets():
+    """Pasted bare, `test_one[a b]` is two arguments to bash and a glob that
+    matches nothing to zsh."""
+    record = _record("tests/test_a.py", "test_one[a b]", message=LONG)
+    record["nodeid"] = "tests/test_a.py::test_one[a b]"
+
+    soup = _rows([record])
+
+    assert _actions(soup)[0]["data-cmd"] == "pytest 'tests/test_a.py::test_one[a b]'"
+
+
+def test_a_row_with_no_node_id_offers_no_command():
+    """`pytest` on its own runs everything, which is not what the button says."""
+    record = _record("tests/test_a.py", "test_one", message=LONG)
+    del record["nodeid"]
+
+    soup = _rows([record])
+
+    assert _actions(soup)[0]["data-cmd"] == ""
 
 
 # --------------------------------------------------------------------------
