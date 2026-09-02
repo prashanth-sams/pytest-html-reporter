@@ -5738,6 +5738,14 @@
 
                 :root[data-theme="dark"] hr { border-top-color: var(--border-hairline); }
 
+                /* bootstrap's border utilities hardcode #dee2e6. The dashboard
+                   pairs Test Suite with Highlights using `.border-right` and
+                   `.border-left`, so on a dark page that seam arrives as two
+                   pale rails. The vendored declarations carry `!important`,
+                   so the correction has to as well. */
+                :root[data-theme="dark"] .border-left  { border-left-color:  var(--border-subtle) !important; }
+                :root[data-theme="dark"] .border-right { border-right-color: var(--border-subtle) !important; }
+
                 /* `.tablecard` also carries bootstrap's `.table`, so its row and
                    header rules apply underneath the app's own. */
                 :root[data-theme="dark"] .table td,
