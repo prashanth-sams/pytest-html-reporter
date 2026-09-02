@@ -49,6 +49,7 @@ Features
 * Opens the finished report in a browser on a local run, and stays quiet on a build agent
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
+* Dedicated GitHub Action
 
 Installation
 ------------
