@@ -5876,10 +5876,13 @@
                 var chart = new Chart(context, config);
 
                 // Re-found on the merged config, which is what the chart draws
-                // from, and kept so a theme change costs one pass over a short
-                // list rather than another walk.
-                chart.themeNodes = collectThemeNodes(chart.config, [], []);
-                applyThemeNodes(chart.themeNodes);
+                // from. Deliberately not cached: update() rebuilds the whole
+                // options tree (`chart.config.options = configMerge(...)`) on
+                // every call, so a list remembered here points into the tree
+                // the first re-theme threw away, and every toggle after that
+                // one would repaint objects the chart no longer reads.
+                chart.isThemed = true;
+                applyThemeNodes(collectThemeNodes(chart.config, [], []));
 
                 return chart;
             }
@@ -5889,14 +5892,14 @@
 
                 Object.keys(Chart.instances).forEach(function (key) {
                     var chart = Chart.instances[key];
-                    if (!chart || !chart.themeNodes) { return; }
+                    if (!chart || !chart.isThemed) { return; }
 
                     // One chart that cannot redraw must not strand the rest in
                     // the old palette - but it is said out loud rather than
                     // swallowed, which is how the walk above came to recurse
                     // into Chart.js and blow the stack unnoticed.
                     try {
-                        applyThemeNodes(chart.themeNodes);
+                        applyThemeNodes(collectThemeNodes(chart.config, [], []));
                         chart.update(0);
                     } catch (e) {
                         console.error('pytest-html-reporter: could not re-theme a chart', e);
@@ -7935,8 +7938,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             stacked: true,
                             maxBarThickness: 45,
                             ticks: {
-                                fontSize: 13,
-                                fontColor: themeValue('--chart-tick-axis')
+                                _theme: { fontColor: '--chart-tick-axis' },
+                                fontSize: 13
                             },
                             gridLines: {
                                 display: false
@@ -7945,9 +7948,9 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         yAxes: [{
                             stacked: true,
                             ticks: {
+                                _theme: { fontColor: '--chart-tick' },
                                 beginAtZero: true,
-                                fontSize: 12,
-                                fontColor: themeValue('--chart-tick')
+                                fontSize: 12
                             }
                         }]
                     }
@@ -8003,8 +8006,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     scales: {
                         xAxes: [{
                             ticks: {
-                                fontSize: 11,
-                                fontColor: themeValue('--chart-tick')
+                                _theme: { fontColor: '--chart-tick' },
+                                fontSize: 11
                             },
                             gridLines: {
                                 display: false
@@ -8012,9 +8015,9 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         }],
                         yAxes: [{
                             ticks: {
+                                _theme: { fontColor: '--chart-tick' },
                                 beginAtZero: true,
-                                fontSize: 12,
-                                fontColor: themeValue('--chart-tick')
+                                fontSize: 12
                             }
                         }]
                     },
@@ -8087,7 +8090,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         },
                         scales: {
                             xAxes: [{
-                                ticks: { fontSize: 11, fontColor: themeValue('--chart-tick') },
+                                ticks: { _theme: { fontColor: '--chart-tick' }, fontSize: 11 },
                                 gridLines: { display: false }
                             }],
                             yAxes: [{
@@ -8095,12 +8098,12 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                                     // Pinned to the full scale: an axis that
                                     // fits itself to the data turns half a
                                     // point of movement into a cliff.
+                                    _theme: { fontColor: '--chart-tick' },
                                     beginAtZero: true,
                                     min: 0,
                                     max: 100,
                                     stepSize: 25,
                                     fontSize: 12,
-                                    fontColor: themeValue('--chart-tick'),
                                     callback: function(value) { return value + '%'; }
                                 }
                             }]
@@ -8184,8 +8187,11 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             // thing that can happen.
             function anAxis(extra) {
                 var axis = {
-                    ticks: { beginAtZero: true, precision: 0, fontSize: 11, fontColor: themeValue('--chart-tick') },
-                    gridLines: { color: themeValue('--chart-grid'), zeroLineColor: themeValue('--chart-grid-zero'), drawBorder: false }
+                    ticks: { _theme: { fontColor: '--chart-tick' }, beginAtZero: true, precision: 0, fontSize: 11 },
+                    gridLines: {
+                        _theme: { color: '--chart-grid', zeroLineColor: '--chart-grid-zero' },
+                        drawBorder: false
+                    }
                 };
 
                 for (var key in (extra || {})) { axis.ticks[key] = extra[key]; }
@@ -8194,7 +8200,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
             function anCategoryAxis() {
                 return {
-                    ticks: { fontSize: 10, fontColor: themeValue('--chart-tick'), maxRotation: 0, autoSkipPadding: 12 },
+                    ticks: { _theme: { fontColor: '--chart-tick' }, fontSize: 10, maxRotation: 0, autoSkipPadding: 12 },
                     gridLines: { display: false }
                 };
             }
@@ -8274,12 +8280,13 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             // straight line along the top.
                             yAxes: [{
                                 ticks: {
+                                    _theme: { fontColor: '--chart-tick' },
                                     fontSize: 11,
-                                    fontColor: themeValue('--chart-tick'),
                                     callback: function(value) { return value + '%'; }
                                 },
                                 gridLines: {
-                                    color: themeValue('--chart-grid'), zeroLineColor: themeValue('--chart-grid-zero'), drawBorder: false
+                                    _theme: { color: '--chart-grid', zeroLineColor: '--chart-grid-zero' },
+                                    drawBorder: false
                                 }
                             }]
                         },
@@ -8308,7 +8315,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         legend: {
                             display: true,
                             position: 'bottom',
-                            labels: { boxWidth: 10, fontSize: 11, fontColor: themeValue('--chart-tick'), padding: 12 }
+                            labels: { _theme: { fontColor: '--chart-tick' }, boxWidth: 10, fontSize: 11, padding: 12 }
                         },
                         responsive: true,
                         maintainAspectRatio: false,
@@ -8405,7 +8412,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                             // Names go on the left of a horizontal bar, so the
                             // long-name axis is the one given room, not clipped.
                             yAxes: [{
-                                ticks: { fontSize: 11, fontColor: themeValue('--chart-tick-strong') },
+                                ticks: { _theme: { fontColor: '--chart-tick-strong' }, fontSize: 11 },
                                 gridLines: { display: false }
                             }],
                             xAxes: [anAxis({ callback: function(value) { return value + 's'; } })]
