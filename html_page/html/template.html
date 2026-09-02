@@ -547,11 +547,18 @@
                     --verdict-flaky-bg:  #3a3018;
                     --verdict-muted-bg:  #2b3039;
 
-                    /* Dashboard statistic bands */
-                    --band-from:     #333333;
-                    --band-pass-to:  #2b4440;
-                    --band-fail-to:  #442b2b;
-                    --band-fallback: #00c6ff;
+                    /* Dashboard statistic bands. The light report's band is a
+                       warm charcoal that fades into the build's outcome, and it
+                       is left exactly as it was. Carried into dark it turned
+                       muddy: a warm grey running into a desaturated red is
+                       brown, and into a desaturated teal is olive, on a page
+                       that is cool neutral everywhere else. These start from
+                       the same blue-grey as the surfaces around them and end on
+                       the hue the status colours actually use. */
+                    --band-from:     #262c37;
+                    --band-pass-to:  #2d4534;
+                    --band-fail-to:  #4b2b31;
+                    --band-fallback: #262c37;
                     --band-fg:       #fff;
 
                     /* Coverage trend */
