@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import os
@@ -543,6 +544,54 @@ def rerun_command(nodeid):
         target = "'" + target.replace("'", "'\\''") + "'"
 
     return "pytest " + target
+
+
+# Everything a URL fragment would have to escape - `::`, `[`, `]`, `/`, a space
+# in a parameter - flattened to a dash. What is left is the part of a node id
+# worth reading in a link, and it is what a chat window, a ticket and a shell
+# all hand on unaltered.
+_ANCHOR_UNSAFE = re.compile(r"[^a-z0-9]+")
+
+# The readable half is cut here. A parametrised node id can run to hundreds of
+# characters, and past a point none of them tell the reader anything the digits
+# on the end do not. Set where a nested path and a sentence-long test name still
+# both fit: the slug exists to be read, and a limit that cuts almost every one
+# of them back to the directory it lives in would be no better than a bare hash.
+_ANCHOR_SLUG_LIMIT = 72
+
+
+def row_anchor(nodeid, suite="", name=""):
+    """The id one test's row carries, for the ``#`` end of a link to it.
+
+    Built from the node id, not from the row's place in the table: a link is
+    pasted into a chat window and opened hours later, against whatever report
+    is at that address by then. A positional anchor would still resolve - to
+    whichever test has since taken that place - and open a different failure
+    with no sign that it had.
+
+    The six hex digits are taken from the whole node id rather than from the
+    slug in front of them, so two tests whose slugs are cut to the same string,
+    or that differ only in the punctuation the slug drops, keep anchors of
+    their own.
+
+    Named ``row_anchor`` rather than ``test_anchor`` because a test module
+    importing it would have pytest collect the import itself as a test.
+    """
+    identity = str(nodeid or "").strip() or "::".join(
+        part for part in (str(suite or "").strip(), str(name or "").strip()) if part
+    )
+
+    if not identity:
+        return ""
+
+    digest = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:6]
+    slug = _ANCHOR_UNSAFE.sub("-", identity.lower()).strip("-")
+
+    # Cut back to a whole word, so the tail of a slug is never half a name.
+    if len(slug) > _ANCHOR_SLUG_LIMIT:
+        slug = slug[:_ANCHOR_SLUG_LIMIT].rsplit("-", 1)[0]
+
+    return "-".join(part for part in ("test", slug, digest) if part)
 
 
 def js_literal(value):

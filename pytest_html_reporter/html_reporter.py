@@ -39,6 +39,7 @@ from pytest_html_reporter.util import (
     format_log_sections,
     escape_report_text,
     rerun_command,
+    row_anchor,
     js_literal,
     count_log_lines,
     report_attachments_mode,
@@ -118,6 +119,11 @@ class HTMLReporter(object):
         self.config = config
         self.rerun_plugin = config.pluginmanager.hasplugin("rerunfailures")
         self._sessionstarttime = None
+
+        # Every row anchor handed out so far, against how many rows asked for
+        # it. Two rows answering to one link is the one thing a deep link
+        # cannot survive, and it would not say so.
+        self._anchors = {}
 
         # What pytest captured for the test currently running, keyed by the
         # section title it gave the capture ("Captured log call", ...). Emptied
@@ -722,6 +728,11 @@ class HTMLReporter(object):
         """
         records = sorted(self._records, key=lambda r: (r['index'], r['worker']))
 
+        # Reset per build: the anchors are handed out as the rows are written,
+        # and a second build_report() in one process would otherwise find every
+        # one of them already taken and number them all a second time.
+        self._anchors = {}
+
         suites = OrderedDict()
         for record in records:
             suites.setdefault(record['suite_name'], []).append(record)
@@ -740,6 +751,28 @@ class HTMLReporter(object):
 
         self.update_counts(records)
 
+    def anchor_for_row(self, record, row_id):
+        """This row's anchor, unique within this report.
+
+        A node id is unique in a run, so the anchors built from them are too -
+        until something runs the same test twice over, which ``pytest-repeat``
+        and a rerun that was collected rather than merged both do. Two rows
+        carrying one id is invalid HTML and, worse, silent: the link opens the
+        first of them whichever was meant. The repeats are numbered instead.
+
+        The fallback is the row's position, for a record with no node id and no
+        names at all - not a thing this plugin builds, but a row that cannot be
+        linked to at all is worse than one whose link is only good for this
+        build.
+        """
+        anchor = row_anchor(record.get('nodeid'), record.get('suite_name'),
+                            record.get('test_name')) or 'test-' + row_id
+
+        seen = self._anchors.get(anchor, 0) + 1
+        self._anchors[anchor] = seen
+
+        return anchor if seen == 1 else '%s-%d' % (anchor, seen)
+
     def append_test_metrics_row(self, record, row_id):
         # Escaped here rather than in the record: output.json carries the same
         # text and wants it raw. The message is cut to length first, so the cut
@@ -752,6 +785,10 @@ class HTMLReporter(object):
             rerun=str(record['rerun']),
             msg=escape_report_text(record['message'][:50]),
             runt=row_id,
+            # The row's own address, for the link the copy button hands out.
+            # Unlike `runt` - which numbers the rows for the buttons that open
+            # this page's own panels - it survives into the next build.
+            anchor=self.anchor_for_row(record, row_id),
             # The suite half of the row id, so the Suite cell can cross to the
             # same group in the Test Steps rail that the Test Case cell crosses
             # into - one id, derived once, rather than two that can disagree.

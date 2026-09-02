@@ -116,7 +116,8 @@ def _metrics_table(page):
 
 def _cell(page, test_name):
     """The attachment count on a test's row."""
-    row = re.search(r'<tr>(?:(?!</tr>).)*?%s.*?</tr>' % re.escape(test_name),
+    # `<tr[^>]*>`: every row now opens with the anchor a link to it points at.
+    row = re.search(r'<tr[^>]*>(?:(?!</tr>).)*?%s.*?</tr>' % re.escape(test_name),
                     _metrics_table(page), re.S)
 
     return re.findall(r'<td class="log-cell" data-logs="(\d*)"', row.group(0))[1]

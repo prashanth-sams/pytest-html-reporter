@@ -120,13 +120,14 @@ def test_floating_error():
     assert actions["data-test"] == name
     assert actions["data-full"] == "1"
 
-    # An expand, a copy and the command that runs this one test again, in that
-    # order, and none of them carries any text: the ellipsis is all the cell
-    # contributes to the table's search index and to its CSV, Excel and print
-    # exports.
+    # An expand, a copy, the command that runs this one test again and the link
+    # that opens the report on this row, in that order, and none of them carries
+    # any text: the ellipsis is all the cell contributes to the table's search
+    # index and to its CSV, Excel and print exports.
     assert [button["title"] for button in actions.findAll("button")] \
         == ["Show the full error", "Copy the full error",
-            "Copy the command that runs this test again"]
+            "Copy the command that runs this test again",
+            "Copy a link to this test"]
     assert actions.get_text(strip=True) == "\u2026"
 
 
@@ -144,6 +145,7 @@ def test_floating_error_offers_no_expand_when_nothing_was_cut():
     assert actions.find("button", class_="msg-open") is not None
     assert actions.find("button", class_="msg-copy") is not None
     assert actions.find("button", class_="msg-rerun") is not None
+    assert actions.find("button", class_="msg-link") is not None
 
 
 def test_screenshot_details():
@@ -221,10 +223,16 @@ def test_test_row():
     attach_count = str(get_random_number())
     shot_count = str(get_random_number())
 
+    anchor = "test-" + get_random_string()
+
     test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
                        floating_error_text=floating_error_text, log_count=log_count,
-                       attach_count=attach_count, shot_count=shot_count, runt=runt)
+                       attach_count=attach_count, shot_count=shot_count, runt=runt,
+                       anchor=anchor)
     soup = BeautifulSoup(str(test_row), "html.parser")
+
+    # The row's own address, which is what a link pasted elsewhere lands on.
+    assert soup.find("tr")["id"] == anchor
 
     cells = soup.findAll("td")
 

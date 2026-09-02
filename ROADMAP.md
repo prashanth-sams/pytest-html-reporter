@@ -43,7 +43,7 @@ rows of "slowest test: no time at all" reads as a chart that failed to load rath
 suite. It sits beside a duration histogram, which answers the question the top-10 cannot: two
 thousand tests at 300ms each is a different problem from ten tests at a minute.
 
-### 4. Copy-error and copy-rerun-command buttons
+### 4. Copy-error and copy-rerun-command buttons — SHIPPED
 Next to each failure message, a copy icon for the full traceback and one that yields
 `pytest path/to/test.py::test_name`. Suite name and test name are both already in the row —
 it is string concatenation.
@@ -61,11 +61,46 @@ overlay the `Logs` column uses, which gave the dialog a `Copy` button and a `<pr
 The old modal's `<p>` had been collapsing every traceback into one run-on line. One delegated click
 handler serves the rows, because DataTables rebuilds them on each sort, search and page change.
 
-### 5. Deep-linkable rows
+### 5. Deep-linkable rows — SHIPPED
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an
 anchor id so a failure can be pasted into Slack and open directly. Pairs with #4.
 
 *Effort:* ~15 lines.
+*Shipped as:* `row_anchor` in `util.py` and `anchor_for_row` on the reporter, an `id` on every
+`<tr>`, a fourth `msg-link` button in `FloatingError`, and `scrollToTestRow` / `pageToTestRow` /
+`markTestRow` behind a `#test-...` branch in `openPageFromHash`.
+
+**The id the rows already had was the one thing the anchor could not be.** `runt` numbers them
+`suite-row` in the order they are written, and it is what the Logs, Data and Steps buttons open
+their panels by — but a link is pasted into a chat window and opened hours later, against whatever
+report is at that address by then. A positional anchor still *resolves*: it opens whichever test
+has since taken that place, with nothing on the page to say it is not the one that was sent. The
+anchor is built from the node id instead, so it survives three tests being added in front of it,
+and a link into a CI job's latest report keeps pointing at the same test build after build.
+
+**Readable, not a bare hash.** The node id flattened to letters, digits and dashes and cut back to
+a whole word, with six hex digits of the *whole* node id after it. The slug is what says which test
+a link opens while it is still sitting in the chat window; the digits are what keep two tests apart
+when the slug is cut to the same string, or when they differ only in the punctuation the slug drops
+— `test_one[a-b]` beside `test_one[a_b]`. Percent-escaping the node id instead would have kept it
+exact, but a fragment of `%5B` and `%3A%3A` is not a link anyone reads, and brackets do not survive
+every chat client's own linkifier intact.
+
+**The row is found through the DataTables API, not with `getElementById`.** Only the current page
+of the table is in the document, so a row on page four is not there to be found at all: its
+position in the filtered, sorted set is what its page is computed from, and the table is paged to
+it before anything is scrolled. Every filter hiding it is cleared first — the search box, the
+column searches, and the status chips (#2), which are a column search with a piece of state of
+their own, so clearing one without the other leaves the chips holding the counts of a filter that
+is no longer on.
+
+Three smaller decisions. The tab is opened by calling `openPage` directly rather than clicking the
+nav link, whose `href` would replace the row anchor in the URL with `#test-metrics` — the same
+thing the archive deep link had to do, for the same reason. The jump waits for `window.load` when
+the page is still coming up, because the table it pages through is built there and the flash saying
+which row it is would otherwise burn out behind the loader. And a node id that appears twice —
+`pytest-repeat`, or a rerun collected rather than merged — has its repeats numbered: two rows
+answering to one link is invalid HTML, and it would silently open the first of them.
 
 ---
 
@@ -365,5 +400,5 @@ did not happen.
 `output.json`, and address the two most common complaints about HTML reporters: "I can't see the
 logs" and "I can't filter to just the failures."
 
-#1, #2 and #7 have shipped; #4 is what is left of that set. #13 shipped separately, off issue #191,
-#14 off #223 and #15 off #203.
+All four have shipped, #4 and the deep links (#5) that pair with it last. #13 shipped separately, off
+issue #191, #14 off #223 and #15 off #203.

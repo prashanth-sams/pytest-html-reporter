@@ -3823,6 +3823,28 @@
                     color: var(--accent-link);
                 }
 
+                /* ---- The row a link was pasted for ---- */
+                /* The table has just been paged to one row out of a hundred
+                   that look exactly like it; the flash says which. Painted on
+                   the cells rather than on the <tr>: with the table's collapsed
+                   borders a row's own background is drawn under its cells', so
+                   an animation on the row itself is never seen. */
+                .metrics-card table.tablecard tbody tr.is-target > td {
+                    animation: rowTargetFlash 1.9s ease-out 1;
+                }
+
+                @keyframes rowTargetFlash {
+                    0%, 45% { background-color: var(--verdict-flaky-bg); }
+                    100% { background-color: transparent; }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .metrics-card table.tablecard tbody tr.is-target > td {
+                        animation: none;
+                        background-color: var(--verdict-flaky-bg);
+                    }
+                }
+
                 /* ---- Counts as pills in the dashboard's status colours ---- */
                 .metrics-card td.metric-num .metric-pill {
                     display: inline-flex;
@@ -6592,8 +6614,27 @@
                         if (button.classList.contains('msg-open')) showError(actions);
                         else if (button.classList.contains('msg-rerun'))
                             copyFromRow(button, actions.getAttribute('data-cmd'));
+                        else if (button.classList.contains('msg-link'))
+                            copyFromRow(button, rowLink(actions));
                         else copyFromRow(button, actions.getAttribute('data-error'));
                     });
+
+                    // Where this report lives, with the row's own anchor on the
+                    // end - the address to paste into a chat window so the
+                    // person who opens it lands on this failure rather than on
+                    // the dashboard with a test name to go and search for.
+                    //
+                    // Read off the <tr> rather than carried in an attribute of
+                    // its own, so the id the link points at and the id the row
+                    // answers to cannot drift apart. Any hash already in the
+                    // address bar is dropped: it is whichever row was opened
+                    // last, not this one.
+                    function rowLink(actions) {
+                        var row = actions.closest ? actions.closest('tr') : null;
+                        if (!row || !row.id) return '';
+
+                        return window.location.href.split('#')[0] + '#' + row.id;
+                    }
 
                     // The error behind a row, or the command that runs that row
                     // again. Both land on the clipboard the same way, and both
@@ -7811,6 +7852,105 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 }, switched ? 60 : 0);
             }
 
+            // Show Test Metrics without going through the nav link's own
+            // click(), which would follow its href and replace the row anchor
+            // in the URL with #test-metrics. Returns true when the tab was
+            // hidden, which is what decides how long the layout needs to settle
+            // before anything is scrolled. The table is asked for either way:
+            // this runs on a hash the page was opened with, which can be before
+            // window.onload has built it.
+            function showTestMetricsTab() {
+                var link = tabLinkFor('testMetrics');
+                if (!link) { return false; }
+
+                var page = document.getElementById('testMetrics');
+                var hidden = !page || page.style.display !== 'block';
+
+                if (hidden) {
+                    openPage('testMetrics', link, 'var(--rail-active-text)', 'var(--rail-active-bg)', 'groove');
+                }
+                executeDataTable('#tm', 3);
+
+                return hidden;
+            }
+
+            // Put the row's own page of the table on screen. A filtered-out
+            // row is on no page at all, so whatever is hiding it is cleared
+            // first: the link was pasted with one row in mind, and landing on
+            // "No matching records found" is not it.
+            function pageToTestRow(table, index) {
+                function positionOf() {
+                    return table.rows({ search: 'applied', order: 'current' })
+                                .indexes().toArray().indexOf(index);
+                }
+
+                var position = positionOf();
+                if (position < 0) {
+                    // Every filter, not only the search box: the status chips
+                    // over the table are a column search, and "show me the
+                    // failures" is the likeliest thing to be hiding the row a
+                    // link was pasted for. Cleared before the draw, so the
+                    // chips are rebuilt from the whole run rather than left
+                    // holding the counts of a filter that is no longer on.
+                    testStatusFilter = '';
+                    table.search('').columns().search('').draw(false);
+                    // The box keeps whatever was typed into it unless it is
+                    // emptied by hand, and a filter box still holding a term
+                    // over a table showing everything reads as a broken filter.
+                    $(table.table().container()).find('.dataTables_filter input').val('');
+                    position = positionOf();
+                }
+
+                var length = table.page.len();
+                if (position < 0 || length <= 0) { return; }
+
+                var page = Math.floor(position / length);
+                if (page !== table.page()) { table.page(page).draw(false); }
+            }
+
+            // Say which row was asked for, then get out of the way - the same
+            // flash a row's name gets when it crosses into the step tree.
+            function markTestRow(node) {
+                Array.prototype.forEach.call(
+                    document.querySelectorAll('#tm tbody tr.is-target'),
+                    function(old) { old.classList.remove('is-target'); }
+                );
+
+                // Restarting the animation on a row that still carries the
+                // class needs the browser to see it leave and come back.
+                void node.offsetWidth;
+                node.classList.add('is-target');
+
+                if (node.scrollIntoView) { node.scrollIntoView({ block: 'center' }); }
+
+                window.setTimeout(function() { node.classList.remove('is-target'); }, 2400);
+            }
+
+            // Bring one test's row into view, wherever the table has put it.
+            // The row is found through the DataTables API rather than with
+            // getElementById: only the current page of the table is in the
+            // document, so a row on page four is not there to be found at all.
+            function scrollToTestRow(id) {
+                var switched = showTestMetricsTab();
+                if (!window.jQuery || !$.fn.dataTable || !$.fn.dataTable.isDataTable('#tm')) { return; }
+
+                var table = $('#tm').DataTable();
+                // Anchors are letters, digits and dashes, so the id is a
+                // selector as it stands.
+                var index = table.row('#' + id).index();
+                if (index === undefined) { return; }
+
+                pageToTestRow(table, index);
+
+                var node = table.row(index).node();
+                if (!node) { return; }
+
+                // Showing a tab resizes its charts on the next tick and scrolls
+                // the page back to the top on another; scroll once both have
+                // been and gone.
+                setTimeout(function() { markTestRow(node); }, switched ? 60 : 0);
+            }
+
             // Function to open page based on URL hash
             function openPageFromHash() {
                 var hash = window.location.hash.substring(1); // Remove the # symbol
@@ -7858,6 +7998,26 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     // view instead of falling back to the default page.
                     if (hash.indexOf('list-item-') === 0) {
                         scrollToArchiveBuild(hash);
+                        return;
+                    }
+
+                    // A link to one test's row (e.g. #test-tests-test-a-py-
+                    // test-login-3f9a1c). Checked after the map above, so the
+                    // two tab names that begin the same way - #test-metrics and
+                    // #test-steps - are still the tabs they name.
+                    //
+                    // Deferred to window.load when the page is still coming up:
+                    // the table this pages through is built there, and until
+                    // the loader has gone the flash saying which row it is would
+                    // burn out behind it.
+                    if (hash.indexOf('test-') === 0) {
+                        if (document.readyState === 'complete') {
+                            scrollToTestRow(hash);
+                        } else {
+                            $(window).one('load', function() {
+                                setTimeout(function() { scrollToTestRow(hash); }, 150);
+                            });
+                        }
                         return;
                     }
                 }

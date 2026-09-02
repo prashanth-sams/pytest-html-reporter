@@ -4,6 +4,13 @@
 - The command is built from the test's node id rather than from the suite and test names the row shows: those are what a person reads, and a test inside a class is listed under its own name where pytest wants the class in front of it
 - A node id a shell would not read as one word is quoted, so a parametrised test's brackets are not a glob pattern to zsh and a space between them is not a second argument
 - A row with no node id of its own - a file that failed to import - offers no command rather than a bare `pytest` that would run the whole suite
+- Every row on `Test Metrics` now has an address of its own, so a failure can be pasted into a chat window or a ticket and open on that test rather than on the report's front page
+- A fourth button beside a failure message copies that link - this report's URL with the row's anchor on the end - read off the row itself, so the address the link points at and the id the row answers to cannot drift apart
+- The anchor is built from the test's node id rather than from the row's place in the table: a link is opened hours later against whatever report is at that address by then, and a positional one would still resolve, to whichever test had since taken that place
+- It stays readable - the node id flattened to letters, digits and dashes and cut back to a whole word - with six hex digits of the whole id after it, so two tests whose slugs are cut to the same string, or that differ only in the punctuation the slug drops, keep addresses of their own
+- Opening one shows the Test Metrics tab and pages the table to the row wherever the sort has put it, then flashes it. Only the current page of the table is in the document, so the row is found through the DataTables API rather than by its id
+- A search or a status chip hiding the row is cleared first, box and chip counts included: the link was pasted with one row in mind, and `No matching records found` is not it
+- The same node id twice over - `pytest-repeat`, or a rerun that was collected rather than merged - has its repeats numbered rather than left sharing one anchor, which is invalid HTML and would silently open the first of them
 
 0.3.9 (02/09/2026)
 -------------------
