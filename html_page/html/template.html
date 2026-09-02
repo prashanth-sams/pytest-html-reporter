@@ -3173,6 +3173,69 @@
                     color: var(--notice-reject-fg);
                 }
 
+                /* ---- What a copy button did, said where the eye is ---- */
+                /* The tick that replaces the icon says the copy worked, but it
+                   says it 22 pixels wide at the end of a row somebody is
+                   reading the other end of. This says the same thing once, in
+                   the middle of the screen, and takes itself away. It is the
+                   only feedback the three buttons share, so it is also what
+                   tells them apart: which of the error, the command and the
+                   link is now on the clipboard. */
+                .copy-toast {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    z-index: 2400;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 9px;
+                    padding: 11px 18px;
+                    border: 1px solid var(--border-subtle);
+                    border-radius: 10px;
+                    background: var(--surface-overlay);
+                    box-shadow: 0 10px 30px 0 var(--shadow-overlay);
+                    color: var(--text-primary);
+                    font-family: sans-serif;
+                    font-size: 0.86rem;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    opacity: 0;
+                    /* Nothing to click and nothing to click through: it sits
+                       over the middle of the table for a moment, and the row
+                       underneath stays live the whole time. */
+                    pointer-events: none;
+                    transform: translate(-50%, -50%) scale(0.96);
+                    /* Hidden by `visibility` rather than by `display`, which
+                       cannot be transitioned - the delay on the way out is what
+                       keeps it out of the tab order until the fade has run. */
+                    visibility: hidden;
+                    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+                }
+
+                .copy-toast.is-on {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translate(-50%, -50%) scale(1);
+                    transition: opacity 0.14s ease, transform 0.14s ease, visibility 0s;
+                }
+
+                .copy-toast .fa {
+                    font-size: 14px;
+                    color: var(--notice-ok-fg);
+                }
+
+                .copy-toast.is-failed .fa {
+                    color: var(--notice-reject-fg);
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .copy-toast,
+                    .copy-toast.is-on {
+                        transform: translate(-50%, -50%);
+                        transition: opacity 0.01s linear, visibility 0s;
+                    }
+                }
+
                 /* The overlay below is the page's one panel of its kind: it
                    shows a test's captured output, and it shows one failure's
                    full error. The class name is older than the second use. */
@@ -6613,10 +6676,10 @@
 
                         if (button.classList.contains('msg-open')) showError(actions);
                         else if (button.classList.contains('msg-rerun'))
-                            copyFromRow(button, actions.getAttribute('data-cmd'));
+                            copyFromRow(button, actions.getAttribute('data-cmd'), 'Command copied');
                         else if (button.classList.contains('msg-link'))
-                            copyFromRow(button, rowLink(actions));
-                        else copyFromRow(button, actions.getAttribute('data-error'));
+                            copyFromRow(button, rowLink(actions), 'Link copied');
+                        else copyFromRow(button, actions.getAttribute('data-error'), 'Error copied');
                     });
 
                     // Where this report lives, with the row's own anchor on the
@@ -6636,10 +6699,39 @@
                         return window.location.href.split('#')[0] + '#' + row.id;
                     }
 
-                    // The error behind a row, or the command that runs that row
-                    // again. Both land on the clipboard the same way, and both
-                    // say so on the button that was pressed.
-                    function copyFromRow(button, text) {
+                    var copyToastTimer;
+
+                    // One line in the middle of the screen naming what just
+                    // landed on the clipboard. Three buttons on one row copy
+                    // three different things and the tick is the same tick for
+                    // all of them, so this is what says which - and it says it
+                    // where the pointer already is rather than at the end of
+                    // the row.
+                    function showCopyToast(text, copied) {
+                        var toast = document.getElementById('copyToast');
+                        if (!toast) return;
+
+                        document.getElementById('copyToastText').textContent = text;
+                        document.getElementById('copyToastIcon').className =
+                            'fa ' + (copied ? 'fa-check' : 'fa-info-circle');
+                        toast.classList.toggle('is-failed', !copied);
+                        toast.classList.add('is-on');
+
+                        // Restarted rather than queued: a second copy while the
+                        // first is still up is news about the second one, and
+                        // two of these stacking would cover the table.
+                        window.clearTimeout(copyToastTimer);
+                        copyToastTimer = window.setTimeout(function() {
+                            toast.classList.remove('is-on');
+                        }, 1400);
+                    }
+
+                    // The error behind a row, the command that runs that row
+                    // again, or the address of the row itself. All three land on
+                    // the clipboard the same way, and all three say so twice -
+                    // on the button that was pressed, and in the middle of the
+                    // page.
+                    function copyFromRow(button, text, label) {
                         text = text || '';
                         if (!text) return;
 
@@ -6655,6 +6747,12 @@
                             button.copyTimer = window.setTimeout(function() {
                                 button.classList.remove('msg-btn--done', 'msg-btn--failed');
                             }, 1200);
+
+                            // A browser that refused the clipboard leaves the
+                            // reader with a button that did nothing and no idea
+                            // why; this is the one place there is room to say
+                            // what to press instead.
+                            showCopyToast(copied ? (label || 'Copied') : 'Press Ctrl+C to copy', copied);
                         }
 
                         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -7366,6 +7464,14 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 </div>
                 <div class="log-overlay__body" id="logOverlayBody"></div>
             </div>
+        </div>
+
+        <!-- Announced rather than only drawn: `role="status"` is what has a
+             screen reader read out that the copy landed, which the tick on the
+             button never said to anyone not looking at it. -->
+        <div class="copy-toast" id="copyToast" role="status" aria-live="polite">
+            <i class="fa fa-check" id="copyToastIcon" aria-hidden="true"></i>
+            <span id="copyToastText"></span>
         </div>
 
         <!-- The cheatsheet is written once, in the tab. This shows the same

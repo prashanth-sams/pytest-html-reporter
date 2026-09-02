@@ -61,6 +61,14 @@ overlay the `Logs` column uses, which gave the dialog a `Copy` button and a `<pr
 The old modal's `<p>` had been collapsing every traceback into one run-on line. One delegated click
 handler serves the rows, because DataTables rebuilds them on each sort, search and page change.
 
+Since #5 there are four of these buttons, and the tick that replaces an icon is the same tick for
+all of them — so a click also puts a word in the middle of the page: `Error copied`, `Command
+copied`, `Link copied`, faded in and gone in a second and a half. That is both the half that is
+legible from wherever the pointer is, 22 pixels of button at the end of a long row not being it,
+and the half that says *which* of the three landed. A refused clipboard — which is what `file://`
+gets in some browsers — says `Press Ctrl+C to copy` there rather than leaving a button that did
+nothing and no reason why. It takes no clicks, so the row underneath stays live while it is up.
+
 ### 5. Deep-linkable rows — SHIPPED
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an
 anchor id so a failure can be pasted into Slack and open directly. Pairs with #4.

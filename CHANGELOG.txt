@@ -11,6 +11,9 @@
 - Opening one shows the Test Metrics tab and pages the table to the row wherever the sort has put it, then flashes it. Only the current page of the table is in the document, so the row is found through the DataTables API rather than by its id
 - A search or a status chip hiding the row is cleared first, box and chip counts included: the link was pasted with one row in mind, and `No matching records found` is not it
 - The same node id twice over - `pytest-repeat`, or a rerun that was collected rather than merged - has its repeats numbered rather than left sharing one anchor, which is invalid HTML and would silently open the first of them
+- Every one of those buttons now says what it did, once, in the middle of the page: `Error copied`, `Command copied`, `Link copied`, faded in and out again. The tick that replaces the icon says the same thing 22 pixels wide at the end of a row somebody is reading the other end of - and says the same tick whichever of the three was pressed
+- A browser that refused the clipboard - which is what `file://` gets in some of them - says `Press Ctrl+C to copy` there instead of leaving a button that did nothing and no reason why
+- It is a `role="status"`, so a screen reader reads the copy out; it takes no clicks, so the row underneath stays live while it is up; and a second copy restarts it rather than stacking a second one over the table
 
 0.3.9 (02/09/2026)
 -------------------

@@ -6,14 +6,27 @@ and then selected by hand before it could be pasted anywhere. The expand button
 opens the whole thing in the report's own panel and the copy button puts it on
 the clipboard without opening anything at all. The third button copies the
 `pytest` line that runs that one test again, which is the step that followed
-reading the error often enough to be worth a click of its own.
+reading the error often enough to be worth a click of its own, and the fourth
+copies a link to the row itself.
+
+Whichever was pressed says so twice: a tick where its icon was, and a word in
+the middle of the page naming which of the three things is now on the clipboard
+- because the tick is the same tick for all of them, and it is 22 pixels wide at
+the end of a row somebody is reading the other end of.
 """
+
+import os
 
 import pytest
 from bs4 import BeautifulSoup
 
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.html_reporter import HTMLReporter
+
+TEMPLATE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "html_page", "html", "template.html",
+)
 
 
 class _FakePluginManager:
@@ -78,6 +91,11 @@ def _rows(records):
 
 def _actions(soup):
     return soup.findAll("span", class_="msg-actions")
+
+
+def _template():
+    with open(TEMPLATE, encoding="utf-8") as page:
+        return page.read()
 
 
 LONG = "assert 1 == 2\n" + "".join("  line %d\n" % i for i in range(40))
@@ -228,3 +246,47 @@ def test_the_controls_add_only_an_ellipsis_to_the_cell_the_table_exports():
     assert _actions(soup)[0].get_text(strip=True) == "…"
     assert LONG not in cell.get_text()
     assert cell.get_text(strip=True).endswith("…")
+
+
+# --------------------------------------------------------------------------
+# saying what the click did
+# --------------------------------------------------------------------------
+
+def test_each_button_names_which_of_the_three_things_it_copied():
+    """The tick that replaces the icon is the same tick for all three, and it
+    is 22 pixels wide at the end of a row somebody is reading the other end of.
+    The word in the middle of the page is what says which one landed."""
+    page = _template()
+
+    assert "'Error copied'" in page
+    assert "'Command copied'" in page
+    assert "'Link copied'" in page
+
+
+def test_a_browser_that_refused_the_clipboard_says_what_to_press_instead():
+    """Otherwise a reader is left with a button that did nothing and no idea
+    why - which is what happens to the file:// clipboard in some browsers."""
+    assert "'Press Ctrl+C to copy'" in _template()
+
+
+def test_the_message_takes_itself_away_and_a_second_copy_restarts_it():
+    """Two of these stacking would cover the table, and a message left up would
+    claim the clipboard still holds what that row put there."""
+    body = _template().split("function showCopyToast", 1)[1].split("function copyFromRow", 1)[0]
+
+    assert "window.clearTimeout(copyToastTimer);" in body
+    assert "classList.remove('is-on');" in body
+
+
+def test_the_message_is_announced_as_well_as_drawn():
+    """`role="status"` is what has a screen reader read the copy out; the tick
+    on the button never said anything to anyone not looking at it."""
+    assert 'id="copyToast" role="status" aria-live="polite"' in _template()
+
+
+def test_the_message_cannot_be_clicked_and_cannot_be_clicked_through():
+    """It sits over the middle of the table for a moment, and the row
+    underneath has to stay live the whole time."""
+    rule = _template().split(".copy-toast {", 1)[1].split("}", 1)[0]
+
+    assert "pointer-events: none;" in rule
