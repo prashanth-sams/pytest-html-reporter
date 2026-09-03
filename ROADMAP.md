@@ -478,6 +478,138 @@ did not happen.
 
 ---
 
+### 17. Sharded and cross-machine runs - SHIPPED
+A suite split over four CI machines had no answer here at all. `-n` has been handled since the
+beginning, because xdist's workers report back to one controller and that controller writes the
+report - but four *processes* on four boxes have no controller between them, and each of them knows
+a quarter of the run. Four of them pointed at one output folder do not produce one build; they
+produce four, overwriting each other, and every longitudinal feature this report has is then reading
+a history in which a quarter of the suite appears and disappears on every step: `Archives` gains
+four entries per CI run, the six-point trend window holds a run and a half, `Suite Highlights`
+counts a suite once per shard, and `Analytics`' movement cards report one shard's tests as "New
+tests" and another's as "No longer run" for ever. The same shape turns up on one machine as soon as
+a job runs unit, integration and e2e as three separate `pytest` invocations into one report folder,
+which is common and which nothing here handled either.
+
+*Shipped as:* `pytest_html_reporter/shards.py` (the bundle format, its reader and the option
+helpers), `merge.py` (the merge itself), `junit.py` (one JUnit writer for both callers), `shim.py`
+(the `Config` stand-in the render path is driven through), `cli.py` and `__main__.py`;
+`--report-shard`, `--report-shard-merge`, `--report-shard-run`, `--report-shard-reset`,
+`--report-junit` and `--report-junit-xpass` with six matching ini keys; the `pytest-html-reporter`
+console script with its `merge`, `junit` and `inspect` subcommands; `reset_config_vars()` in
+`const_vars.py`; and the extraction of `pytest_terminal_summary`'s post-yield body into
+`HTMLReporter.render()`, which is what lets a merge drive the existing pipeline instead of
+reimplementing it.
+
+**The shard is a lossless record dump, not a report.** A leg writes
+`<report>/shards/<id>/records.json` plus its own screenshots and writes nothing else - no
+`report.html`, no `output.json`, no archive rotation. That single invariant is what makes everything
+downstream honest: one build per CI run, one rotation, one trend point, one entry per test in the
+histories Analytics reconstructs. The records need no serialiser because `append_test_record`
+already builds every one of them out of JSON-safe built-ins so an xdist worker can ship them through
+`config.workeroutput`, so logs, steps, attachments, phases, meta, bdd, worker and index all travel
+untouched.
+
+Rejected, with the reason each time:
+
+*Merging `output.json` files.* The obvious move, and it cannot work: `append_suite_metrics_row`
+keeps `{status, message, test_name, rerun, duration}` per test - no node id, no logs, no steps, no
+attachments, no phases. A merge built on it produces correct totals over an empty report and cannot
+name a single test in a JUnit file.
+
+*Merging per-shard JUnit XMLs with `junitparser` or `junit-merge`.* It sums the counts rather than
+recounting the elements, and it leaves duplicates in - and a duplicate testcase is read differently
+by every consumer, GitLab pinning the first and Jenkins the last, so two CI systems report different
+outcomes for the same test. The XML is therefore built *from records*, once, and its counts are
+recomputed from the elements actually emitted.
+
+*Routing cross-shard duplicates through `store_test_record`.* That path exists to fold
+`pytest-rerunfailures` attempts and only fires when `pluginmanager.hasplugin("rerunfailures")` is
+true **in the merging process** - so a merged report's contents would depend on what happens to be
+installed on the machine doing the merging, which is not a decision a merge is entitled to make.
+Duplicate handling is an explicit five-way policy instead, and the shim answers `hasplugin` with
+`False` so the question cannot be asked by accident.
+
+*Running pytest a second time in the merge directory* to get a report out of the existing plugin
+path. `pytest_configure` calls `clean_screenshots(path)`, which would `rmtree` the images the merge
+had just staged.
+
+*Averaging the shards' coverage percentages.* Four numbers over four different slices of the code
+average to nothing, and the result would be archived into the trend for ever. A merge with nothing
+combined records **no** `coverage` key at all, so `archived_coverage()` reads the build as *not
+measured* rather than as zero, and the tab says what to run. The merge also never calls
+`discover_coverage`, which searches `os.getcwd()`: a stale `coverage.json` in the merging job's
+working directory would otherwise become the build's number.
+
+*Base64-embedding screenshots in the bundle.* It inflates the JSON by a third over the bytes, forces
+a whole matrix's images through one `json.loads`, and could not be rendered anyway - both screenshot
+templates build `pytest_screenshots/<name>.png` by literal concatenation into an `href` **and** a
+`src`, so a data URI would come out as `src="pytest_screenshots/data:image/png;base64,....png"`. The
+pngs travel as files inside the bundle directory.
+
+*Putting the bundle straight in the report base, sharing the report's own `pytest_screenshots`.*
+That layout deletes its own sources on `merge ./report --html-report ./report`, which is the most
+natural command anybody would type. A shard is a subtree - `<base>/shards/<id>/` - so the merge
+clearing `<base>/pytest_screenshots` cannot reach it.
+
+*`--expect-shards N` as the answer to stale bundles.* It catches a leg that never finished, which is
+a real gap, but not the one that actually bit: a leg deleted between two CI runs leaves a bundle
+behind and the **count is still right**. That needed the run token instead.
+
+*A clock heuristic for "this bundle is old".* There is none to have. Every bundle beside a merging
+leg was written before it, whether by this run or yesterday's, and any threshold picked here would
+be a guess presented as a fact. So nothing is guessed: a token filters when there is one,
+`--report-shard-reset` clears when there is not, and every merge prints one provenance line per
+bundle - id, test count, local finish time - so a leg from yesterday is visible in the log of the
+run that merged it.
+
+Bugs found on the way, most of them in code this feature only walked past:
+
+- **`clean_screenshots` destroyed an earlier leg's images in the sequential case.** The shard branch
+  cannot use it at all; it resets the leg's own directory outright, because a stale `records.json`
+  from a previous run of the *same* leg has to go too - if that run collected more tests than this
+  one does, its records are what the merge would read.
+- **A shard id containing a literal `.html`** - `--report-shard=v1.html` - made its own cleanup a
+  silent no-op, since `clean_screenshots` short-circuits on any path containing `.html`. Fixed by
+  not going through it.
+- **Two ids that sanitise alike buried each other in silence.** `1/4` and `1-4` name one directory;
+  the second leg to write now compares the stored label with its own and says so, and stays quiet
+  for the everyday case of one leg re-running.
+- **A cross-shard screenshot was reported as missing while sitting on disk.** Under the default fold
+  the survivor is the last shard's record, back-filled with a *loser's* screenshot list - so a test
+  photographed on shard 1 and passed on shard 2 named images that staging then looked for under
+  shard 2. `--strict` failed merges over files that were never missing. Each screenshot entry now
+  carries the bundle it came from.
+- **A bundle from a newer release turned a finished pytest run into an INTERNALERROR.**
+  `--report-shard-merge` runs from `pytest_terminal_summary`, so one stale artifact produced a
+  traceback, no report and no verdict *after* every test had run. Caught and named at the dispatch
+  site, pointing at the bundle that was written.
+- **A mistyped `--report-junit` path cost the HTML report.** The XML write sits before the `if
+  self._records:` guard deliberately, so an empty run still owes CI a document - but unguarded it
+  took `report.html`, `output.json` and the archive rotation with it, without even changing the exit
+  code.
+- **`run.collected` read 0 on every parallel leg**, because `pytest_collection_modifyitems` never
+  fires on an xdist controller; and the merge summary named a report the empty-records guard had
+  never written.
+- `_date()` returned *today*, so a matrix that started before midnight and was merged after it was
+  dated - and therefore sorted in the trend, for ever - a day late. And
+  `ConfigVars._start_execution_time`, which names the archive file and labels the trend point, holds
+  the last test's setup time by the time the report is written; the merge overrides both rather than
+  trusting them.
+
+Four gaps left open on purpose. **True global collection order is unrecoverable** - no shard knows
+the whole suite's order, so `--order shard` and `--order name` are both deterministic and neither is
+"what pytest would have collected"; under the default, a folded duplicate sorts at the *last*
+shard's position. **A leg that never finishes is invisible** - it writes no bundle, and the merge
+cannot know it was expected; `--strict` plus a job-level count is the CI-side mitigation.
+**Concurrent legs on one machine are not serialised** against a `--report-shard-merge` leg, which
+the sequential flow makes moot by being sequential and the matrix flow makes moot by merging
+elsewhere. **An empty merge writes the XML but no HTML**, because CI is owed a `tests="0"` document
+while a page with nothing on it is not worth writing; it is the one place the two outputs do not
+track each other, and it is said out loud rather than left to be discovered.
+
+---
+
 ## Suggested next release
 
 **#1, #2, #4, #7.** Together they are roughly one afternoon, need no schema change to

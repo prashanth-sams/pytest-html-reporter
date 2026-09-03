@@ -1,6 +1,7 @@
 import glob
 import json
 import os
+import sys
 import time
 import shutil
 from collections import OrderedDict
@@ -55,6 +56,21 @@ from pytest_html_reporter.util import (
     generate_run_delta,
 )
 from pytest_html_reporter.step_report import generate_steps_view
+from pytest_html_reporter import merge
+from pytest_html_reporter.junit import (
+    junit_path,
+    junit_xpass,
+    write_junit,
+)
+from pytest_html_reporter.shards import (
+    BundleTooNew,
+    report_shard,
+    report_shard_merge,
+    sanitise_id,
+    shard_dir,
+    shard_payload,
+    write_bundle,
+)
 from pytest_html_reporter.coverage_report import (
     collect_coverage,
     generate_coverage_view,
@@ -181,6 +197,52 @@ class HTMLReporter(object):
         self._collect_slots = set()
         self._collected = {}
         self.worker_id = xdist_worker_id(config)
+
+        # Which leg of a matrix this process is, if it is one at all. A shard
+        # writes a bundle of its records and nothing else - no report.html, no
+        # output.json, no archive rotation - so that four legs of one run
+        # cannot manufacture four builds in the report's own history; the
+        # merge turns the bundles back into the single build they describe.
+        self.shard_id = sanitise_id(report_shard(config))
+        self.shard_merge = report_shard_merge(config)
+
+        # The JUnit xml written alongside the report, for the CI system that
+        # reads xml and not html. Both are resolved now, while the run is being
+        # configured, so an xpass mode that is not a mode is a usage error
+        # before the tests run rather than after them - which is the same
+        # reason open_mode is resolved up here.
+        self.junit_path = junit_path(config)
+        self.junit_xpass = junit_xpass(config)
+
+        # None until something knows better. The exit status arrives with the
+        # terminal summary hook, and the other two are how a merge tells this
+        # object about a run that happened on other machines: how long the
+        # matrix took, and when it started. A merge that let this process
+        # answer either from its own clock would report a forty-minute matrix
+        # as the four seconds the merging took, and date a build that crossed
+        # midnight to the day somebody collected the artifacts.
+        self._exitstatus = None
+        self._execution_seconds = None
+        self._build_time = None
+
+        # The three answers a merged build has to give differently: coverage
+        # measured somewhere else, an Environment panel describing every
+        # shard's machine rather than this one, and the shards' own reasons for
+        # an empty Logs column. Defaulted to exactly the calls render() used to
+        # make inline, so a plain run is unchanged and a merge replaces the
+        # answer rather than the pipeline that asks for it.
+        self.coverage_source = lambda base: collect_coverage(self.config, base, self._sessionstarttime)
+        self.environment_source = lambda: generate_environment_info(self.config)
+        self.logs_notice_source = lambda: generate_logs_notice(self.config)
+
+        # And the fourth: what a merged JUnit document knows that a single
+        # run's cannot - which shards it came from, whose clock the timestamp
+        # is, how many attempts were folded. None on a plain run, where the
+        # keywords render() passes say everything there is to say; filled in by
+        # merge_into so that the xml a --report-shard-merge leg writes is the
+        # same document the merge command writes from the same bundles, rather
+        # than one that quietly lost every shard.id a CI system reads.
+        self.junit_options = None
 
         # attach() needs somewhere to write long before the report is built,
         # and each xdist worker saves its own screenshots.
@@ -317,6 +379,7 @@ class HTMLReporter(object):
         # report shows, and it must not be shown carrying the previous
         # attempt's timings.
         self._phase_ms = {}
+        ConfigVars._xfail_reason = ""
         set_phase('setup')
 
     def pytest_sessionfinish(self, session):
@@ -357,6 +420,32 @@ class HTMLReporter(object):
             logfile = os.path.expanduser(os.path.expandvars(self.path))
             HTMLReporter.base_path = os.path.abspath(logfile)
             return os.path.abspath(logfile), 'pytest_html_report.html'
+
+    @property
+    def shard_path(self):
+        """Where this leg's bundle and this leg's screenshots go.
+
+        A subtree of the report folder rather than the folder itself, and that
+        is what makes `merge ./report --html-report ./report` safe: the merge
+        clears <base>/pytest_screenshots before it stages the images it was
+        given, while every shard's copies live on under
+        <base>/shards/<id>/pytest_screenshots and are read out of there.
+        """
+        return shard_dir(self.report_path[0], self.shard_id)
+
+    @property
+    def asset_base(self):
+        """The folder this process files its screenshots under.
+
+        The report base on a plain run - character for character the string
+        collect_screenshots used to build for itself - and this shard's own
+        directory when the process is one leg of a matrix. screenshot_name()
+        is <milliseconds>[-<worker>]-<counter> with the counter restarting at 1
+        in every process, so two machines both name their first image the same
+        thing; shards that shared one folder would quietly overwrite each
+        other's pictures and the merge would have no way to notice.
+        """
+        return self.shard_path if self.shard_id else self.report_path[0]
 
     def remove_old_archives(self):
         """Apply the retention limits to the builds kept on disk.
@@ -401,12 +490,119 @@ class HTMLReporter(object):
         # per worker, each holding only that worker's share of the tests.
         if is_xdist_worker(self.config): return
 
-        _execution_time = time.time() - self._sessionstarttime
+        self._exitstatus = exitstatus
+
+        # After the worker guard, and never before it: an `-n 8` shard is one
+        # leg of the matrix however many processes it ran in, so the bundle is
+        # written once by the controller - which by now holds all eight
+        # workers' records, already merged - rather than eight times, once per
+        # worker, each holding an eighth of the tests.
+        if self.shard_id:
+            self.write_shard()
+
+            # A shard renders nothing at all unless it was asked to be the leg
+            # that also merges: the whole point of a shard is that it leaves no
+            # build behind for the merge to have to reconcile with its own.
+            if not self.shard_merge: return
+
+            try:
+                merge.merge_into(self)
+            except (BundleTooNew, merge.MergeError) as error:
+                # Said, and not raised. This runs after every test in the leg
+                # has finished, and a stale bundle from a newer release sitting
+                # in the folder would otherwise turn a run that passed into an
+                # INTERNALERROR traceback with no report and no verdict at all.
+                # Every leg's bundle is on disk either way, so the answer is
+                # still recoverable with one command once the folder is - which
+                # is what the second line says.
+                sys.stderr.write("pytest-html-reporter: the shards beside this one could not be "
+                                 "merged: %s\n" % error)
+                sys.stderr.write("pytest-html-reporter: this leg's records were still written to "
+                                 "%s; merge them with `pytest-html-reporter merge` once that is "
+                                 "sorted out\n" % self.shard_path)
+                return
+
+        self.render()
+
+    def write_shard(self):
+        """Write this leg's bundle of records, and nothing else. Return its path.
+
+        The bundle is lossless on purpose - self._records verbatim, plus what
+        only this machine knows about itself - because output.json carries no
+        nodeid, no logs, no steps and no attachments, so a merge built on it
+        could produce correct totals and an empty report.
+
+        What is deliberately *not* written is the build: no report.html, no
+        output.json and no archive rotation. Four legs that each wrote one
+        would leave four builds in the history of a report that saw one run -
+        four trend points, four archive files, four Analytics entries, and
+        Suite Highlights counting every suite four times - with nothing on
+        disk afterwards to say which four belonged together.
+        """
+        return write_bundle(self.shard_path, shard_payload(self, self._exitstatus))
+
+    def write_junit_report(self, execution_time):
+        """Write the --report-junit document, and never take the report with it.
+
+        Reported rather than raised, because this happens before the page is
+        built and a raise here would cost the run its html report, its
+        output.json and its archived build as well as its xml - over a
+        mistyped path, in the one hook that runs after every test has already
+        finished. So the failure is named on stderr and the build carries on:
+        an xml that is not there is still not there, and a CI step that fails
+        on a missing file still fails, but it fails holding the report that
+        says what the tests did.
+        """
+        try:
+            if self.junit_options is not None:
+                # A merge leg. The options already carry the matrix's earliest
+                # start, its whole span and the identity of every shard, so the
+                # keywords below would only overwrite them with this one leg's
+                # own clock and drop the shards on the floor.
+                return write_junit(self.junit_path, self._records, options=self.junit_options)
+
+            return write_junit(
+                self.junit_path,
+                self._records,
+                xpass=self.junit_xpass,
+                timestamp=self._sessionstarttime,
+                time=execution_time,
+                report_base=self.report_path[0],
+            )
+        except Exception as error:
+            sys.stderr.write("pytest-html-reporter: --report-junit could not write %s: %s\n"
+                             % (self.junit_path, error))
+
+            return None
+
+    def render(self):
+        """Write the build - the html report, output.json, the archive and the rest.
+
+        Lifted out of pytest_terminal_summary unmodified, because a merge of
+        several shard files has no pytest run behind it and no terminal to
+        summarise, and this is the whole of what it has to drive. The order of
+        the steps below is load-bearing and is not incidental: see the comments
+        against each of them.
+        """
+        # A merge hands over the span of the whole matrix, measured from the
+        # earliest shard's start to the latest one's end. This process's own
+        # clock has only ever measured how long the merging took.
+        if self._execution_seconds is not None:
+            _execution_time = self._execution_seconds
+        else:
+            _execution_time = time.time() - self._sessionstarttime
 
         if _execution_time < 60:
             ConfigVars._execution_time = str(round(_execution_time, 2)) + " secs"
         else:
             ConfigVars._execution_time = str(time.strftime("%H:%M:%S", time.gmtime(round(_execution_time)))) + " Hrs"
+
+        # Written before the `if self._records:` guard, deliberately: a run
+        # that collected nothing still owes its CI system a document saying so.
+        # A missing file reads as "the job never ran", which is the one thing a
+        # run that finished cleanly is not - and a build server that was told
+        # to fail on a missing xml would fail the wrong thing.
+        if self.junit_path: self.write_junit_report(_execution_time)
 
         if self._records:
             # rows, suite totals and json, built once from every process's records
@@ -444,11 +640,15 @@ class HTMLReporter(object):
             # rates, failing streaks, pass-rate drift, where the minutes go
             generate_analytics(base)
 
-            # collect host, interpreter and invocation details
-            generate_environment_info(self.config)
+            # collect host, interpreter and invocation details - through the
+            # seam, because a merged report's panel has to name every shard's
+            # machine and not the one that did the merging, which ran no tests
+            self.environment_source()
 
-            # say why the Logs column is empty, when something is suppressing it
-            generate_logs_notice(self.config)
+            # say why the Logs column is empty, when something is suppressing
+            # it; a merge answers this from the shards' own captured reasons,
+            # since the merging process never had a --capture setting to report
+            self.logs_notice_source()
 
             # build the Coverage tab from what was collected above, now that
             # update_trends has filled in the archived builds' percentages
@@ -473,6 +673,17 @@ class HTMLReporter(object):
         outcome = yield
         rep = outcome.get_result()
         ConfigVars._suite_name = rep.nodeid.split("::")[0]
+
+        # Why a known bug was expected to fail, straight from pytest. Read here
+        # rather than off the markers because the markers do not always have it:
+        # an imperative pytest.xfail("...") mid-test leaves no marker at all,
+        # and a marker's reason is only ever a display string. The report itself
+        # shows the assertion that failed - which is the more useful of the two
+        # in a page you are reading - so this is kept beside it rather than in
+        # place of it, for the JUnit xml, where the reason is what a collector
+        # shows and an assertion is not.
+        if hasattr(rep, "wasxfail"):
+            ConfigVars._xfail_reason = str(rep.wasxfail or "")
 
         # Setup, call and teardown each report their own captured output, so
         # the sections are collected as the phases go by rather than read off
@@ -605,6 +816,9 @@ class HTMLReporter(object):
             # None for a plain pytest test, which is what the tab keys off to
             # show a scenario as a scenario rather than as a function.
             'bdd': take_scenario(),
+            # Empty for every test that is not a known bug, which is nearly all
+            # of them.
+            'xfail_reason': str(ConfigVars._xfail_reason),
         }
 
         self.store_test_record(record)
@@ -1034,7 +1248,7 @@ class HTMLReporter(object):
         pending = take_screenshots()
         if not pending: return []
 
-        base = os.path.join(self.report_path[0], 'pytest_screenshots')
+        base = os.path.join(self.asset_base, 'pytest_screenshots')
         os.makedirs(base, exist_ok=True)
 
         suite = ConfigVars._suite_name.split('/')[-1:][0].replace('.py', '')
@@ -1171,7 +1385,12 @@ class HTMLReporter(object):
         already, so a percentage kept there is a percentage every one of them
         can reach without a second format to keep in step.
         """
-        summary, notice = collect_coverage(self.config, base, self._sessionstarttime)
+        # Through the seam rather than straight at collect_coverage: a merged
+        # build's coverage was measured on machines this one never saw, and
+        # looking for a coverage.json in the merging process's own working
+        # directory would find a stale file and archive it into the trend for
+        # ever. On a plain run the seam is that same call, bound in __init__.
+        summary, notice = self.coverage_source(base)
 
         ConfigVars._coverage = summary
         ConfigVars._coverage_notice = notice
@@ -1193,6 +1412,17 @@ class HTMLReporter(object):
         ConfigVars._test_status = status
 
     def _date(self):
+        """The day this build is stamped with, on the page and in output.json.
+
+        Today for a run being reported as it finishes, and the day the tests
+        actually ran for a merge: a matrix that started before midnight and was
+        collected after it belongs to the day it ran, not to the day somebody
+        downloaded its artifacts. update_trends and load_archive both parse
+        this back out again, so a build dated a day late is a build that sorts
+        a day late in the trend for the rest of the report's life.
+        """
+        if self._build_time: return date.fromtimestamp(self._build_time).strftime("%B %d, %Y")
+
         return date.today().strftime("%B %d, %Y")
 
     def _test_suites(self, name):
