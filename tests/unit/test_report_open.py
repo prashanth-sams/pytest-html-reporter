@@ -168,9 +168,18 @@ def test_interactive_follows_the_stream():
     assert is_interactive(_FakeStream(False)) is False
 
 
-def test_not_interactive_without_a_stream_at_all():
-    """pythonw and friends have no stdout to ask."""
-    assert is_interactive(None) is False
+def test_not_interactive_without_a_stream_at_all(monkeypatch):
+    """pythonw and friends have no stdout to ask.
+
+    sys.__stdout__ is replaced rather than None being passed as the argument:
+    None is is_interactive's *default*, so `is_interactive(None)` reads the
+    real stdout of whoever is running the suite - which meant this passed when
+    the run was piped into a file and failed the moment somebody ran it from a
+    terminal, where the real stdout is a tty.
+    """
+    monkeypatch.setattr(sys, "__stdout__", None)
+
+    assert is_interactive() is False
 
 
 def test_not_interactive_on_a_closed_stream():

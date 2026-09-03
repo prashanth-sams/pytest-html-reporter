@@ -1570,6 +1570,19 @@ class HTMLReporter(object):
             except KeyError:
                 if len(ConfigVars._test_suite_name) == i + 1: self.json_data['status'] = "PASS"
 
+        # Zeroed first, because the loop below adds to them and they live on the
+        # class. They are this render's totals - the dashboard's headline count
+        # and every number under the ring - so a process that renders twice was
+        # putting the second build's tests on top of the first's, and the page
+        # said more tests than the run had. The Test Steps and Test Metrics tabs
+        # read the records instead and stayed right, which is how the two came
+        # to disagree on one page. render_merged calls reset_config_vars() and so
+        # never saw it; a shard-merge leg deliberately does not, and neither does
+        # anything else that renders more than once in a process.
+        ConfigVars._aspass = ConfigVars._asfail = ConfigVars._asskip = 0
+        ConfigVars._aserror = ConfigVars._asxpass = ConfigVars._asxfail = 0
+        ConfigVars._asrerun = 0
+
         for i in suite:
             for k in self.json_data['content']['suites'][i]['status']:
                 if k == 'total_pass':
