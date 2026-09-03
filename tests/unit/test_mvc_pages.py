@@ -293,7 +293,7 @@ def test_test_shot():
     ts = get_random_string()
     tc = get_random_string()
 
-    shot = TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc)
+    shot = TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc, group="metrics")
     soup = BeautifulSoup(str(shot), "html.parser")
 
     path = "pytest_screenshots/%s.png" % screen_name
@@ -301,9 +301,13 @@ def test_test_shot():
     link = soup.find("a", class_="shot-thumb")
     assert link["href"] == path
     assert link["data-caption"] == "SUITE: %s :: SCENARIO: %s" % (ts, tc)
-    # Its own group: arrowing off a row and into a screenshot from a tab the
-    # reader is not looking at is not what the arrow keys are for.
+    # The gallery the arrow keys walk. One thumbnail template serves the table
+    # and the Test Steps tree, and each names its own group: arrowing off a row
+    # and into a screenshot from a tab the reader is not looking at is not what
+    # the arrow keys are for.
     assert link["data-fancybox"] == "metrics"
+    assert str(TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc,
+                        group="steps")).count('data-fancybox="steps"') == 1
     assert link.find("img")["src"] == path
     assert link.find("img")["loading"] == "lazy"
 

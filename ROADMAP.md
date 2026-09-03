@@ -419,6 +419,23 @@ was slow", never "which test was slow" — scaling across the run draws a flat l
 interleaved: a tree that never existed. Each thread nests within itself, and a background thread's steps
 land at the top level.
 
+**A failing test's screenshot is shown on the step that threw.** The picture was already in the
+report twice over — the `Screens` column and the gallery — and neither says *where* in the test it
+was taken, which is the one thing this tab knows. The automatic capture runs from the teardown hook
+with nothing open, so those are filed against the step carrying the error rather than by asking the
+stack: a photograph of the browser at the end of a failing test is a photograph of the state that
+step left behind. One attached mid-test carries its own step id, the way an attachment does, which
+is what puts a picture on a step of a test that passed; anything left over goes under `Test body`,
+because a test that named no steps is the ordinary case and the body is where it ran.
+
+Finding the browser at all had to be fixed first. **A pytest-bdd scenario was never photographed.**
+Its generated test function takes no fixtures — each step asks for what it needs through
+`request.getfixturevalue` while it runs — so the page never reached `item.funcargs`, which was the
+only place the capture looked, and a Gherkin suite driving a browser silently produced no pictures.
+Fixture values are now also read out of the request's cache, and read rather than asked for by name:
+`getfixturevalue` on a fixture the test never used would *build* it, which at teardown means
+starting a browser in order to photograph it.
+
 The tab's own durations are summed from the per-phase milliseconds rather than the record's
 seconds-rounded-to-two-places, where every test faster than 5ms arrived as a flat `0`. Step trees are
 parked outside the metrics table for the same reason logs and attachments are, and a retry reports the

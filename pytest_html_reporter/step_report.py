@@ -27,6 +27,7 @@ from html_page.step_phase import StepPhase
 from html_page.step_scenario import StepScenario
 from html_page.step_suite import StepSuite
 from html_page.step_test import StepTest
+from html_page.test_shot import TestShot
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.util import escape_report_text
 
@@ -135,7 +136,76 @@ def _attach_chip(step, attachments):
             % (_pluralise(count, 'attachment'), count))
 
 
-def _line(step, width, attachments):
+def _threw(steps):
+    """The step a failure came out of, or None.
+
+    A raised exception walks out through every step it was inside and each of
+    those is marked failed, but only the innermost one is given the text - so
+    the one carrying a message is the one that actually threw. The last of
+    them, if a test managed to fail twice; failing deeper beats failing later,
+    which is why the message is what this reads rather than the status.
+    """
+    threw = [index for index, step in enumerate(steps) if (step.get('error') or '').strip()]
+    if threw: return threw[-1]
+
+    failed = [index for index, step in enumerate(steps)
+              if str(step.get('status') or '').upper() in ('FAIL', 'ERROR')]
+
+    return failed[-1] if failed else None
+
+
+def _shots_by_step(record):
+    """This test's screenshots, filed under the step each one belongs to.
+
+    Two ways a picture gets here. One was taken while a step was open - by a
+    test calling ``attach`` inside it - and says so itself. The other is the
+    automatic capture, which runs from the teardown hook with nothing open at
+    all: those are filed against the step that threw, because a photograph of
+    the browser at the end of a failing test is a photograph of the state that
+    step left behind, and looking for it anywhere else is the whole complaint.
+
+    What is left over - a picture from a test that passed, or one from a test
+    whose failure named no step - goes to the phase, under `None`.
+    """
+    steps = record.get('steps') or []
+    threw = _threw(steps) if str(record.get('status') or '').upper() in ('FAIL', 'ERROR') else None
+
+    filed = {}
+    for shot in record.get('screenshots') or []:
+        try:
+            index = int(shot.get('step', -1))
+        except (TypeError, ValueError):
+            index = -1
+
+        if not 0 <= index < len(steps):
+            index = threw if threw is not None else None
+
+        filed.setdefault(index, []).append(shot)
+
+    return filed
+
+
+def _shot_strip(shots, record):
+    """The thumbnails themselves, in the same gallery the tab opens them in."""
+    if not shots: return ''
+
+    thumbs = ''.join(
+        str(TestShot(
+            screen_name=escape_report_text(shot.get('name') or ''),
+            ts=escape_report_text(shot.get('suite') or ''),
+            tc=escape_report_text(shot.get('test') or record.get('test_name') or ''),
+            # A gallery of its own: the tab shows one test at a time, so
+            # arrowing across should stay inside the test being read rather
+            # than travel the whole run the way the table's strip does.
+            group='steps',
+            tip=escape_report_text('Screenshot taken here'),
+        ))
+        for shot in shots)
+
+    return '<div class="step-shots">%s</div>' % thumbs
+
+
+def _line(step, width, attachments, shots, record):
     params = _params_text(step.get('params') or [])
     error = step.get('error') or ''
 
@@ -150,6 +220,7 @@ def _line(step, width, attachments):
         width=str(width),
         ms=escape_report_text(duration(step.get('ms'))),
         error=('<pre class="step-line__error">%s</pre>' % escape_report_text(error)) if error else '',
+        shots=_shot_strip(shots, record),
     ))
 
 
@@ -164,13 +235,20 @@ def _phases(record):
     attachments = record.get('attachments') or []
     timings = record.get('phases') or {}
     widths = dict(zip(range(len(steps)), _widths(steps)))
+    shots = _shots_by_step(record)
+
+    # A picture belonging to no step is shown against the test body: a test
+    # with no named steps is the ordinary case, and the body is where it ran.
+    loose = shots.get(None) or []
 
     blocks = ''
     for phase, label in PHASES.items():
         owned = [(index, step) for index, step in enumerate(steps)
                  if (step.get('phase') or 'call') == phase]
 
-        lines = ''.join(_line(step, widths.get(index, 0), attachments) for index, step in owned)
+        lines = ''.join(_line(step, widths.get(index, 0), attachments,
+                              shots.get(index) or [], record)
+                        for index, step in owned)
 
         blocks += str(StepPhase(
             phase=phase,
@@ -179,6 +257,7 @@ def _phases(record):
             lines=lines,
             state='filled' if owned else 'bare',
             none='' if owned else 'No steps named here',
+            shots=_shot_strip(loose if phase == 'call' else [], record),
         ))
 
     return blocks

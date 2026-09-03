@@ -5332,6 +5332,37 @@
                     overflow: auto;
                 }
 
+                /* The picture of the moment a step went wrong, on that step.
+                   The automatic capture happens at teardown, so a failing
+                   test's screenshot used to be reachable only from the table's
+                   Screens column and from the gallery - both of which say which
+                   test it came from and neither of which says where in it. On
+                   the same row as the error, because they are two halves of the
+                   same answer. */
+                .step-shots {
+                    flex: 1 1 100%;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin: 8px 0 2px 0;
+                }
+
+                /* Under the phase, for a picture that belongs to the test
+                   rather than to a step in it - which is every screenshot from
+                   a suite that has never named one. */
+                .step-phase .step-shots {
+                    margin: 0 14px 14px 14px;
+                }
+
+                .step-phase--bare .step-shots {
+                    margin-top: -4px;
+                }
+
+                .step-shots .shot-thumb {
+                    width: 108px;
+                    height: 66px;
+                }
+
                 .step-head__tail {
                     display: flex;
                     align-items: center;

@@ -900,6 +900,10 @@ class HTMLReporter(object):
                 screen_name=escape_report_text(shot['name']),
                 ts=escape_report_text(shot['suite']),
                 tc=escape_report_text(shot['test']),
+                # Arrowing from one thumbnail to the next stays inside the
+                # table; the same pictures on the Test Steps tab are a gallery
+                # of their own, since that tab shows one test at a time.
+                group='metrics',
                 tip=escape_report_text(self.shot_tip(shot, len(pending)))
             ))
 
@@ -1055,6 +1059,9 @@ class HTMLReporter(object):
                 # Where the picture came from - the fixture it was taken
                 # through, or 'attached' when the test handed it over itself.
                 'label': entry.get('label', ''),
+                # The step it was taken inside, for the tree to file it under.
+                # -1 when none was open, which is every automatic capture.
+                'step': entry.get('step', -1),
             })
 
         return shots
