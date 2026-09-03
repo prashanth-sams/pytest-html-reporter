@@ -20,11 +20,18 @@ from pytest_html_reporter import merge
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.html_reporter import HTMLReporter
 from pytest_html_reporter.shards import (
+    _CI_RUN_VARIABLES,
     SHARD_SCHEMA,
     SHARD_VERSION,
     shards_root,
     write_bundle,
 )
+
+
+# Every environment variable a leg can derive its run token from, read off the
+# module rather than spelled out again, so that this file cannot go on passing
+# while the plugin learns about a CI system listed only over there.
+_CI_VARIABLES = tuple(name for _, names in _CI_RUN_VARIABLES for name in names)
 
 
 class _FakePluginManager:
@@ -93,7 +100,19 @@ def _reporter(tmp_path, **options):
 
 
 @pytest.fixture(autouse=True)
-def _isolate():
+def _isolate(monkeypatch):
+    """Class-level state back as it was, and a leg that is nobody's CI job.
+
+    The environment matters as much as ConfigVars here. A leg given no
+    --report-shard-run takes its token from the CI variables, so this suite run
+    on a CI server would hand every reporter below that job's token - and the
+    bundles written beside them, which carry none, would each be put aside as
+    another run's. The tests about a leg *without* a token have to say what the
+    whole environment is rather than only what they add to it.
+    """
+    for name in _CI_VARIABLES:
+        monkeypatch.delenv(name, raising=False)
+
     saved = {name: getattr(ConfigVars, name, None)
              for name in ("_start_execution_time", "_environment",
                           "_environment_rows", "_logs_notice")}
