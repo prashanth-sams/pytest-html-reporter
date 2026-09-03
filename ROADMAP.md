@@ -206,12 +206,40 @@ counted against a test, or a test skipped for three builds between two passes re
 only ever describe the current run, because a number that was never stored is a number no later
 build can show; archives written before it have no key and are read as *not measured*, never as zero.
 
-### 9. Failure grouping by exception type
+### 9. Failure grouping by exception type — SHIPPED
 Parse the first line of each captured error and group — "12 failures, 9 are `TimeoutException`".
 Pure post-processing on `_current_error`.
 
 *Why:* turns a wall of red into one actionable insight.
 *Effort:* ~30 lines.
+*Shipped as:* `exception_type` / `failure_counts` / `failure_types` / `failure_headline` in
+`analytics.py`, the `AnalyticsFault` component, and a **Why this run failed** card sat directly
+under the Analytics tiles. It reads the current build alone, so it is the one panel on that tab
+that is answerable on a first run — which is when a red suite most needs it — and it is left out
+entirely on a green one rather than standing empty.
+
+**Not the first line.** A failure is stored as pytest's `E` lines with the marker stripped, but an
+*error* keeps the whole traceback as printed, and the first line of that is a source frame. So the
+whole message is read, and which end wins depends on what is found: a name spelled like an
+exception is taken from the *last* line that has one, because a chained failure prints the original
+traceback first and the exception that actually surfaced last — which is the one pytest itself
+reports — while anything else is taken from the first. Colour escapes are stripped before matching;
+they sit between the start of a line and the name.
+
+**Anchored, or an assertion diff becomes a failure mode.** What a test compared can be anything at
+all, including the text of somebody else's exception, and pytest prints it back as `- ValueError:
+nope`. Matching only at the start of a line keeps a diff out of the grouping. The same anchoring is
+what keeps Selenium's `Message:` continuation lines from becoming a type of their own.
+
+**A bare `assert` is read as an `AssertionError`.** pytest prints those with no type name at all,
+and they are far too common a failure to leave in the unclassified pile. Anything genuinely naming
+nothing — a fixture that could not be found, a message the reporter never captured — lands in
+`Unclassified`, which is ranked last however large it grows: a panel headed by "Unclassified: 40"
+has answered nothing.
+
+Movement against the previous build rides along for free, since the archives are already lined up:
+a group that the last build did not have at all says `new` rather than `+3`, which reads as three
+more of something that was already there.
 
 ---
 

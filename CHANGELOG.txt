@@ -1,4 +1,4 @@
-0.4.0 (02/09/2026)
+0.4.0 (03/09/2026)
 -------------------
 - A third button beside a failure message copies the command that runs that one test again - `pytest tests/test_a.py::test_one` - which is the step that followed reading the error often enough to be worth a click of its own
 - The command is built from the test's node id rather than from the suite and test names the row shows: those are what a person reads, and a test inside a class is listed under its own name where pytest wants the class in front of it
@@ -30,6 +30,15 @@
 - All four of those buttons now fold behind the `...` and come back out along the row when it is pressed, a tenth of a second apart, so a table of forty failures rests as forty single buttons rather than the 160 it was carrying for the one somebody wants
 - They are folded by width and opacity rather than by `display: none`, which cannot be transitioned - and while they are folded they take no clicks and no tab stops. One row is open at a time, and a click anywhere else or Escape shuts it
 - Those buttons are no longer drawn in the palette a disabled control gets: the glyph goes up a point to 12px in `--text-muted`, behind a `--border-strong` edge. In `--text-faint` behind a `--border-subtle` one they were a pale square holding a pale glyph, and read as decoration on the message rather than as the things that do the work. The box stays the 22px it always was - it is the ink that was hard to see, and a button out-weighing the message it belongs to is a different complaint from the one being fixed
+- The `Analytics` tab opens on `Why this run failed`: this run's failures grouped by the exception each came out of, biggest group first - `12 failures, 9 are TimeoutException`. A wall of red says how much went wrong; this says what went wrong, which is the thing you would otherwise get by opening failures one at a time until a pattern appeared
+- Each group carries the share of the run it holds, the tests in it by name, and how it has moved since the last build - `+2`, `-1`, `new`. Nine timeouts through one page object and nine unrelated waits are different mornings, and the names are what tell the two apart
+- Nothing new is collected for it. The message stored against every failing test is what pytest printed, in this run and in every archived build, so the exception is read back out of the text
+- The exception that actually surfaced wins over the one it came from, which is what pytest itself reports for a chained failure; a dotted name groups with its bare one, since which of the two a message carries is down to how the traceback was rendered rather than to what went wrong
+- A bare `assert` is read as an `AssertionError`. pytest prints those with no type name at all, and they are far too common a failure to leave sitting in the unclassified pile
+- An assertion diff is not mistaken for a raised exception - what a test compared can be anything at all, including the text of somebody else's error - and colour written into a message does not hide the exception behind it
+- A message naming nothing lands in `Unclassified`, which is held at the bottom of the list however large it grows: a panel headed by `Unclassified: 40` has answered nothing
+- Errors are grouped beside failures, as they are counted everywhere else on the tab: a test that blew up in a fixture failed for a reason worth grouping, and the reason is in the same field. `xfail` is not - it is an outcome the suite asked for, not one anybody is triaging
+- The panel reads the current build alone, so it is answerable on a first run, where every longitudinal panel below it is still blank - and a first run that is red is exactly when somebody wants it. A green run has nothing to group and the card is left out rather than standing empty
 
 0.3.9 (02/09/2026)
 -------------------

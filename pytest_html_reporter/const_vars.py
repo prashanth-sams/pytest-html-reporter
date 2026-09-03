@@ -130,3 +130,6 @@ class ConfigVars:
     _analytics_bucket_labels = '[]'
     _analytics_buckets = '[]'
     _analytics_slowest = '[]'
+    _analytics_faults = ''
+    _analytics_fault_note = ''
+    _analytics_fault_state = 'is-empty'

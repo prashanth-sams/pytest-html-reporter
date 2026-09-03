@@ -15,7 +15,11 @@ import json
 import re
 
 from pytest_html_reporter.analytics import (
+    OTHER,
     duration_buckets,
+    exception_type,
+    failure_headline,
+    failure_types,
     generate_analytics,
     histories,
     movements,
@@ -342,6 +346,173 @@ def test_flipping_scores_worse_than_failing_outright(tmp_path):
 
 
 # --------------------------------------------------------------------------
+# grouping failures by the exception they came out of
+# --------------------------------------------------------------------------
+
+def _failed(stamp, *messages, **kwargs):
+    """One build whose tests all failed, each with the message it failed with."""
+    build = _build(stamp, [("test_%d" % i, kwargs.get("status", "FAIL"), 0, 0.1)
+                           for i, _ in enumerate(messages)])
+
+    for i, message in enumerate(messages):
+        build["content"]["suites"]["0"]["tests"][str(i)]["message"] = message
+
+    return build
+
+
+def _types(tmp_path, *builds):
+    """The failure groups of the last build, against the one before it.
+
+    Read off disk rather than out of the dict, so what is grouped here is what
+    survives a round trip through an archive - which is the only form the
+    older builds are ever in.
+    """
+    read = read_builds(_history(tmp_path, *builds))
+
+    return failure_types(read[-1], read[-2] if len(read) > 1 else None)
+
+
+def _grouped(tmp_path, *builds):
+    return {entry["name"]: entry["count"] for entry in _types(tmp_path, *builds)}
+
+
+def test_the_exception_is_read_off_the_line_it_is_raised_on():
+    assert exception_type("   ValueError: bad input\n") == "ValueError"
+    assert exception_type("TimeoutException: Message: waited 10s") == "TimeoutException"
+
+
+def test_a_dotted_exception_groups_with_its_bare_name():
+    """Which of the two a message carries is down to how the traceback was
+    rendered, not to what went wrong."""
+    dotted = "selenium.common.exceptions.TimeoutException: Message: gone"
+
+    assert exception_type(dotted) == exception_type("TimeoutException: gone")
+
+
+def test_a_bare_assert_is_read_as_an_assertion():
+    """pytest prints these with no type name at all, and they are far too
+    common a failure to leave in the unclassified pile."""
+    assert exception_type("   assert 1 == 2\n") == "AssertionError"
+
+
+def test_an_error_keeps_its_whole_traceback_and_is_still_read():
+    """A failure is stored as pytest's E-lines with the marker taken off; an
+    error is stored as the traceback exactly as printed."""
+    traceback = ("@pytest.fixture\n"
+                 "    def broken():\n"
+                 ">       raise RuntimeError('boom')\n"
+                 "E       RuntimeError: boom\n")
+
+    assert exception_type(traceback) == "RuntimeError"
+
+
+def test_the_exception_that_surfaced_wins_over_the_one_it_came_from():
+    """A chained failure prints the original traceback first and the exception
+    that actually came out last - which is the one pytest itself reports."""
+    chained = ("   ValueError: bad\n\n"
+               "During handling of the above exception, another exception occurred:\n\n"
+               "   RuntimeError: worse\n")
+
+    assert exception_type(chained) == "RuntimeError"
+
+
+def test_a_diff_line_is_not_mistaken_for_a_raised_exception():
+    """An assertion prints what it compared, and that can be anything at all -
+    including the text of somebody else's exception."""
+    diff = ("   AssertionError: assert '- ValueError: nope' == '+ KeyError: x'\n"
+            "     - + KeyError: x\n"
+            "     + - ValueError: nope\n")
+
+    assert exception_type(diff) == "AssertionError"
+
+
+def test_colour_written_into_the_message_does_not_hide_the_exception():
+    assert exception_type("   \x1b[31mValueError\x1b[0m: bad") == "ValueError"
+
+
+def test_a_message_naming_nothing_is_left_unclassified():
+    """Saying more than the message supports is how a report stops being
+    believed: a fixture that could not be found names no exception."""
+    assert exception_type("file /x/test_a.py, line 3\n"
+                          "E       fixture 'missing' not found\n") == ""
+    assert exception_type("") == ""
+
+
+def test_only_the_failures_are_grouped(tmp_path):
+    """A pass carries no message, and an expected failure is an outcome the
+    suite asked for rather than one anybody is triaging."""
+    build = _build(1000.0, [("a", "PASS", 0, 0.1), ("b", "xFAIL", 0, 0.1),
+                            ("c", "FAIL", 0, 0.1)])
+    build["content"]["suites"]["0"]["tests"]["2"]["message"] = "   ValueError: no\n"
+
+    assert _grouped(tmp_path, build) == {"ValueError": 1}
+
+
+def test_an_error_is_grouped_beside_the_failures(tmp_path):
+    """It failed for a reason worth grouping, and the reason is in the same
+    field - the tab reads ERROR with FAIL everywhere else too."""
+    build = _failed(1000.0, "   ValueError: no\n", status="ERROR")
+
+    assert _grouped(tmp_path, build) == {"ValueError": 1}
+
+
+def test_the_largest_group_leads_and_carries_its_share(tmp_path):
+    entries = _types(tmp_path, _failed(
+        1000.0,
+        "   TimeoutException: a\n", "   TimeoutException: b\n",
+        "   TimeoutException: c\n", "   ValueError: d\n"))
+
+    assert [(entry["name"], entry["count"], entry["share"]) for entry in entries] == [
+        ("TimeoutException", 3, 75), ("ValueError", 1, 25)]
+
+
+def test_the_unclassified_pile_is_held_at_the_bottom_however_large_it_is(tmp_path):
+    """A list headed by "Unclassified: 3" is a list that has answered nothing."""
+    entries = _types(tmp_path, _failed(
+        1000.0, "no exception here", "nor here", "or here", "   ValueError: d\n"))
+
+    assert [entry["name"] for entry in entries] == ["ValueError", OTHER]
+
+
+def test_a_group_is_compared_against_the_build_before(tmp_path):
+    before = _failed(1000.0, "   TimeoutException: a\n", "   TimeoutException: b\n",
+                     "   ValueError: c\n")
+    after = _failed(1001.0, "   TimeoutException: a\n", "   KeyError: b\n")
+
+    entries = {entry["name"]: entry for entry in _types(tmp_path, before, after)}
+
+    assert entries["TimeoutException"]["delta"] == -1
+    # A failure mode the last build did not have at all, not two more of one it
+    # already had.
+    assert entries["KeyError"]["delta"] == entries["KeyError"]["count"] == 1
+
+
+def test_a_first_build_has_no_movement_to_report(tmp_path):
+    """Which is not the same as a group that has not moved, and reads
+    differently on the page."""
+    entries = _types(tmp_path, _failed(1000.0, "   ValueError: a\n"))
+
+    assert entries[0]["delta"] is None
+
+
+def test_the_headline_says_where_to_start(tmp_path):
+    build = _failed(1000.0, "   TimeoutException: a\n", "   TimeoutException: b\n",
+                    "   ValueError: c\n")
+
+    assert failure_headline(_types(tmp_path, build)) == "3 failures, 2 are TimeoutException"
+
+
+def test_the_headline_says_so_when_every_failure_is_the_same_thing(tmp_path):
+    build = _failed(1000.0, "   TimeoutException: a\n", "   TimeoutException: b\n")
+
+    assert failure_headline(_types(tmp_path, build)) == "all 2 failures are TimeoutException"
+
+
+def test_a_green_run_has_no_headline_at_all(tmp_path):
+    assert failure_headline(_types(tmp_path, _build(1000.0, [("a", "PASS", 0, 0.1)]))) == ""
+
+
+# --------------------------------------------------------------------------
 # what reaches the page
 # --------------------------------------------------------------------------
 
@@ -413,6 +584,7 @@ def test_a_name_that_looks_like_a_placeholder_is_not_filled_in(tmp_path):
 
     assert "%(archives)%" not in ConfigVars._analytics_rows
     assert "%(archives)%" not in ConfigVars._analytics_movement
+    assert "%(archives)%" not in ConfigVars._analytics_faults
 
 
 def test_the_worst_behaved_tests_are_at_the_top(tmp_path):
@@ -445,6 +617,51 @@ def test_the_history_strip_carries_a_sort_value(tmp_path):
 
     # A strip of nothing but skips has decided nothing, so it sits below both.
     assert order["gone"] < order["down"]
+
+
+def test_the_failure_panel_names_the_tests_under_each_exception(tmp_path):
+    """"9 TimeoutException" says what broke; the names say whether it is one
+    page object nine tests go through or nine unrelated waits."""
+    _generate(tmp_path, _failed(1000.0, "   TimeoutException: a\n",
+                                "   TimeoutException: b\n", "   ValueError: c\n"))
+
+    assert "TimeoutException" in ConfigVars._analytics_faults
+    assert "test_0" in ConfigVars._analytics_faults
+    assert ConfigVars._analytics_fault_note == "3 failures, 2 are TimeoutException"
+    assert ConfigVars._analytics_fault_state == ""
+
+
+def test_the_failure_panel_is_answerable_on_a_first_run(tmp_path):
+    """Every other longitudinal panel is blank until there are two builds.
+    This one reads the current build alone, and a first run that is red is
+    exactly when somebody wants it."""
+    _generate(tmp_path, _failed(1000.0, "   ValueError: a\n"))
+
+    assert ConfigVars._analytics_state == "is-solo"
+    assert ConfigVars._analytics_fault_state == ""
+    assert "ValueError" in ConfigVars._analytics_faults
+
+
+def test_a_green_run_has_no_failure_panel(tmp_path):
+    """A card standing empty over a passing run is a card that gets ignored
+    when it does have something to say."""
+    _generate(tmp_path, _build(1000.0, [("a", "PASS", 0, 0.1)]))
+
+    assert ConfigVars._analytics_fault_state == "is-empty"
+    assert ConfigVars._analytics_faults == ""
+    assert ConfigVars._analytics_fault_note == ""
+
+
+def test_a_test_named_under_a_failure_group_reaches_the_page_escaped(tmp_path):
+    """The names listed under each exception are the same arbitrary text as
+    everywhere else - a parametrized case can be called anything at all."""
+    build = _failed(1000.0, "   ValueError: x\n")
+    build["content"]["suites"]["0"]["tests"]["0"]["test_name"] = "test_x[<script>alert(1)</script>]"
+
+    _generate(tmp_path, build)
+
+    assert "<script>" not in ConfigVars._analytics_faults
+    assert "&lt;script&gt;" in ConfigVars._analytics_faults
 
 
 def test_a_run_with_nothing_on_disk_is_left_alone(tmp_path):

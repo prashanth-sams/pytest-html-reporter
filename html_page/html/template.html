@@ -6013,6 +6013,110 @@
                     height: 300px;
                 }
 
+                /* ---- Failures grouped by the exception they came out of ----
+                   Read off this run alone, so it says something on a first
+                   build where every longitudinal panel below is still blank.
+                   A green run has nothing to group, and the card goes rather
+                   than standing there empty. */
+                .an-faults.is-empty { display: none; }
+
+                .fault-list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 6px 16px 16px 16px;
+                }
+
+                .fault {
+                    padding: 10px 0;
+                    border-bottom: 1px solid var(--border-hairline);
+                }
+
+                .fault:last-child { border-bottom: 0; }
+
+                .fault__head {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 10px;
+                    font-family: sans-serif;
+                }
+
+                .fault__name {
+                    font-size: 0.86rem;
+                    font-weight: 550;
+                    color: var(--text-body);
+                    word-break: break-word;
+                }
+
+                .fault__count {
+                    font-size: 0.86rem;
+                    font-weight: 700;
+                    color: var(--trend-down);
+                }
+
+                .fault__share {
+                    font-size: 0.74rem;
+                    color: var(--text-faintest);
+                }
+
+                /* Sat with the count rather than pushed to the far edge of
+                   the card: on a wide screen the two ends of that row are a
+                   hand-span apart, and the movement belongs to the number. */
+                .fault__delta {
+                    font-size: 0.74rem;
+                    white-space: nowrap;
+                }
+
+                /* More of this failure than the build before is the bad
+                   direction, which is the opposite of what these words mean
+                   on the pass-rate tiles. */
+                .fault__delta--up   { color: var(--trend-down); }
+                .fault__delta--down { color: var(--trend-up); }
+                .fault__delta--flat { color: var(--text-faintest); }
+
+                .fault__bar {
+                    height: 4px;
+                    margin: 7px 0 8px 0;
+                    border-radius: 2px;
+                    background-color: var(--surface-hover);
+                    overflow: hidden;
+                }
+
+                .fault__bar i {
+                    display: block;
+                    height: 100%;
+                    border-radius: 2px;
+                    background-color: var(--status-fail);
+                }
+
+                .fault__tests {
+                    list-style: none;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .fault__test,
+                .fault__more {
+                    padding: 2px 8px;
+                    border-radius: 999px;
+                    background-color: var(--surface-hover);
+                    font-family: sans-serif;
+                    font-size: 0.73rem;
+                    color: var(--text-muted);
+                    word-break: break-word;
+                }
+
+                .fault__more { background-color: transparent; color: var(--text-faintest); }
+
+                .fault__rest {
+                    padding-top: 10px;
+                    font-family: sans-serif;
+                    font-size: 0.78rem;
+                    color: var(--text-faintest);
+                }
+
                 /* ---- Movement cards: what changed since the build before ---- */
                 .move-grid {
                     display: grid;
@@ -7062,6 +7166,14 @@
 
                     <div class="an-shell">
                         <div class="stat-tiles">%(analytics_tiles)%</div>
+
+                        <div class="metrics-card an-faults %(analytics_fault_state)%">
+                            <div class="an-chart__head">
+                                <i class="fa fa-bug" aria-hidden="true"></i>Why this run failed
+                                <span class="an-chart__note">%(analytics_fault_note)%</span>
+                            </div>
+                            <ul class="fault-list">%(analytics_faults)%</ul>
+                        </div>
 
                         <div class="an-solo-note">
                             <i class="fa fa-info-circle" aria-hidden="true"></i>

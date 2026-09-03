@@ -35,7 +35,7 @@ Features
   - Trends
   - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
-* Analytics - flaky tests, standing failures, pass-rate drift and where the run's time goes, read across every archived build
+* Analytics - flaky tests, standing failures, failures grouped by exception, pass-rate drift and where the run's time goes, read across every archived build
 * Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did
 * Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
 * Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
@@ -942,6 +942,16 @@ Six figures across the top, then the panels behind them:
 * **Flaky tests** - tests that have flipped between passing and failing, or that needed a retry to pass.
 * **Always failing** - tests that have failed every build they were in, two builds running or more.
 * **Builds analysed** and **time in tests**, against the median build.
+
+**Why this run failed** sits under the figures and groups this run's failures by the exception each one came out of -
+*12 failures, 9 are* ``TimeoutException`` - with the share of the run each group holds, how it has moved since the last
+build, and the tests in it named rather than only counted: nine timeouts through one page object and nine unrelated
+waits are different mornings. Errors are grouped beside failures, as they are counted everywhere else on the tab;
+``xfail`` is not, being an outcome the suite asked for. The type is read back out of the message pytest printed, since
+that is all an archived build ever holds - the exception that surfaced from a chained failure, a bare ``assert`` read as
+an ``AssertionError``, and a message naming nothing left in ``Unclassified``, which is held at the bottom of the list
+however large it grows. The panel reads the current build alone, so unlike everything below it it says something on a
+first run; a green run has nothing to group and the card is left out entirely.
 
 ``Pass rate across builds`` plots the drift; the axis is *not* pinned to 0-100, because a suite that lives between 96%
 and 99% is exactly the one whose two-point drops matter. ``What moved, build to build`` stacks what changed at each

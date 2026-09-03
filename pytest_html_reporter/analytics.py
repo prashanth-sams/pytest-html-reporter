@@ -16,9 +16,11 @@ where the run's minutes go.
 import glob
 import json
 import os
+import re
 import time
 from collections import OrderedDict
 
+from html_page.analytics_fault import AnalyticsFault
 from html_page.analytics_move import AnalyticsMove
 from html_page.analytics_row import AnalyticsRow
 from html_page.analytics_tile import AnalyticsTile
@@ -47,6 +49,16 @@ MOVEMENT_NAMES = 6
 # a row: one failure is a failure, a standing one is a different conversation.
 BROKEN_STREAK = 2
 
+# Exception groups listed in the failure panel, and test names shown under each.
+FAULT_TYPES = 8
+FAULT_NAMES = 4
+
+# Where a failure lands when nothing in its message names an exception - a
+# collection error, a fixture that could not be found, a message the reporter
+# never captured. Ranked last however many are in it: it is the one group that
+# says nothing about what went wrong.
+OTHER = 'Unclassified'
+
 
 def outcome(status):
     """Reduce a pytest status to the three things a history reads as.
@@ -61,6 +73,71 @@ def outcome(status):
     if status in ('FAIL', 'ERROR'): return 'fail'
     if status == 'SKIP': return 'skip'
     return 'pass'
+
+
+# Colour written into the message by pytest's own diff, or by whatever the
+# test printed. It is invisible in the report - the page renders the escapes
+# as nothing - but it sits between the start of a line and the exception name.
+_ANSI = re.compile(r'\x1b\[[0-9;]*[A-Za-z]')
+
+# A line that opens with a raised exception: an optionally dotted name, then a
+# colon or the end of the line. Anchored at the start on purpose. An assertion
+# diff prints lines like "- ValueError: nope", and that is a string being
+# compared, not something that was raised.
+_RAISED = re.compile(r'^((?:[A-Za-z_]\w*\.)*[A-Z]\w*)\s*(?::|$)')
+
+# What makes a name read as an exception rather than as a word that happens to
+# start a line. "Failed" and "Skipped" are pytest's own; "Message" is
+# Selenium's, and is exactly what this keeps out - a WebDriver error prints
+# "TimeoutException: Message: ..." and then more "Message:" lines under it.
+_RAISED_SUFFIXES = ('Error', 'Exception', 'Failure', 'Failed', 'Skipped',
+                    'Timeout', 'Interrupt', 'Abort', 'Exit')
+
+# pytest marks the lines it wants read with an "E" and pads the rest out to the
+# source indent beside it. A failure has had that stripped by the time it is
+# stored, but an error keeps the whole traceback as printed - and the exception
+# is on one of the marked lines.
+_MARKER = re.compile(r'^E\s+')
+
+
+def exception_type(message):
+    """The exception a stored failure message came out of, or ``''``.
+
+    What is stored per test is what pytest printed, not an exception object -
+    by the time a build is read back it is text and nothing else, and in an
+    archive it always was. So the type is read back out of the message.
+
+    One pass, but the two things it looks for want opposite ends of the
+    message. A name spelled like an exception is taken from the *last* line
+    that has one: a chained failure prints the original traceback first and the
+    exception that actually surfaced last, which is the one pytest itself
+    reports. Anything else is taken from the *first* line, where a plain
+    traceback puts its headline.
+
+    A bare ``assert`` is read as an AssertionError. pytest prints those with no
+    type name at all - "assert 1 == 2" and nothing else - and they are far too
+    common a failure to leave sitting in the unclassified pile.
+    """
+    raised = named = ''
+
+    for line in _ANSI.sub('', str(message or '')).splitlines():
+        line = _MARKER.sub('', line.strip())
+        if not line: continue
+
+        match = _RAISED.match(line)
+        if match is None:
+            if not named and line.startswith('assert '): named = 'AssertionError'
+            continue
+
+        # Dotted names are cut to the class: "selenium.common.exceptions.
+        # TimeoutException" and "TimeoutException" are one group, and which of
+        # them a message carries is down to how the traceback was rendered.
+        name = match.group(1).rsplit('.', 1)[-1]
+
+        if name.endswith(_RAISED_SUFFIXES): raised = name
+        elif not named: named = name
+
+    return raised or named
 
 
 def _to_int(value, fallback=0):
@@ -127,6 +204,10 @@ def _normalise(data, stamp):
                 'name': name,
                 'status': str(test.get('status', '')),
                 'outcome': state,
+                # Kept as written so the failure grouping can read the
+                # exception back out of it. Every build on disk already
+                # carries this; nothing new is being collected for it.
+                'message': str(test.get('message', '')),
                 'rerun': _to_int(test.get('rerun')),
                 'duration': duration,
             }
@@ -346,6 +427,78 @@ def duration_buckets(tracked):
     return counts if measured else []
 
 
+def failure_counts(build):
+    """One build's failures, grouped by the exception each came out of.
+
+    Keyed by suite and test the same way the histories are, so a group can be
+    turned back into the tests in it.
+    """
+    groups = OrderedDict()
+
+    for key, test in (build or {}).get('tests', {}).items():
+        # ERROR sits with FAIL here, as it does everywhere else in the tab: a
+        # test that blew up in a fixture failed for a reason worth grouping,
+        # and the reason is in the same field. xFAIL does not - it is an
+        # outcome the suite asked for, not one anybody is triaging.
+        if test['outcome'] != 'fail': continue
+
+        groups.setdefault(exception_type(test['message']) or OTHER, []).append(key)
+
+    return groups
+
+
+def failure_types(build, previous=None):
+    """The failure groups of one build, ranked, with movement against the last.
+
+    Biggest group first, ties broken by name so the order is stable between
+    two runs that failed the same way. ``OTHER`` is held at the bottom however
+    large it is: a list headed by "Unclassified: 40" is a list that has
+    answered nothing.
+
+    ``delta`` is ``None`` when there is no build to compare against - which is
+    not the same as a group that has not moved, and is drawn differently.
+    """
+    groups = failure_counts(build)
+    total = sum(len(keys) for keys in groups.values())
+    if not total: return []
+
+    before = {name: len(keys) for name, keys in failure_counts(previous).items()} if previous else None
+
+    ranked = sorted(groups.items(), key=lambda group: (group[0] == OTHER, -len(group[1]), group[0]))
+
+    return [{
+        'name': name,
+        'count': len(keys),
+        'share': round(100.0 * len(keys) / total),
+        'keys': keys,
+        'delta': None if before is None else len(keys) - before.get(name, 0),
+    } for name, keys in ranked]
+
+
+def failure_headline(entries):
+    """The one line the panel is worth reading for.
+
+    "12 failures, 9 are TimeoutException" - the count on its own is already on
+    the Dashboard, and it is the second half that says where to start.
+    """
+    total = sum(entry['count'] for entry in entries)
+    if not total: return ''
+
+    plural = 'failure' if total == 1 else 'failures'
+    top = entries[0]
+
+    # OTHER only ever ranks first by being the only group there is.
+    if top['name'] == OTHER:
+        return '%d %s, none of them naming an exception' % (total, plural)
+
+    if top['count'] == total:
+        if total == 1: return 'the one failure is a %s' % top['name']
+
+        return 'all %d %s are %s' % (total, plural, top['name'])
+
+    return '%d %s, %d are %s' % (total, plural, top['count'], top['name'])
+
+
 def stability_score(tracked):
     """One number, 0-100, for how much the suite can be trusted.
 
@@ -459,6 +612,73 @@ def _movement_card(icon, title, keys, tracked, tone):
 
     return str(AnalyticsMove(icon=icon, title=escape_report_text(title),
                              count=str(len(keys)), tone=tone, items=names))
+
+
+def _fault_tone(delta):
+    """How a group's movement should read: worse, better, or neither."""
+    if delta is None: return 'flat'
+    if delta > 0: return 'up'
+    if delta < 0: return 'down'
+
+    return 'flat'
+
+
+def _fault_delta(delta, count):
+    """The movement in a group since the build before, as a person says it.
+
+    A group that is new says so rather than showing "+3": the number on its own
+    reads as three more of something that was already there, and a failure mode
+    the last build did not have at all is the more interesting of the two.
+    """
+    if delta is None: return ''
+    if delta == 0: return 'level'
+    if delta == count: return 'new'
+
+    return '%+d' % delta
+
+
+def _fault_rows(entries, tracked):
+    """The failure panel: one row per exception, with the tests under it.
+
+    The tests are named rather than counted alone. "9 TimeoutException" says
+    what broke; the names say whether it is one page object nine tests go
+    through or nine unrelated waits, and those are different mornings.
+    """
+    content = ''
+
+    for entry in entries[:FAULT_TYPES]:
+        tests = ''
+        for key in entry['keys'][:FAULT_NAMES]:
+            history = tracked.get(key)
+            name = history['name'] if history else key.rsplit('::', 1)[-1]
+            suite = history['suite'] if history else key.rsplit('::', 1)[0]
+
+            tests += ('<li class="fault__test" title="%s">%s</li>'
+                      % (escape_report_text('%s::%s' % (suite, name)), escape_report_text(name)))
+
+        extra = entry['count'] - FAULT_NAMES
+        if extra > 0: tests += '<li class="fault__more">and %d more</li>' % extra
+
+        content += str(AnalyticsFault(
+            name=escape_report_text(entry['name']),
+            count=str(entry['count']),
+            share=str(entry['share']),
+            delta=escape_report_text(_fault_delta(entry['delta'], entry['count'])),
+            tone=_fault_tone(entry['delta']),
+            tests=tests,
+        ))
+
+    # Eight groups is already a long panel, and the tail of a list like this is
+    # one-offs. They are counted rather than dropped: a run whose failures are
+    # all different is itself the finding.
+    rest = entries[FAULT_TYPES:]
+    if rest:
+        content += ('<li class="fault__rest">and %d more %s, %d %s between them</li>'
+                    % (len(rest), 'type' if len(rest) == 1 else 'types',
+                       sum(entry['count'] for entry in rest),
+                       'failure' if sum(entry['count'] for entry in rest) == 1 else 'failures'))
+
+    return content
 
 
 def _rank(history):
@@ -608,6 +828,16 @@ def generate_analytics(base):
     movement += _movement_card('fa-check', 'Newly fixed', latest['fixed'], tracked, 'good')
     movement += _movement_card('fa-file-o', 'New tests', latest['added'], tracked, 'neutral')
     movement += _movement_card('fa-times', 'No longer run', latest['removed'], tracked, 'muted')
+
+    # --- why this run failed --------------------------------------------
+    # Read off the current build alone. Everything else on the tab needs a
+    # history before it means anything; this is answerable on a first run, and
+    # a first run that is red is exactly when somebody wants it.
+    faults = failure_types(current, builds[-2] if len(builds) > 1 else None)
+
+    ConfigVars._analytics_faults = _fault_rows(faults, tracked)
+    ConfigVars._analytics_fault_note = failure_headline(faults)
+    ConfigVars._analytics_fault_state = '' if faults else 'is-empty'
 
     ConfigVars._analytics_tiles = tiles
     ConfigVars._analytics_movement = movement
