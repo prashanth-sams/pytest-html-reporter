@@ -39,6 +39,11 @@
 - A message naming nothing lands in `Unclassified`, which is held at the bottom of the list however large it grows: a panel headed by `Unclassified: 40` has answered nothing
 - Errors are grouped beside failures, as they are counted everywhere else on the tab: a test that blew up in a fixture failed for a reason worth grouping, and the reason is in the same field. `xfail` is not - it is an outcome the suite asked for, not one anybody is triaging
 - The panel reads the current build alone, so it is answerable on a first run, where every longitudinal panel below it is still blank - and a first run that is red is exactly when somebody wants it. A green run has nothing to group and the card is left out rather than standing empty
+- Every `and N more` on the Analytics tab is now a link that opens the whole list - the failure groups and all four movement cards - in a dialog you can scroll and search. The number on its own said how much was being kept from you and offered no way to see it
+- The dialog shows the card's own items rather than a copy of them: a card writes out every name it has and hides the tail, and opening one is that hiding taken off. There is no second list in a data attribute to fall out of step with the first, and no test name written into the page twice
+- It searches as you type, over the test name and the suite together, and says `3 of 41 tests` while a search is on - `41` beside thirty-eight filtered-out rows reads as a list that lost them
+- The exception types past the eighth open the same way, with the count of failures in each, rather than ending at `and 4 more types`
+- Escape closes it, as it already did for the captured-output panel and the environment card, and the search box takes focus as it opens
 
 0.3.9 (02/09/2026)
 -------------------

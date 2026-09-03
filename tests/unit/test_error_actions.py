@@ -417,7 +417,13 @@ def test_only_one_row_is_ever_open():
 
     assert "closeRowActions();" in body
     assert "if (!near) closeRowActions();" in page
-    assert "toggleLogs(false);\n                        closeRowActions();" in page
+
+    # Escape shuts them along with whatever else the key closes. Read out of
+    # the handler rather than as two lines that happen to sit together, so
+    # another dialog joining the list does not read as this one leaving it.
+    escape = page.split("if (e.key !== 'Escape') return;", 1)[1].split("});", 1)[0]
+
+    assert "closeRowActions();" in escape
 
 
 def test_the_toggle_says_whether_it_is_open():

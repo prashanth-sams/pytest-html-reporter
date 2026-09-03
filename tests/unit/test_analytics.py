@@ -12,9 +12,12 @@ history be a few lines instead of five subprocess runs.
 """
 
 import json
+import os
 import re
 
 from pytest_html_reporter.analytics import (
+    FAULT_TYPES,
+    MOVEMENT_NAMES,
     OTHER,
     duration_buckets,
     exception_type,
@@ -28,6 +31,11 @@ from pytest_html_reporter.analytics import (
     stability_score,
 )
 from pytest_html_reporter.const_vars import ConfigVars
+
+TEMPLATE = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "html_page", "html", "template.html",
+)
 
 
 # --------------------------------------------------------------------------
@@ -508,6 +516,15 @@ def test_the_headline_says_so_when_every_failure_is_the_same_thing(tmp_path):
     assert failure_headline(_types(tmp_path, build)) == "all 2 failures are TimeoutException"
 
 
+def test_the_headline_says_so_when_nothing_groups_with_anything(tmp_path):
+    """Naming the first of twelve one-offs reads as a lead. That a run failed
+    twelve different ways is the finding."""
+    build = _failed(1000.0, "   ValueError: a\n", "   KeyError: b\n", "   IndexError: c\n")
+
+    assert failure_headline(_types(tmp_path, build)) == \
+        "3 failures, every one a different exception"
+
+
 def test_a_green_run_has_no_headline_at_all(tmp_path):
     assert failure_headline(_types(tmp_path, _build(1000.0, [("a", "PASS", 0, 0.1)]))) == ""
 
@@ -662,6 +679,89 @@ def test_a_test_named_under_a_failure_group_reaches_the_page_escaped(tmp_path):
 
     assert "<script>" not in ConfigVars._analytics_faults
     assert "&lt;script&gt;" in ConfigVars._analytics_faults
+
+
+def test_a_truncated_list_is_written_out_in_full_behind_the_card(tmp_path):
+    """The overlay shows the card's own items with the hiding taken off, so
+    what a card lists and what opening it shows cannot drift apart - and no
+    test name is written into the page twice to make that work."""
+    failures = _failed(1000.0, *["   TimeoutException: %d\n" % i for i in range(9)])
+    _generate(tmp_path, failures)
+
+    names = re.findall(r'class="fault__test[^"]*"[^>]*>([^<]+)<', ConfigVars._analytics_faults)
+
+    assert len(names) == 9
+    # Everything past the first few is in the page but not shown in the card.
+    assert ConfigVars._analytics_faults.count("is-extra") == 9 - 4
+    assert 'and 5 more' in ConfigVars._analytics_faults
+
+
+def test_a_truncated_list_opens_rather_than_ending_at_a_count(tmp_path):
+    _generate(tmp_path, _failed(1000.0, *["   ValueError: %d\n" % i for i in range(6)]))
+
+    assert 'class="more-link"' in ConfigVars._analytics_faults
+    assert 'onclick="showMore(this)"' in ConfigVars._analytics_faults
+    # The dialog is titled with the group it was opened from.
+    assert 'data-title="ValueError"' in ConfigVars._analytics_faults
+
+
+def test_a_movement_card_opens_the_same_way(tmp_path):
+    """The four cards under the charts truncate the same list the same way."""
+    _generate(tmp_path,
+              _build(1000.0, [("a", "PASS", 0, 0.1)]),
+              _build(1001.0, [("a", "PASS", 0, 0.1)]
+                     + [("new_%d" % i, "PASS", 0, 0.1) for i in range(9)]))
+
+    assert 'class="more-link"' in ConfigVars._analytics_movement
+    assert 'data-title="New tests"' in ConfigVars._analytics_movement
+    assert ConfigVars._analytics_movement.count("is-extra") == 9 - MOVEMENT_NAMES
+
+
+def test_a_card_short_enough_to_show_everything_offers_nothing_to_open(tmp_path):
+    _generate(tmp_path, _failed(1000.0, "   ValueError: a\n", "   ValueError: b\n"))
+
+    assert "more-link" not in ConfigVars._analytics_faults
+    assert "is-extra" not in ConfigVars._analytics_faults
+
+
+def test_the_exception_types_past_the_panel_open_too(tmp_path):
+    """The tail of that list is one-offs, and it is counted rather than
+    dropped: a run whose failures are all different is itself the finding."""
+    _generate(tmp_path, _failed(1000.0, *["   Type%dError: x\n" % i for i in range(11)]))
+
+    rest = ConfigVars._analytics_faults.split('class="fault__rest"')[-1]
+
+    assert 'data-noun="types"' in rest
+    assert 'and 3 more types, 3 failures between them' in rest
+    # The types themselves ride in the page beside the line, hidden, so the
+    # dialog has something to open.
+    assert rest.count("fault__rest-item") == 11 - FAULT_TYPES
+
+
+def test_the_dialog_a_truncated_list_opens_is_on_the_page(tmp_path):
+    """One dialog serves every "and N more" on the tab: it copies the card's
+    own items across, so it has to search and scroll rather than assume the
+    list is short."""
+    with open(TEMPLATE, encoding="utf-8") as handle:
+        page = handle.read()
+
+    assert 'id="moreOverlay"' in page
+    assert 'id="moreOverlaySearch"' in page
+    assert "function showMore(trigger)" in page
+    assert "function filterMore(text)" in page
+
+    # The card's items, with the hiding taken off - not a second copy of them.
+    assert "copy.classList.remove('is-extra');" in page
+
+    # A filtered row is hidden with the attribute, and the list styles the rows
+    # with `display`, which would otherwise win over it.
+    assert ".more-overlay__body li[hidden] { display: none; }" in page
+
+    body = page.split(".more-overlay__body {", 1)[1].split("}", 1)[0]
+    assert "overflow-y: auto;" in body
+
+    escape = page.split("if (e.key !== 'Escape') return;", 1)[1].split("});", 1)[0]
+    assert "toggleMore(false);" in escape
 
 
 def test_a_run_with_nothing_on_disk_is_left_alone(tmp_path):

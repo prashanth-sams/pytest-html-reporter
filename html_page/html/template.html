@@ -3844,7 +3844,8 @@
                 .metrics-card .dataTables_filter input,
                 .metrics-card .step-search input,
                 .metrics-card .attach-search input,
-                .shot-toolbar .attach-search input {
+                .shot-toolbar .attach-search input,
+                .more-overlay__search input {
                     margin: 0;
                     width: 250px;
                     max-width: 100%;
@@ -3864,14 +3865,16 @@
                 .metrics-card .dataTables_filter input::placeholder,
                 .metrics-card .step-search input::placeholder,
                 .metrics-card .attach-search input::placeholder,
-                .shot-toolbar .attach-search input::placeholder {
+                .shot-toolbar .attach-search input::placeholder,
+                .more-overlay__search input::placeholder {
                     color: var(--text-faintest);
                 }
 
                 .metrics-card .dataTables_filter input:focus,
                 .metrics-card .step-search input:focus,
                 .metrics-card .attach-search input:focus,
-                .shot-toolbar .attach-search input:focus {
+                .shot-toolbar .attach-search input:focus,
+                .more-overlay__search input:focus {
                     outline: none;
                     border-color: var(--border-focus);
                     box-shadow: 0 0 0 3px var(--ring-focus);
@@ -6110,10 +6113,186 @@
 
                 .fault__more { background-color: transparent; color: var(--text-faintest); }
 
+                .fault__rest-list {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                }
+
                 .fault__rest {
                     padding-top: 10px;
                     font-family: sans-serif;
                     font-size: 0.78rem;
+                    color: var(--text-faintest);
+                }
+
+                /* ---- "and N more", opened out ----
+                   One dialog for every truncated list on the tab. It shows the
+                   card's own items rather than a copy: what is written into a
+                   card is the whole list, with everything past the first few
+                   carrying is-extra, and the overlay is where that class comes
+                   off again. */
+                .is-extra { display: none; }
+
+                .more-link {
+                    border: 0;
+                    padding: 0;
+                    background: none;
+                    font: inherit;
+                    color: inherit;
+                    cursor: pointer;
+                    text-decoration: underline;
+                    text-decoration-style: dotted;
+                    text-underline-offset: 3px;
+                }
+
+                .more-link:hover,
+                .more-link:focus {
+                    color: var(--text-body);
+                    outline: none;
+                }
+
+                .more-overlay {
+                    position: fixed;
+                    inset: 0;
+                    z-index: 1200;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 24px;
+                }
+
+                .more-overlay__backdrop {
+                    position: absolute;
+                    inset: 0;
+                    background: var(--scrim-overlay);
+                }
+
+                .more-overlay__panel {
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                    max-width: 620px;
+                    max-height: 78vh;
+                    background: var(--surface-overlay);
+                    border-radius: 6px;
+                    box-shadow: 12px 15px 40px 0 var(--shadow-overlay);
+                    padding: 20px 24px 20px 24px;
+                }
+
+                .more-overlay__head {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid var(--border-hairline-neutral);
+                    font-family: sans-serif;
+                    font-weight: 550;
+                    font-size: 0.78rem;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: var(--text-heading-muted);
+                }
+
+                .more-overlay__title {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 8px;
+                    min-width: 0;
+                }
+
+                .more-overlay__title .fa { color: currentcolor; }
+
+                .more-overlay__title #moreOverlayName {
+                    color: var(--text-primary);
+                    text-transform: none;
+                    letter-spacing: 0.01em;
+                    font-size: 0.92rem;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .more-overlay__title em {
+                    font-style: normal;
+                    text-transform: none;
+                    letter-spacing: 0.01em;
+                    font-size: 0.78rem;
+                    color: var(--text-faintest);
+                    white-space: nowrap;
+                }
+
+                .more-overlay__close {
+                    border: none;
+                    background: none;
+                    color: var(--text-quiet-glyph);
+                    font-size: 1.5rem;
+                    line-height: 1;
+                    padding: 0 4px;
+                    cursor: pointer;
+                }
+
+                .more-overlay__close:hover,
+                .more-overlay__close:focus {
+                    color: var(--text-emphasis);
+                    outline: none;
+                }
+
+                .more-overlay__search {
+                    padding: 14px 0 12px 0;
+                }
+
+                .more-overlay__search input { width: 100%; }
+
+                .more-overlay__body {
+                    list-style: none;
+                    margin: 0;
+                    padding: 0;
+                    overflow-y: auto;
+                    min-height: 0;
+                }
+
+                /* The items arrive dressed as whatever they were in the card -
+                   a chip, a two-line entry - and are levelled here into rows
+                   of one list, so a dialog opened from two different cards
+                   reads the same way. */
+                .more-overlay__body li {
+                    display: block;
+                    padding: 8px 2px;
+                    border-bottom: 1px solid var(--border-hairline);
+                    border-radius: 0;
+                    background: none;
+                    font-family: sans-serif;
+                    font-size: 0.82rem;
+                    color: var(--text-body);
+                    word-break: break-word;
+                }
+
+                /* The rule above sets `display` outright, and an author rule
+                   beats the one the browser gives `hidden` - so a filtered-out
+                   row would stay on screen without this. */
+                .more-overlay__body li[hidden] { display: none; }
+
+                .more-overlay__body li:last-child { border-bottom: 0; }
+
+                .more__name {
+                    display: block;
+                    color: var(--text-body);
+                }
+
+                .more__meta,
+                .more-overlay__body .move__suite {
+                    display: block;
+                    font-size: 0.72rem;
+                    color: var(--text-faintest);
+                }
+
+                .more-overlay__empty {
+                    padding: 18px 2px 4px 2px;
+                    font-family: sans-serif;
+                    font-size: 0.82rem;
                     color: var(--text-faintest);
                 }
 
@@ -6838,11 +7017,85 @@
                         if (open) overlay.querySelector('.env-overlay__close').focus();
                     }
 
+                    // Every "and N more" on the Analytics tab opens the same
+                    // dialog. What it shows is the card's own list: a card
+                    // renders every name it has and hides the tail behind
+                    // is-extra, so opening one is a matter of copying those
+                    // items over with the class taken off - there is no second
+                    // list in a data attribute to fall out of step with the
+                    // first, and no name reaching the page twice.
+                    var moreItems = [];
+                    var moreNoun = 'items';
+
+                    function toggleMore(open) {
+                        var overlay = document.getElementById('moreOverlay');
+                        if (!overlay) return;
+
+                        overlay.hidden = !open;
+                        if (open) document.getElementById('moreOverlaySearch').focus();
+                    }
+
+                    function showMore(trigger) {
+                        var source = trigger.closest('ul');
+                        var body = document.getElementById('moreOverlayBody');
+                        if (!source || !body) return;
+
+                        body.innerHTML = '';
+                        moreItems = [];
+                        moreNoun = trigger.getAttribute('data-noun') || 'items';
+
+                        source.querySelectorAll('li').forEach(function(item) {
+                            // The line that was clicked is the way in, not one
+                            // of the things being listed.
+                            if (item.contains(trigger)) return;
+
+                            var copy = item.cloneNode(true);
+                            copy.classList.remove('is-extra');
+                            copy.removeAttribute('title');
+                            body.appendChild(copy);
+                            moreItems.push(copy);
+                        });
+
+                        document.getElementById('moreOverlayName').textContent =
+                            trigger.getAttribute('data-title') || '';
+                        document.getElementById('moreOverlayPanel').setAttribute(
+                            'aria-label', trigger.getAttribute('data-title') || 'Full list');
+
+                        document.getElementById('moreOverlaySearch').value = '';
+                        filterMore('');
+                        body.scrollTop = 0;
+                        toggleMore(true);
+                    }
+
+                    function filterMore(text) {
+                        var needle = text.trim().toLowerCase();
+                        var shown = 0;
+
+                        moreItems.forEach(function(item) {
+                            var match = !needle
+                                || item.textContent.toLowerCase().indexOf(needle) !== -1;
+
+                            item.hidden = !match;
+                            if (match) shown++;
+                        });
+
+                        // The total is what the card promised; the pair is what
+                        // a search has left of it. Saying "12" while eleven rows
+                        // are filtered out reads as a list that lost them.
+                        document.getElementById('moreOverlayCount').textContent =
+                            shown === moreItems.length
+                                ? moreItems.length + ' ' + moreNoun
+                                : shown + ' of ' + moreItems.length + ' ' + moreNoun;
+
+                        document.getElementById('moreOverlayEmpty').hidden = shown !== 0;
+                    }
+
                     document.addEventListener('keydown', function(e) {
                         if (e.key !== 'Escape') return;
 
                         toggleEnvironment(false);
                         toggleLogs(false);
+                        toggleMore(false);
                         closeRowActions();
                     });
 
@@ -7851,6 +8104,31 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     </span>
                 </div>
                 <div class="log-overlay__body" id="logOverlayBody"></div>
+            </div>
+        </div>
+
+        <!-- Every "and N more" on the Analytics tab opens here. The list it
+             shows is the card's own - the cards render every name and hide the
+             tail with a class - so there is one list per card rather than a
+             shown one and a copy of it in an attribute. -->
+        <div class="more-overlay" id="moreOverlay" hidden>
+            <div class="more-overlay__backdrop" onclick="toggleMore(false)"></div>
+            <div class="more-overlay__panel" id="moreOverlayPanel" role="dialog" aria-modal="true" aria-label="Full list">
+                <div class="more-overlay__head">
+                    <span class="more-overlay__title">
+                        <i class="fa fa-list-ol" aria-hidden="true"></i>
+                        <span id="moreOverlayName"></span>
+                        <em id="moreOverlayCount"></em>
+                    </span>
+                    <button type="button" class="more-overlay__close" aria-label="Close" onclick="toggleMore(false)">&times;</button>
+                </div>
+                <div class="more-overlay__search">
+                    <input type="search" id="moreOverlaySearch" autocomplete="off" spellcheck="false"
+                           placeholder="Search this list" aria-label="Search this list"
+                           oninput="filterMore(this.value)" />
+                </div>
+                <ul class="more-overlay__body" id="moreOverlayBody"></ul>
+                <div class="more-overlay__empty" id="moreOverlayEmpty" hidden>Nothing here matches that</div>
             </div>
         </div>
 

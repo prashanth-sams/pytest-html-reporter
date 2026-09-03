@@ -496,6 +496,12 @@ def failure_headline(entries):
 
         return 'all %d %s are %s' % (total, plural, top['name'])
 
+    # Nothing groups with anything: naming the first of twelve one-offs would
+    # read as a lead, and that a run failed twelve different ways is itself the
+    # thing worth saying.
+    if top['count'] == 1:
+        return '%d %s, every one a different exception' % (total, plural)
+
     return '%d %s, %d are %s' % (total, plural, top['count'], top['name'])
 
 
@@ -592,20 +598,44 @@ def _spark_order(states):
     return round(1000.0 * decided.count('pass') / len(decided), 1) + len(states)
 
 
+def _more_link(title, label, noun):
+    """An "and N more" line, as the button that opens the rest of the list.
+
+    The list it opens is the one already in the page: a card renders every
+    name it has and hides the tail, and the overlay shows the same items with
+    the hiding taken off. A second copy of the names in a data attribute would
+    be the same bytes again, and two lists to keep in step.
+    """
+    return ('<button type="button" class="more-link" aria-haspopup="dialog"'
+            ' data-title="%s" data-noun="%s" onclick="showMore(this)">%s</button>'
+            % (escape_report_text(title), noun, escape_report_text(label)))
+
+
+def _named(key, tracked):
+    """One test as a two-line entry: what it is called, and where it lives."""
+    history = tracked.get(key)
+
+    return (history['name'] if history else key.rsplit('::', 1)[-1],
+            history['suite'] if history else key.rsplit('::', 1)[0])
+
+
 def _movement_card(icon, title, keys, tracked, tone):
     names = ''
-    for key in keys[:MOVEMENT_NAMES]:
-        history = tracked.get(key)
-        suite = history['suite'] if history else key.rsplit('::', 1)[0]
-        name = history['name'] if history else key.rsplit('::', 1)[-1]
+    for position, key in enumerate(keys):
+        name, suite = _named(key, tracked)
 
-        names += ('<li class="move__item"><span class="move__test">%s</span>'
+        # Everything past the first few is written into the card but not shown
+        # in it: that tail is what the overlay opens, and a card listing forty
+        # tests would push the three cards beside it off the screen.
+        names += ('<li class="move__item%s"><span class="move__test">%s</span>'
                   '<span class="move__suite">%s</span></li>'
-                  % (escape_report_text(name), escape_report_text(suite)))
+                  % (' is-extra' if position >= MOVEMENT_NAMES else '',
+                     escape_report_text(name), escape_report_text(suite)))
 
     extra = len(keys) - MOVEMENT_NAMES
     if extra > 0:
-        names += '<li class="move__more">and %d more</li>' % extra
+        names += ('<li class="move__more">%s</li>'
+                  % _more_link(title, 'and %d more' % extra, 'tests'))
 
     if not keys:
         names = '<li class="move__empty">Nothing</li>'
@@ -648,16 +678,17 @@ def _fault_rows(entries, tracked):
 
     for entry in entries[:FAULT_TYPES]:
         tests = ''
-        for key in entry['keys'][:FAULT_NAMES]:
-            history = tracked.get(key)
-            name = history['name'] if history else key.rsplit('::', 1)[-1]
-            suite = history['suite'] if history else key.rsplit('::', 1)[0]
+        for position, key in enumerate(entry['keys']):
+            name, suite = _named(key, tracked)
 
-            tests += ('<li class="fault__test" title="%s">%s</li>'
-                      % (escape_report_text('%s::%s' % (suite, name)), escape_report_text(name)))
+            tests += ('<li class="fault__test%s" title="%s">%s</li>'
+                      % (' is-extra' if position >= FAULT_NAMES else '',
+                         escape_report_text('%s::%s' % (suite, name)), escape_report_text(name)))
 
         extra = entry['count'] - FAULT_NAMES
-        if extra > 0: tests += '<li class="fault__more">and %d more</li>' % extra
+        if extra > 0:
+            tests += ('<li class="fault__more">%s</li>'
+                      % _more_link(entry['name'], 'and %d more' % extra, 'tests'))
 
         content += str(AnalyticsFault(
             name=escape_report_text(entry['name']),
@@ -670,13 +701,26 @@ def _fault_rows(entries, tracked):
 
     # Eight groups is already a long panel, and the tail of a list like this is
     # one-offs. They are counted rather than dropped: a run whose failures are
-    # all different is itself the finding.
+    # all different is itself the finding, and the whole tail is a click away.
     rest = entries[FAULT_TYPES:]
     if rest:
-        content += ('<li class="fault__rest">and %d more %s, %d %s between them</li>'
-                    % (len(rest), 'type' if len(rest) == 1 else 'types',
-                       sum(entry['count'] for entry in rest),
-                       'failure' if sum(entry['count'] for entry in rest) == 1 else 'failures'))
+        failures = sum(entry['count'] for entry in rest)
+
+        items = ''.join(
+            '<li class="fault__rest-item is-extra"><span class="more__name">%s</span>'
+            '<span class="more__meta">%d %s</span></li>'
+            % (escape_report_text(entry['name']), entry['count'],
+               'failure' if entry['count'] == 1 else 'failures')
+            for entry in rest)
+
+        content += ('<li class="fault__rest"><ul class="fault__rest-list">%s'
+                    '<li class="fault__more">%s</li></ul></li>'
+                    % (items, _more_link(
+                        'More exception types',
+                        'and %d more %s, %d %s between them'
+                        % (len(rest), 'type' if len(rest) == 1 else 'types',
+                           failures, 'failure' if failures == 1 else 'failures'),
+                        'types')))
 
     return content
 

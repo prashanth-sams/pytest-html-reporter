@@ -237,6 +237,12 @@ nothing — a fixture that could not be found, a message the reporter never capt
 `Unclassified`, which is ranked last however large it grows: a panel headed by "Unclassified: 40"
 has answered nothing.
 
+**"and N more" opens.** A truncated list that ends at a count says how much is being kept back and offers no way to
+see it, so every one on the tab — the failure groups, the exception types past the eighth, and the four movement cards,
+which had the same dead end — opens a searchable, scrollable dialog. It shows the card's own items rather than a copy:
+a card writes out every name it has and hides the tail behind `is-extra`, and opening one is that class coming off, so
+there is no second list in a data attribute to drift from the first and no name written into the page twice.
+
 Movement against the previous build rides along for free, since the archives are already lined up:
 a group that the last build did not have at all says `new` rather than `+3`, which reads as three
 more of something that was already there.

@@ -946,7 +946,8 @@ Six figures across the top, then the panels behind them:
 **Why this run failed** sits under the figures and groups this run's failures by the exception each one came out of -
 *12 failures, 9 are* ``TimeoutException`` - with the share of the run each group holds, how it has moved since the last
 build, and the tests in it named rather than only counted: nine timeouts through one page object and nine unrelated
-waits are different mornings. Errors are grouped beside failures, as they are counted everywhere else on the tab;
+waits are different mornings. A group with more tests than fit ends in *and 9 more*, which opens the whole list in a
+searchable, scrollable dialog - as do the ``and N more`` lines on the four movement cards below. Errors are grouped beside failures, as they are counted everywhere else on the tab;
 ``xfail`` is not, being an outcome the suite asked for. The type is read back out of the message pytest printed, since
 that is all an archived build ever holds - the exception that surfaced from a chained failure, a bare ``assert`` read as
 an ``AssertionError``, and a message naming nothing left in ``Unclassified``, which is held at the bottom of the list
@@ -960,7 +961,7 @@ slowest-tests list cannot tell you: two thousand tests at 300ms each is a differ
 minute. ``Test base growth`` shows the suite being added to, or quietly shrinking.
 
 Underneath, four cards name what changed since the previous build - **newly failing**, **newly fixed**, **new tests**
-and **no longer run** - and then a searchable, sortable row per test: its verdict, its recent outcomes as a strip of
+and **no longer run**, each opening its full list on the same dialog - and then a searchable, sortable row per test: its verdict, its recent outcomes as a strip of
 one block per build, its pass rate, how many times it has flipped, its retries, how long its current streak has run
 for and its duration. It opens worst-behaved first, so the list to work through is already the list on screen.
 
