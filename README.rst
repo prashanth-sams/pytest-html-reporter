@@ -10,8 +10,8 @@ pytest-html-reporter
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
-.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=master
-    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=master
+.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.0
+    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.0
 
 .. image:: https://pepy.tech/badge/pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter

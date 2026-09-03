@@ -145,6 +145,17 @@ def _check_html_report(path):
                 "as a file name and the report would be written into the current directory; "
                 "name the folder without '.html' in it, or name the .html file itself" % path)
 
+    # The folder the build goes into, decided the same way HTMLReporter does it.
+    # Something already sitting there that is not a folder is refused now, with
+    # the other usage errors, rather than reaching os.makedirs at the end of the
+    # render and coming out as a FileExistsError traceback over a merge that had
+    # otherwise succeeded.
+    folder = os.path.dirname(path) or "." if path.endswith(".html") else path
+
+    if os.path.exists(folder) and not os.path.isdir(folder):
+        return ("--html-report %r cannot be written to: %r already exists and is not a folder"
+                % (path, folder))
+
     return ""
 
 

@@ -872,6 +872,14 @@ def merge_bundles(bundles, opts):
 # screenshots
 # --------------------------------------------------------------------------
 
+def _within(root, candidate):
+    """True when `candidate` really does sit under `root` once both are resolved."""
+    root = os.path.abspath(root)
+    candidate = os.path.abspath(candidate)
+
+    return candidate == root or candidate.startswith(root + os.sep)
+
+
 def stage_assets(bundles, records, out_base, notes=None):
     """Copy every png the merged records name into the report's own folder.
 
@@ -931,8 +939,30 @@ def stage_assets(bundles, records, out_base, notes=None):
                 continue
 
             destination = os.path.join(target_root, shard_id, name + '.png')
+
+            # The check that does not depend on normalise_record having run.
+            # Both halves of this path came out of a bundle, and a merge is not
+            # entitled to write outside the folder it was pointed at whatever a
+            # downloaded artifact says - so a name that still resolves out of
+            # the tree is dropped and named rather than followed.
+            if not _within(target_root, destination):
+                missing.append(source)
+                notes.append("screenshot named by %s would be written outside the report "
+                             "folder and was dropped: %s" % (record['nodeid'], name))
+                continue
+
             os.makedirs(os.path.dirname(destination), exist_ok=True)
-            shutil.copyfile(source, destination)
+
+            try:
+                shutil.copyfile(source, destination)
+            except (shutil.Error, OSError) as exc:
+                # An unreadable source, a name the filesystem will not take, or
+                # a source that is already the destination. The build is worth
+                # more than the thumbnail, so the row keeps everything else.
+                missing.append(source)
+                notes.append("screenshot named by %s could not be copied and was dropped: %s"
+                             % (record['nodeid'], exc))
+                continue
 
             entry['name'] = shard_id + '/' + name
             shots.append(entry)

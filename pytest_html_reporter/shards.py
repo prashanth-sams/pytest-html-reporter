@@ -383,6 +383,24 @@ def natural_key(text):
 # records
 # --------------------------------------------------------------------------
 
+def safe_shot_name(value):
+    """One screenshot's file name, reduced to something that cannot leave a folder.
+
+    The name is put into a path twice over - the merge reads
+    <bundle>/pytest_screenshots/<name>.png and writes
+    <out>/pytest_screenshots/<shard>/<name>.png - and it comes out of a bundle,
+    which is a file downloaded from CI rather than anything this process wrote.
+    An absolute name takes over the whole os.path.join and lands the copy
+    outside the report directory entirely; a '..' walks out of it a level at a
+    time. screenshot_name() only ever produces '<ms>[-<worker>]-<n>', so
+    flattening to a bare name costs a real run nothing.
+    """
+    name = str(value or '').replace('\\', '/')
+    name = os.path.basename(name)
+
+    return '' if name in ('.', '..') else name
+
+
 def normalise_record(raw):
     """One record with every key present and every type the report expects.
 
@@ -422,6 +440,19 @@ def normalise_record(raw):
 
     for name in _DICT_FIELDS:
         record[name] = dict(record[name]) if isinstance(record[name], dict) else {}
+
+    # Flattened at the boundary rather than trusted by each of the three places
+    # that build a path out of it. An entry that is not a mapping at all is
+    # dropped: every consumer indexes it by key.
+    shots = []
+    for entry in record['screenshots']:
+        if not isinstance(entry, dict): continue
+
+        entry = dict(entry)
+        entry['name'] = safe_shot_name(entry.get('name'))
+        shots.append(entry)
+
+    record['screenshots'] = shots
 
     # Left exactly as it is: None for a plain pytest test, a dict for a
     # pytest-bdd scenario, and the tab keys off which of the two it got.
@@ -702,6 +733,13 @@ class Bundle(object):
         # one, or two anonymous bundles collapse into one.
         if not self.shard.id:
             self.shard.set('id', _fallback_id(path))
+
+        # Sanitised on the way in, not only on the way out. A leg sanitises its
+        # own id before it writes, but a bundle is a file that arrived from CI,
+        # and this id becomes a directory component under the merged report -
+        # so an id of '..', or one carrying a separator, would put a staged
+        # screenshot somewhere the merge does not own.
+        self.shard.set('id', sanitise_id(self.shard.id) or _fallback_id(path))
 
     @property
     def assets_dir(self):

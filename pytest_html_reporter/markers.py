@@ -236,6 +236,13 @@ def doc(item):
     repeating it under every method in it says nothing about any of them.
     """
     function = getattr(item, 'function', None)
+
+    # Checked rather than left to getattr's default: ``None.__doc__`` is
+    # NoneType's own docstring, so an item that is not a python function - a
+    # DoctestItem under --doctest-modules, a YAML-driven one - was describing
+    # every one of its rows as "The type of the None singleton."
+    if function is None: return ''
+
     text = (getattr(function, '__doc__', None) or '').strip()
     if not text: return ''
 
