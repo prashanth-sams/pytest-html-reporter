@@ -7989,7 +7989,7 @@
                 %(archive_status)%
             </div>
 
-            <div data-spy="scroll" data-target="#list-example" data-offset="0" class="scrollspy-example">
+            <div class="archive-builds">
                 %(archive_body_content)%
             </div>
         </div>
@@ -9388,6 +9388,57 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     if (observer) { observer.observe(canvases[i]); }
                     else { drawArchiveChart(canvases[i]); }
                 }
+            })();
+        </script>
+
+        <script>
+            // Which build the rail marks as the one being read.
+            //
+            // This was Bootstrap's ScrollSpy, pointed at the wrapper round the
+            // builds - an element that does not scroll. Its scrollHeight and
+            // its offsetHeight are therefore the same number, which makes
+            // ScrollSpy's maxScroll exactly 0, and the first thing _process()
+            // asks is whether scrollTop >= maxScroll. At rest that reads 0 >= 0,
+            // so it took the reader for someone who had reached the end of the
+            // list and lit the last build in it - and never changed its mind,
+            // because the page is what scrolls and that div never does. The
+            // oldest build came up selected on a rail nobody had touched.
+            //
+            // The builds are watched instead of the box round them: the one
+            // furthest up the list that is still under the top of the screen is
+            // the one being read. Cheaper too - ScrollSpy re-measured every
+            // build in the rail on scroll, and there can be hundreds.
+            (function () {
+                var rows = document.querySelectorAll('.archive-body');
+                if (!rows.length || !window.IntersectionObserver) { return; }
+
+                var ids = Array.prototype.map.call(rows, function (row) { return row.id; });
+                var onScreen = {};
+
+                var observer = new IntersectionObserver(function (entries) {
+                    for (var i = 0; i < entries.length; i++) {
+                        onScreen[entries[i].target.id] = entries[i].isIntersecting;
+                    }
+
+                    // The last one down the list that is still in the band,
+                    // which is the one most recently scrolled into - the same
+                    // reading ScrollSpy took. Taking the first would hand the
+                    // rail to the build being left behind, on nothing more than
+                    // the sliver of it still showing above the one being read.
+                    var active = null;
+                    for (var k = 0; k < ids.length; k++) {
+                        if (onScreen[ids[k]]) { active = ids[k]; }
+                    }
+                    if (active) { highlightArchiveRow(active); }
+                }, {
+                    // Only the top slice of the screen counts, which is where
+                    // ScrollSpy took its reading too. Without this the build
+                    // being left behind holds the rail until its last pixel is
+                    // gone, long after the next one fills the view.
+                    rootMargin: '0px 0px -80% 0px'
+                });
+
+                for (var i = 0; i < rows.length; i++) { observer.observe(rows[i]); }
             })();
         </script>
 
