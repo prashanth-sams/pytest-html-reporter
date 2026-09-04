@@ -1739,6 +1739,25 @@ class HTMLReporter(object):
                 ConfigVars._archive_body_content += str(_archive_body_text)
 
     def update_trends(self, base):
+        """Build the per-build lists the Trends chart and the delta read from.
+
+        This build first, then the archived builds newest first.
+        """
+        # Emptied first, because the appends below add to lists that live on
+        # the class. Anything that rendered earlier in this process - an
+        # in-process merge, an embedding that renders twice - left its own
+        # point behind, and it sat at index 0, which is the slot this build's
+        # point belongs in. The chart then drew a build that was not this one
+        # as the newest, and generate_run_delta() read "+1 failure since last
+        # build" off it while the ring above said nothing had failed: the ring
+        # counts this run's records, the delta counted a stranger's. Rebound
+        # rather than cleared in place, so a caller holding the old list - the
+        # suite's own isolation fixtures do - keeps what it was holding.
+        ConfigVars.trends_label = []
+        ConfigVars.tpass = []
+        ConfigVars.tfail = []
+        ConfigVars.tskip = []
+        ConfigVars.tcoverage = []
 
         f2 = glob.glob(base + '/output.json')
         with open(f2[0]) as json_file:
