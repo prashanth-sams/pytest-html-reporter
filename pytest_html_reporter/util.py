@@ -10,6 +10,7 @@ import time
 from collections import Counter
 from datetime import datetime
 from html import escape
+from urllib.parse import quote
 
 import pytest
 
@@ -17,6 +18,7 @@ from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
 from html_page.report_link import ReportLink
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.markers import OWNER_MARKER, OWNER_MARKER_KIND
 from pytest_html_reporter.screenshots import MODES as SCREENSHOT_MODES
 
 # Re-exported: the package publishes this as ``attach``, and it was defined
@@ -274,6 +276,138 @@ def report_links(config):
             links.append((label, url))
 
     return links
+
+
+def link_patterns(config):
+    """{marker name: url template} from --report-link-pattern and the ini key.
+
+    This is what turns a marker into traceability. ``@pytest.mark.jira`` is
+    already collected and already shown - it has been since markers landed -
+    but as a flat badge, because nothing in the report knows that `PROJ-123`
+    is an issue rather than a word. A pattern is that missing half::
+
+        report_link_pattern =
+            jira = https://acme.atlassian.net/browse/{}
+            testcase = https://acme.testrail.io/index.php?/cases/view/{}
+
+    Deliberately not a Jira client. The report is a static file that gets
+    mailed, published and opened off a disk months later, and a badge that
+    needs a token and a network to render is a badge that is blank in exactly
+    those cases. A url template needs neither and never goes stale in a way
+    that lies - a dead link says so in the address bar.
+
+    A marker with no pattern keeps the badge it has today, so this is opt-in
+    per marker and nothing changes for a suite that sets none.
+    """
+    entries = list(config.getoption("report_link_pattern", None) or [])
+    entries += list(_ini(config, "report_link_pattern") or [])
+
+    return parse_link_patterns(entries)
+
+
+def parse_link_patterns(entries):
+    """{marker name: url template} from MARKER=URL entries.
+
+    Split from link_patterns because the merge command holds these as a list of
+    strings off its own argv and never builds a config to ask.
+    """
+    patterns = {}
+
+    for entry in entries:
+        marker, _, template = str(entry).strip().partition("=")
+        marker = marker.strip()
+
+        # Through the same sieve the nav links go through, for the same reason
+        # and then some: this one is built per test out of whatever a marker
+        # said, so a report is only ever as safe as the schemes it will render.
+        template = safe_link(template)
+
+        if marker and template:
+            patterns[marker] = template
+
+    return patterns
+
+
+def trace_markers(patterns):
+    """The marker names that say what a test traces to rather than what it is.
+
+    ``owner`` plus whatever report_link_pattern named. This is the set the
+    JUnit xml writes as testcase properties: Xray, Zephyr and TestRail read a
+    test's issue key from a property and none of them opens an html report, so
+    an id that only ever reaches a badge is an id those tools cannot see.
+
+    Sorted so that two runs of one suite differ by their results and not by the
+    order a dict happened to hand back.
+    """
+    return [OWNER_MARKER] + sorted(patterns or {})
+
+
+def marker_url(patterns, marker):
+    """Where one marker points, or '' when it points nowhere.
+
+    ``{}`` is where the marker's first argument goes, percent-encoded - an id
+    is pasted from a tracker and arrives with whatever the tracker allows in
+    one. A template with no ``{}`` is a fixed destination that the marker's
+    presence links to, which is what ``docs = https://wiki/testing`` means; it
+    is not an error and not a placeholder somebody forgot.
+
+    Substituted rather than formatted. ``str.format`` reads every brace in the
+    string, and a url is a place people put braces - a Confluence page id, a
+    templated query - so formatting one throws KeyError on somebody's link
+    rather than rendering it.
+    """
+    if not patterns: return ''
+
+    template = patterns.get(marker.get('name'))
+    if not template: return ''
+
+    if '{}' not in template: return template
+
+    args = marker.get('args') or []
+    value = str(args[0]).strip() if args else ''
+
+    # A bare ``@pytest.mark.jira`` with no id has nothing to put in the url,
+    # and half a url is worse than none: it opens the tracker's front page and
+    # looks like the link worked.
+    if not value: return ''
+
+    return template.replace('{}', quote(value, safe=''))
+
+
+def record_owners(record):
+    """Who owns one finished test, in the order the markers were written.
+
+    Read off the record rather than off the item because everything that needs
+    it runs long after the test did - the rail's filter, output.json, and the
+    Analytics roll-up that reads that file back a build later.
+
+    A test can have more than one owner and often does without anyone meaning
+    it: ``pytestmark = pytest.mark.owner("platform")`` on the module and a
+    second on the test itself both survive, because they are two different
+    things to say and the report has never picked between two markers.
+    """
+    owners = []
+
+    for marker in ((record.get('meta') or {}).get('markers') or []):
+        if marker.get('kind') != OWNER_MARKER_KIND: continue
+
+        args = marker.get('args') or []
+        name = str(args[0]).strip() if args else ''
+
+        if name and name not in owners: owners.append(name)
+
+    return owners
+
+
+def generate_link_patterns(config):
+    """Resolve the patterns once, where the render can reach them.
+
+    Left on ConfigVars rather than passed down because the Test Steps tab is
+    built from ``build_report``, which runs before the render has a config in
+    its hands, and the badge is drawn several frames below that. Same reason
+    ``_step_limit`` lives there.
+    """
+    ConfigVars._link_patterns = link_patterns(config)
 
 
 def generate_report_links(config):

@@ -15,7 +15,14 @@ from pytest_html_reporter.shards import (
     shard_dir,
     shards_root,
 )
-from pytest_html_reporter.util import archive_count, clean_screenshots, custom_title, report_path
+from pytest_html_reporter.markers import OWNER_MARKER
+from pytest_html_reporter.util import (
+    archive_count,
+    clean_screenshots,
+    custom_title,
+    link_patterns,
+    report_path,
+)
 
 
 def report_base(path):
@@ -217,6 +224,17 @@ def pytest_addoption(parser):
     )
 
     group.addoption(
+        "--report-link-pattern",
+        action="append",
+        dest="report_link_pattern",
+        default=[],
+        metavar="MARKER=URL",
+        help="turn a marker into a link on the test it is written on, e.g. "
+             "'jira=https://acme.atlassian.net/browse/{}'; {} is where the "
+             "marker's argument goes; repeat for more",
+    )
+
+    group.addoption(
         "--report-open",
         action="store",
         dest="report_open",
@@ -363,6 +381,13 @@ def pytest_addoption(parser):
     )
 
     parser.addini(
+        "report_link_pattern",
+        type="linelist",
+        help="turn a marker into a link on the test it is written on, one "
+             "MARKER=URL per line, where {} is the marker's argument",
+    )
+
+    parser.addini(
         "report_open",
         help="whether to open the finished report in a browser: auto, always or none",
         default="",
@@ -440,7 +465,32 @@ def pytest_addoption(parser):
     )
 
 
+def register_markers(config):
+    """Tell pytest about the markers this plugin gives a meaning to.
+
+    Without this, ``--strict-markers`` rejects a suite for using the very
+    markers the report was configured to read, and every run without it prints
+    a PytestUnknownMarkWarning per test per marker - which is the plugin
+    telling somebody their working configuration is a typo.
+
+    The pattern markers are registered from the configuration rather than from
+    a list here, because which names mean something is the user's decision:
+    they named them in report_link_pattern.
+    """
+    config.addinivalue_line(
+        "markers", "%s(name): who to tell when this test fails" % OWNER_MARKER)
+
+    for marker in link_patterns(config):
+        config.addinivalue_line(
+            "markers", "%s(id): link this test to %s" % (marker, marker))
+
+
 def pytest_configure(config):
+    # Named before anything is collected, so that a suite using them is not
+    # warned about - or, under --strict-markers, refused - for markers this
+    # plugin asked it to write.
+    register_markers(config)
+
     # Resolved once, and written back, so that anything reading the option
     # later - an xdist worker, which is handed a copy of these options - sees
     # the same expanded path this process settled on.

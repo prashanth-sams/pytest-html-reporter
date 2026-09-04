@@ -19,6 +19,8 @@ from pytest_html_reporter.analytics import (
     FAULT_TYPES,
     MOVEMENT_NAMES,
     OTHER,
+    UNOWNED,
+    _owner_headline,
     duration_buckets,
     exception_type,
     failure_headline,
@@ -27,6 +29,7 @@ from pytest_html_reporter.analytics import (
     histories,
     movements,
     outcome,
+    owner_totals,
     read_builds,
     stability_score,
 )
@@ -767,3 +770,184 @@ def test_the_dialog_a_truncated_list_opens_is_on_the_page(tmp_path):
 def test_a_run_with_nothing_on_disk_is_left_alone(tmp_path):
     """No output.json is not a crash - it is a report that was never written."""
     generate_analytics(str(tmp_path))
+
+
+# --------------------------------------------------------------------------
+# the owner roll-up
+# --------------------------------------------------------------------------
+
+def _owned_build(stamp, tests, suite="tests/test_thing.py"):
+    """A build whose tests carry owners, as this version writes output.json."""
+    build = _build(stamp, [(name, status, 0, duration)
+                           for name, status, _owner, duration in tests], suite=suite)
+
+    entries = build["content"]["suites"]["0"]["tests"]
+    for position, (_name, _status, owner, _duration) in enumerate(tests):
+        entries[str(position)]["owner"] = list(owner)
+
+    return build
+
+
+def _totals(tmp_path, *builds):
+    return owner_totals(histories(read_builds(_history(tmp_path, *builds))))
+
+
+def test_an_owner_row_counts_the_tests_that_team_holds(tmp_path):
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["payments"], 0.5),
+        ("test_b", "FAIL", ["payments"], 0.25),
+        ("test_c", "PASS", ["checkout"], 0.1),
+    ]))
+
+    by_owner = {row["owner"]: row for row in rows}
+
+    assert by_owner["payments"]["tests"] == 2
+    assert by_owner["payments"]["failing"] == 1
+    assert by_owner["checkout"]["tests"] == 1
+    assert by_owner["checkout"]["failing"] == 0
+
+
+def test_a_test_with_two_owners_counts_for_both(tmp_path):
+    """Picking one would take a team off the hook for a test they signed."""
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "FAIL", ["platform", "payments"], 0.1),
+    ]))
+
+    assert sorted(row["owner"] for row in rows) == ["payments", "platform"]
+    assert all(row["tests"] == 1 and row["failing"] == 1 for row in rows)
+
+
+def test_a_test_nobody_claimed_is_a_row_rather_than_a_gap(tmp_path):
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["payments"], 0.1),
+        ("test_b", "FAIL", [], 0.1),
+    ]))
+
+    unowned = [row for row in rows if row["owner"] == UNOWNED]
+
+    assert len(unowned) == 1
+    assert unowned[0]["tests"] == 1
+    assert unowned[0]["failing"] == 1
+
+
+def test_unowned_sorts_last_however_bad_it_is(tmp_path):
+    """It is not a team, and reading it among them invites somebody to go and
+    find out who Unowned is."""
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "FAIL", [], 0.1),
+        ("test_b", "PASS", ["payments"], 0.1),
+    ]))
+
+    assert [row["owner"] for row in rows] == ["payments", UNOWNED]
+
+
+def test_the_worst_team_is_at_the_top(tmp_path):
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["calm"], 0.1),
+        ("test_b", "FAIL", ["busy"], 0.1),
+    ]))
+
+    assert [row["owner"] for row in rows] == ["busy", "calm"]
+
+
+def test_ownership_is_read_from_the_most_recent_build_that_named_one(tmp_path):
+    """A test that moved teams should page the team that has it today."""
+    rows = _totals(tmp_path,
+                   _owned_build(1000.0, [("test_a", "PASS", ["old-team"], 0.1)]),
+                   _owned_build(2000.0, [("test_a", "FAIL", ["new-team"], 0.1)]))
+
+    assert [row["owner"] for row in rows] == ["new-team"]
+
+
+def test_a_build_archived_before_ownership_existed_reads_as_unowned(tmp_path):
+    """Older archives simply have no key, and inventing one would be worse."""
+    rows = _totals(tmp_path, _build(1000.0, [("test_a", "PASS", 0, 0.1)]))
+
+    assert [row["owner"] for row in rows] == [UNOWNED]
+
+
+def test_a_test_this_run_no_longer_has_is_nobodys_morning(tmp_path):
+    """Leaving a deleted test in makes a team's numbers unfixable."""
+    rows = _totals(tmp_path,
+                   _owned_build(1000.0, [("test_gone", "FAIL", ["payments"], 0.1),
+                                         ("test_here", "PASS", ["payments"], 0.1)]),
+                   _owned_build(2000.0, [("test_here", "PASS", ["payments"], 0.1)]))
+
+    assert [row["tests"] for row in rows] == [1]
+    assert rows[0]["failing"] == 0
+
+
+def test_the_pass_rate_is_the_mean_of_the_tests_own_rates(tmp_path):
+    """One test with two hundred runs must not decide a team's number."""
+    rows = _totals(tmp_path,
+                   _owned_build(1000.0, [("test_a", "PASS", ["t"], 0.1),
+                                         ("test_b", "FAIL", ["t"], 0.1)]),
+                   _owned_build(2000.0, [("test_a", "PASS", ["t"], 0.1),
+                                         ("test_b", "FAIL", ["t"], 0.1)]))
+
+    # test_a passed both builds (100), test_b failed both (0).
+    assert rows[0]["pass_rate"] == 50.0
+
+
+def test_the_share_bar_is_drawn_against_the_busiest_owner(tmp_path):
+    """Against the whole suite every bar would be a stub."""
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["big"], 0.1),
+        ("test_b", "PASS", ["big"], 0.1),
+        ("test_c", "PASS", ["big"], 0.1),
+        ("test_d", "PASS", ["small"], 0.1),
+    ]))
+
+    by_owner = {row["owner"]: row for row in rows}
+
+    assert by_owner["big"]["share"] == 100
+    assert by_owner["small"]["share"] == 33
+
+
+def test_the_headline_says_how_much_of_the_suite_is_unclaimed(tmp_path):
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["payments"], 0.1),
+        ("test_b", "PASS", [], 0.1),
+    ]))
+
+    named = [row for row in rows if row["owner"] != UNOWNED]
+
+    assert _owner_headline(named, rows) == "1 owner, and 1 of 2 tests unclaimed"
+
+
+def test_the_headline_says_so_when_every_test_is_claimed(tmp_path):
+    rows = _totals(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["payments"], 0.1),
+    ]))
+
+    assert _owner_headline(rows, rows) == "1 owner, every test claimed"
+
+
+def test_a_suite_that_named_no_owner_gets_no_panel(tmp_path):
+    """A table of one row called Unowned is a table saying nothing."""
+    base = _history(tmp_path, _build(1000.0, [("test_a", "PASS", 0, 0.1)]))
+    generate_analytics(base)
+
+    assert ConfigVars._analytics_owner_state == "is-empty"
+    assert ConfigVars._analytics_owners == ""
+    assert ConfigVars._analytics_owner_note == ""
+
+
+def test_a_suite_that_named_one_gets_the_panel(tmp_path):
+    base = _history(tmp_path, _owned_build(1000.0, [
+        ("test_a", "PASS", ["payments"], 0.1),
+    ]))
+    generate_analytics(base)
+
+    assert ConfigVars._analytics_owner_state == ""
+    assert "payments" in ConfigVars._analytics_owners
+    assert ConfigVars._analytics_owner_note == "1 owner, every test claimed"
+
+
+def test_the_panel_the_template_asks_for_is_the_one_that_is_filled():
+    """The placeholders and the ConfigVars behind them, kept in step."""
+    template = open(TEMPLATE, encoding="utf-8").read()
+
+    for name in ("analytics_owners", "analytics_owner_note", "analytics_owner_state"):
+        assert "%%(%s)%%" % name in template
+        assert hasattr(ConfigVars, "_" + name)

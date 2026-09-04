@@ -34,6 +34,18 @@ BUILTIN_MARKERS = frozenset((
 # is the *argument*: the marker itself is an ordinary `parametrize`.
 INTERNAL_MARKERS = frozenset(('_pytest_bdd_example',))
 
+# The marker that names who to tell when a test goes red. It is collected like
+# any other user marker, but it answers a different question from the rest -
+# "whose is this", not "what is this about" - and a row that shows it beside
+# `slow` and `smoke` answers neither. It gets a kind of its own here, and the
+# tab reads that kind to pull it out into a fact of its own.
+OWNER_MARKER = 'owner'
+
+# The kind an owner marker is recorded under. Named rather than spelled out at
+# every reader: the rail filters on it, output.json is written from it and the
+# Analytics roll-up reads it back a build later.
+OWNER_MARKER_KIND = 'owner'
+
 
 def _is_internal(mark):
     """True for a marker some other plugin applied as plumbing.
@@ -122,6 +134,14 @@ def _scope(node):
     return SCOPES.get(type(node).__name__, type(node).__name__.lower())
 
 
+def _kind(mark):
+    """Which of the three things a marker is, as the badge colours say them."""
+    if mark.name in BUILTIN_MARKERS: return 'builtin'
+    if mark.name == OWNER_MARKER: return 'owner'
+
+    return 'user'
+
+
 def markers(item):
     """Every marker on a test, nearest first, each said once.
 
@@ -141,10 +161,16 @@ def markers(item):
         seen[signature] = {
             'name': str(mark.name),
             'text': signature,
+            # The arguments on their own, unjoined. ``text`` is what a badge
+            # says and cannot be taken back apart - ``jira(PROJ-123)`` is one
+            # string - while a link needs the id by itself to put in a url, and
+            # guessing it back out of the signature would break on the first
+            # marker whose argument contains a bracket.
+            'args': _arguments(mark),
             # Where it was written. A failure explained by a marker nobody
             # remembers applying is usually one inherited from a conftest.
             'scope': _scope(node),
-            'kind': 'builtin' if mark.name in BUILTIN_MARKERS else 'user',
+            'kind': _kind(mark),
         }
 
     return list(seen.values())

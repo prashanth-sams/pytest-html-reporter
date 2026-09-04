@@ -119,7 +119,8 @@ class MergeOptions(object):
                  strip_path_prefix=None, start_time='earliest', report_coverage='auto',
                  report_coverage_file='', coverage_data=None, report_coverage_limit=None,
                  coverage_target=None, title='PYTEST REPORT', environment='',
-                 build_info=None, report_link=None, archive_count='', archive_days=None,
+                 build_info=None, report_link=None, report_link_pattern=None,
+                 archive_count='', archive_days=None,
                  archive_since=None, report_open='none', junit_suite_name='pytest',
                  junit_hostname='', junit_xpass='pass', junit_logging='no',
                  junit_attachments=True, copy_assets=True, strict=False, exit_code=False,
@@ -139,6 +140,12 @@ class MergeOptions(object):
         self.environment = environment
         self.build_info = list(build_info or [])
         self.report_link = list(report_link or [])
+
+        # Declared rather than left to **extra. The CLI always passes it, but
+        # the --report-shard-merge leg builds a MergeOptions of its own with
+        # only the handful of fields it cares about, and an undeclared field is
+        # an AttributeError the moment build_merge_config reads it.
+        self.report_link_pattern = list(report_link_pattern or [])
         self.archive_count = archive_count
         self.archive_days = archive_days
         self.archive_since = archive_since
@@ -1159,6 +1166,7 @@ def _merge_config(opts):
             'environment': opts.environment,
             'build_info': list(opts.build_info),
             'report_link': list(opts.report_link),
+            'report_link_pattern': list(opts.report_link_pattern),
             'archive_count': opts.archive_count,
             'archive_days': opts.archive_days,
             'archive_since': opts.archive_since,
@@ -1403,7 +1411,8 @@ def merge_into(reporter):
     # under. Only xpass is this run's own, because --report-junit-xpass is the
     # one shaping flag a pytest run has.
     reporter.junit_options = merged_junit_options(
-        result, xpass=reporter.junit_xpass, report_base=base)
+        result, xpass=reporter.junit_xpass, report_base=base,
+        trace_markers=reporter.trace_markers)
 
     result.missing_assets.extend(
         stage_assets(bundles, result.records, base, result.notes))

@@ -115,6 +115,7 @@ class ConfigVars:
     _failure_delta_figure = ''
     _failure_delta_unit = ''
     _report_links = ''
+    _link_patterns = {}
     _title = 'PYTEST REPORT'
     _title_full = 'PYTEST REPORT'
     _title_class = ''
@@ -138,6 +139,9 @@ class ConfigVars:
     _analytics_faults = ''
     _analytics_fault_note = ''
     _analytics_fault_state = 'is-empty'
+    _analytics_owners = ''
+    _analytics_owner_note = ''
+    _analytics_owner_state = 'is-empty'
 
 
 # Every attribute as it stood at import, so a process that renders a second

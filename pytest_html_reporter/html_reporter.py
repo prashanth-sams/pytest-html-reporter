@@ -52,7 +52,10 @@ from pytest_html_reporter.util import (
     archive_since,
     archive_cutoff,
     expired_archives,
+    generate_link_patterns,
     generate_report_links,
+    record_owners,
+    trace_markers,
     generate_run_delta,
 )
 from pytest_html_reporter.step_report import generate_steps_view
@@ -165,6 +168,18 @@ class HTMLReporter(object):
         # can read it.
         self.steps_mode = report_steps_mode(config)
         ConfigVars._step_limit = report_step_limit(config)
+
+        # Which markers are links, and where they point. Resolved now for the
+        # same reason the step limit is: the Test Steps tab draws these badges
+        # from build_report(), which runs several frames below the last place
+        # that still has a config in its hands.
+        generate_link_patterns(config)
+
+        # The same names again, for the JUnit xml. That document is what the
+        # test-management tools actually read, and it is written before the
+        # page is built - so the set is settled here rather than dug back out
+        # of the rendered badges.
+        self.trace_markers = trace_markers(ConfigVars._link_patterns)
 
         # How long each of setup, call and teardown took, per test. This is
         # what fills the Test Steps tab for a suite that never named a step of
@@ -568,6 +583,7 @@ class HTMLReporter(object):
                 timestamp=self._sessionstarttime,
                 time=execution_time,
                 report_base=self.report_path[0],
+                trace_markers=self.trace_markers,
             )
         except Exception as error:
             sys.stderr.write("pytest-html-reporter: --report-junit could not write %s: %s\n"
@@ -1331,6 +1347,12 @@ class HTMLReporter(object):
                 # show. Archives written before this simply have no key, and
                 # are read as "not measured" rather than as zero.
                 'duration': record['duration'],
+                # And for the same reason again: the owner roll-up is a
+                # cross-build table, so ownership has to be in the file before
+                # it can ever be read across files. Builds archived before this
+                # version carry no key and are read as unowned, which is what
+                # they were as far as any report could tell.
+                'owner': record_owners(record),
             }
 
         self.json_data['content']['suites'][suite_index] = {
@@ -1516,6 +1538,9 @@ class HTMLReporter(object):
             analytics_faults=str(ConfigVars._analytics_faults),
             analytics_fault_note=escape_report_text(ConfigVars._analytics_fault_note),
             analytics_fault_state=str(ConfigVars._analytics_fault_state),
+            analytics_owners=str(ConfigVars._analytics_owners),
+            analytics_owner_note=escape_report_text(ConfigVars._analytics_owner_note),
+            analytics_owner_state=str(ConfigVars._analytics_owner_state),
             environment_rows=str(ConfigVars._environment_rows),
             environment=escape_report_text(ConfigVars._environment_label),
             environment_title=escape_report_text(ConfigVars._environment),

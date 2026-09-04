@@ -23,13 +23,14 @@ from html_page.step_badge import StepBadge
 from html_page.step_body import StepBody
 from html_page.step_fact import StepFact
 from html_page.step_line import StepLine
+from html_page.step_link import StepLink
 from html_page.step_phase import StepPhase
 from html_page.step_scenario import StepScenario
 from html_page.step_suite import StepSuite
 from html_page.step_test import StepTest
 from html_page.test_shot import TestShot
 from pytest_html_reporter.const_vars import ConfigVars
-from pytest_html_reporter.util import escape_report_text
+from pytest_html_reporter.util import escape_report_text, marker_url, record_owners
 
 
 # The phases every test has, in the order they run, as the tab names them.
@@ -44,6 +45,11 @@ PHASES = OrderedDict((
 # The Gherkin words, which are shown as a badge in front of a step so a
 # specification never reads as a piece of somebody's plumbing.
 GHERKIN = ('given', 'when', 'then', 'and', 'but')
+
+# How a test's owners are packed into one attribute for the rail to filter on.
+# A pipe rather than a comma: a team is called "Payments, EU" often enough to
+# matter and is called "Payments|EU" essentially never.
+OWNER_SEPARATOR = '|'
 
 # A suite path repeats down the whole rail; only its tail tells one from the next.
 SUITE_TAIL_MAX = 34
@@ -314,6 +320,64 @@ def _phases(record):
     return blocks
 
 
+def _label(name):
+    """A marker name as the label of the row its ids sit in: `jira` -> `Jira`."""
+    text = str(name or '').replace('_', ' ').replace('-', ' ').strip()
+
+    return text[:1].upper() + text[1:]
+
+
+def _badge(marker, bare=False):
+    """One marker, linked when a pattern says where it points.
+
+    `bare` drops the marker's name from the badge and shows its argument alone.
+    It is set for the badges that sit under a label already naming the marker -
+    the Jira row, the Owner row - where `jira(PROJ-123)` would say `jira` twice
+    and `PROJ-123` says it once.
+    """
+    kind = marker.get('kind') or 'user'
+    scope = marker.get('scope') or 'test'
+    args = marker.get('args') or []
+
+    text = str(args[0]) if (bare and args) else (marker.get('text') or marker.get('name') or '')
+    url = marker_url(ConfigVars._link_patterns, marker)
+
+    if not url:
+        return str(StepBadge(kind=escape_report_text(kind),
+                             text=escape_report_text(text),
+                             # Where it was written, which is the answer when
+                             # nobody remembers applying it.
+                             title='%s marker, from the %s'
+                                   % (escape_report_text(kind), escape_report_text(scope))))
+
+    # The url is the title rather than the scope: this one opens something, and
+    # what it is about to open is the thing worth seeing before clicking it.
+    return str(StepLink(kind=escape_report_text(kind),
+                        text=escape_report_text(text),
+                        url=escape_report_text(url),
+                        title=escape_report_text(url)))
+
+
+def _traced(markers):
+    """(linked markers grouped by their marker name, everything else).
+
+    Grouped rather than left in the markers row because a bare `PROJ-123` says
+    nothing about which system it is an id in, and the group's own label is the
+    cheapest place on the page to say it. A test that closes two tickets has
+    two entries under one label, in the order they were written.
+    """
+    groups = OrderedDict()
+    rest = []
+
+    for marker in markers:
+        if marker_url(ConfigVars._link_patterns, marker):
+            groups.setdefault(str(marker.get('name') or ''), []).append(marker)
+        else:
+            rest.append(marker)
+
+    return groups, rest
+
+
 def _facts(record):
     """What the test says about itself, as a row of labelled facts."""
     meta = record.get('meta') or {}
@@ -327,17 +391,25 @@ def _facts(record):
         facts += str(StepFact(label='Description', value=escape_report_text(doc)))
 
     markers = meta.get('markers') or []
-    if markers:
-        badges = ''.join(
-            str(StepBadge(kind=escape_report_text(marker.get('kind') or 'user'),
-                          text=escape_report_text(marker.get('text') or marker.get('name') or ''),
-                          # Where it was written, which is the answer when
-                          # nobody remembers applying it.
-                          title='%s marker, from the %s'
-                                % (escape_report_text(marker.get('kind') or 'user'),
-                                   escape_report_text(marker.get('scope') or 'test'))))
-            for marker in markers)
-        facts += str(StepFact(label=_pluralise(len(markers), 'marker'), value=badges))
+
+    # Who to tell, first and on its own. It is the one fact here that is about
+    # a person rather than about the test, and it is what somebody reading a
+    # red run is looking for - so it does not go in a row of eight badges where
+    # `smoke` and `slow` are the ones catching the eye.
+    owners = [marker for marker in markers if marker.get('kind') == 'owner']
+    if owners:
+        facts += str(StepFact(label=_pluralise(len(owners), 'owner'),
+                              value=''.join(_badge(marker, bare=True) for marker in owners)))
+
+    linked, plain = _traced([marker for marker in markers if marker.get('kind') != 'owner'])
+
+    for name, group in linked.items():
+        facts += str(StepFact(label=escape_report_text(_label(name)),
+                              value=''.join(_badge(marker, bare=True) for marker in group)))
+
+    if plain:
+        facts += str(StepFact(label=_pluralise(len(plain), 'marker'),
+                              value=''.join(_badge(marker) for marker in plain)))
 
     params = meta.get('params') or []
     if params:
@@ -436,6 +508,7 @@ def generate_steps_view(suites):
                 sid=sid,
                 stat=escape_report_text(record.get('status') or ''),
                 kind='bdd' if record.get('bdd') else 'plain',
+                owner=escape_report_text(OWNER_SEPARATOR.join(record_owners(record))),
                 name=escape_report_text(record.get('test_name') or ''),
                 note=escape_report_text(_note(record)),
                 dur=escape_report_text(duration(_test_ms(record))),

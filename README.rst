@@ -342,6 +342,9 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_link =
         Coverage=htmlcov/index.html
         CI job=https://ci.example.com/job/42
+    report_link_pattern =
+        jira = https://acme.atlassian.net/browse/{}
+        testcase = https://acme.testrail.io/index.php?/cases/view/{}
     report_shard =
     report_shard_merge = false
     report_shard_run =
@@ -359,6 +362,10 @@ turn the browser off once for everybody rather than in every command.
 
 ``report_link`` takes one ``Label=URL`` per line and, like ``build_info``, adds to whatever ``--report-link`` passes
 rather than being replaced by it.
+
+``report_link_pattern`` takes one ``MARKER=URL`` per line, where ``{}`` is where the marker's argument goes, and turns
+that marker into a link on every test carrying it - see `Jira, test cases and ownership`_. It adds to whatever
+``--report-link-pattern`` passes, the same way.
 
 ``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
 location without going through ``addopts``.
@@ -380,7 +387,8 @@ keys take ``1``, ``true``, ``yes`` or ``on``.
 
 **Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
-``--report-link`` entries are added to the ones set in the ini file the same way; ``--archive-count``,
+``--report-link`` and ``--report-link-pattern`` entries are added to the ones set in the ini file the same way;
+``--archive-count``,
 ``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``, ``--report-attachments``,
 ``--report-attachment-limit``, ``--report-screenshots``, ``--report-coverage``, ``--report-coverage-file``,
 ``--report-coverage-limit``, ``--report-shard``, ``--report-shard-run``, ``--report-junit`` and
@@ -817,6 +825,99 @@ changes how a test runs and ``@smoke`` only names it.
 Two are cut down deliberately. ``parametrize`` shows its argument **names** rather than every row the test will ever
 run with - this case's own row is already shown as its parameters. And a ``skipif`` condition is evaluated at import,
 so ``sys.platform == "win32"`` reaches any reporter as a bare ``False``; the reason is shown instead.
+
+Jira, test cases and ownership
+""""""""""""""""""""""""""""""
+
+A marker holding an id is already collected and already searchable. ``report_link_pattern`` is what turns it into a
+link - one ``MARKER=URL`` per line, where ``{}`` is where the marker's argument goes::
+
+    [pytest]
+    report_link_pattern =
+        jira = https://acme.atlassian.net/browse/{}
+        testcase = https://acme.testrail.io/index.php?/cases/view/{}
+
+Then write the markers on the tests::
+
+    @pytest.mark.jira("PROJ-123")
+    @pytest.mark.testcase("C4471")
+    @pytest.mark.owner("payments-team")
+    def test_a_declined_card_is_rejected():
+        ...
+
+The ids arrive on the test as clickable badges, grouped under the marker they were written as - a ``Jira`` row, a
+``Testcase`` row - so a bare ``PROJ-123`` never has to say which system it belongs to. A test that closes two tickets
+gets two badges in one row. ``--report-link-pattern`` does the same from the command line and adds to whatever the ini
+file set.
+
+``owner`` needs no pattern and gets a row of its own, ahead of the tags: it answers *who do I tell*, which is not the
+same question as *what is this test about*, and it is what somebody reading a red run is looking for. Give it a
+pattern too and it links - to a team page, a rota, a Slack channel.
+
+Both markers are registered for you, so ``--strict-markers`` is happy and no run prints
+``PytestUnknownMarkWarning`` for the markers this plugin asked you to write.
+
+The ids also reach the **JUnit xml**, as properties on the testcase itself::
+
+    <testcase classname="tests.test_pay" name="test_a_declined_card_is_rejected" time="0.412">
+      <properties>
+        <property name="owner" value="payments-team"/>
+        <property name="jira" value="PROJ-123"/>
+        <property name="testcase" value="C4471"/>
+      </properties>
+    </testcase>
+
+which is the half that matters to Xray, Zephyr and TestRail - they ingest a test's key from a property and never open
+an html report. The property name is the marker name, so a suite that has to emit ``test_key`` writes
+``@pytest.mark.test_key`` and gets exactly that. Only ``owner`` and the markers named in ``report_link_pattern`` are
+written, so nothing starts appearing in a file your CI parses without being asked for.
+
+This is deliberately **not** a Jira client. Nothing is fetched, no token is needed and no network is touched: the
+report is a static file that gets mailed, published and opened off a disk months later, and a badge that needs
+credentials to render is a badge that is blank in exactly those cases. Ids are percent-encoded on the way into the
+url, and - as everywhere else links are built from what a run said - anything carrying a scheme other than ``http``,
+``https`` or ``mailto`` is dropped rather than rendered.
+
+A marker with no pattern is untouched, so a suite that configures none of this gets exactly the report it had before.
+
+filtering the rail by owner
+"""""""""""""""""""""""""""
+
+Once anything carries an ``owner``, the ``Test Steps`` rail grows a second row of filters for it - one pill per team,
+counted, busiest first, with an ``Unowned`` pill at the end for the tests nobody claimed. It sits apart from the
+``All`` / ``Failed`` / ``Scenarios`` row on purpose: the two are different questions, and *this team's failures* needs
+both answered at once. The owner counts are counted **inside** the current kind, so picking ``Failed`` and then a team
+gives that team's failures, and the number on the pill is what the rail will show.
+
+The row is not drawn at all for a run with no owners, so nothing changes for a suite that never wrote one.
+
+who owns what, across builds
+""""""""""""""""""""""""""""
+
+The ``Analytics`` tab gains a **Who owns what** panel: one row per owner, worst first, with the tests they hold, the
+share of the suite that is, their mean pass rate, how many are failing now, how many are flaky, and where their
+minutes go.
+
+It answers a question none of the other panels do. A run with forty failures spread evenly over six teams and a run
+with forty in one team read identically on every other tab; this is the one that tells them apart. The stability
+table says *which test is worst* - this says *whose morning it is*.
+
+Four rules worth knowing, because they are what make the numbers actionable rather than merely true:
+
+* **A test with two owners counts for both.** Picking one would quietly take a team off the hook for a test they had
+  put their name on.
+* **Only tests this run actually ran are counted.** A test deleted three builds ago is nobody's morning, and leaving
+  it in makes a team's numbers impossible to fix.
+* **Ownership is read from the most recent build that named one.** A test that moved teams last month pages the team
+  that has it today, not both.
+* **The pass rate is the mean of the tests' own rates**, not passes over runs - so a team holding one test that has run
+  two hundred times and forty that ran once does not have the two hundred decide their number.
+
+Unclaimed tests are a row rather than a gap, sorted last: unowned is not a team, but a suite that is a third
+unclaimed should say so, and the line above the table does - *3 owners, and 14 of 92 tests unclaimed*.
+
+Ownership is written into ``output.json`` from this version on, which is what lets the panel read across builds.
+Builds archived by an earlier version carry no owner and are read as unclaimed rather than as anything invented.
 
 keeping the file down
 """""""""""""""""""""""""""

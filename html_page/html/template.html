@@ -4792,6 +4792,23 @@
                     gap: 6px;
                 }
 
+                .step-owners {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border-top: 1px solid var(--border-hairline);
+                }
+
+                .step-owners__label {
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: var(--text-muted);
+                    flex: 0 0 auto;
+                }
+
                 .step-tree-actions {
                     display: flex;
                     gap: 6px;
@@ -5156,6 +5173,30 @@
                 .step-badge--user    { background-color: var(--status-info-tint); color: var(--status-info-fg); }
                 .step-badge--param   { background-color: var(--status-purple-tint); color: var(--status-purple-fg); }
                 .step-badge--fixture { background-color: var(--status-teal-tint); color: var(--accent-teal); }
+
+                /* Who to tell, which is neither a tag nor an id. Given the one
+                   remaining tint so that an owner is never mistaken for either
+                   at a glance. */
+                .step-badge--owner   { background-color: var(--status-skip-tint); color: var(--status-skip-fg-heavy); }
+
+                /* A badge that opens something. It keeps the colour of the kind
+                   it is - a linked owner is still an owner - and earns the arrow
+                   and the underline, which are what say it can be clicked in a
+                   row where everything else is the same shape and cannot. */
+                a.step-badge--link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    text-decoration: none;
+                }
+
+                a.step-badge--link:hover,
+                a.step-badge--link:focus-visible { text-decoration: underline; }
+
+                a.step-badge--link .fa {
+                    font-size: 9px;
+                    opacity: 0.65;
+                }
                 .step-badge--gherkin {
                     background-color: var(--status-info-tint);
                     color: var(--status-info-fg);
@@ -6022,6 +6063,123 @@
                    A green run has nothing to group, and the card goes rather
                    than standing there empty. */
                 .an-faults.is-empty { display: none; }
+
+                /* ---- Whose tests these are ----
+                   The same shape as the failure panel above it and hidden the
+                   same way, because a suite that never named an owner has
+                   nothing here and a card saying so is worse than no card. */
+                .an-owners.is-empty { display: none; }
+
+                /* The table is six columns of small numbers and one name that
+                   can be any length at all, so it scrolls inside its own box
+                   rather than widening the page. */
+                /* Every owner is drawn rather than a top few - a team cut
+                   off the bottom is a team that does not know it has work -
+                   so the panel scrolls once the list outgrows a screenful. */
+                .owner-scroll {
+                    overflow: auto;
+                    max-height: 420px;
+                    padding: 6px 16px 16px 16px;
+                }
+
+                .owner-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                }
+
+                .owner-table th {
+                    text-align: right;
+                    padding: 6px 10px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: var(--text-muted);
+                    border-bottom: 1px solid var(--border-hairline);
+                    white-space: nowrap;
+                    /* The panel scrolls, so the header has to stay put or the
+                       six numeric columns lose their names on the way down. */
+                    position: sticky;
+                    top: 0;
+                    background: var(--surface-card);
+                    z-index: 1;
+                }
+
+                .owner-table th:first-child,
+                .owner-table th:nth-child(2) { text-align: left; }
+
+                .owner-row td {
+                    padding: 9px 10px;
+                    border-bottom: 1px solid var(--border-hairline);
+                    color: var(--text-body);
+                    text-align: right;
+                    white-space: nowrap;
+                }
+
+                .owner-row:last-child td { border-bottom: none; }
+                .owner-row__name { text-align: left; }
+
+                .owner-chip {
+                    display: inline-block;
+                    border-radius: 5px;
+                    padding: 3px 10px;
+                    font-size: 11.5px;
+                    font-weight: 600;
+                    background-color: var(--status-skip-tint);
+                    color: var(--status-skip-fg-heavy);
+                }
+
+                /* Not a team. Drawn as the absence it is rather than as
+                   another name in the same colour as the real ones. */
+                .owner-chip--unowned {
+                    background-color: var(--status-slate-tint);
+                    color: var(--status-slate-fg);
+                    font-style: italic;
+                }
+
+                .owner-row__tests {
+                    text-align: left;
+                    min-width: 130px;
+                }
+
+                .owner-row__count {
+                    display: inline-block;
+                    min-width: 26px;
+                    font-variant-numeric: tabular-nums;
+                }
+
+                .owner-row__bar {
+                    display: inline-block;
+                    width: 84px;
+                    height: 6px;
+                    border-radius: 3px;
+                    background: var(--surface-hover);
+                    overflow: hidden;
+                    vertical-align: middle;
+                }
+
+                .owner-row__bar i {
+                    display: block;
+                    height: 100%;
+                    background: var(--text-caret);
+                }
+
+                .owner-row--warn .owner-row__bar i { background: var(--status-skip); }
+                .owner-row--bad .owner-row__bar i { background: var(--status-fail); }
+
+                .owner-row__rate,
+                .owner-row__num { font-variant-numeric: tabular-nums; }
+
+                /* A zero is the good answer in both of these columns, and
+                   colouring every zero red would make the table unreadable
+                   for the runs that are fine. */
+                .owner-row__num--fail:not(:empty) { color: var(--text-body); }
+                .owner-row--bad .owner-row__num--fail,
+                .owner-row--warn .owner-row__num--fail { color: var(--status-fail-fg-heavy); }
+                .owner-row--warn .owner-row__num--flaky { color: var(--status-skip-fg-heavy); }
+
 
                 .fault-list {
                     list-style: none;
@@ -7428,6 +7586,32 @@
                             <ul class="fault-list">%(analytics_faults)%</ul>
                         </div>
 
+                        <!-- Under "why this run failed", which is the same
+                             question one level up: that panel says what broke,
+                             this says whose morning it is. Hidden outright for
+                             a suite that never wrote an owner marker. -->
+                        <div class="metrics-card an-owners %(analytics_owner_state)%">
+                            <div class="an-chart__head">
+                                <i class="fa fa-clipboard" aria-hidden="true"></i>Who owns what
+                                <span class="an-chart__note">%(analytics_owner_note)%</span>
+                            </div>
+                            <div class="owner-scroll">
+                                <table class="owner-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Owner</th>
+                                            <th>Tests</th>
+                                            <th>Pass rate</th>
+                                            <th>Failing</th>
+                                            <th>Flaky</th>
+                                            <th>Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>%(analytics_owners)%</tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="an-solo-note">
                             <i class="fa fa-info-circle" aria-hidden="true"></i>
                             <span>
@@ -7599,6 +7783,15 @@
                             <input type="search" id="stepSearch" autocomplete="off" spellcheck="false"
                                    placeholder="Search by test, step, marker or feature" oninput="filterSteps()" />
                         </div>
+                    </div>
+                    <!-- A row of its own rather than more pills beside the
+                         others: owner is a second dimension, not a fifth value
+                         of the first, and a run can be filtered to one team's
+                         failures only if the two can be set at the same time.
+                         Hidden outright when nobody wrote an owner. -->
+                    <div class="metrics-toolbar step-toolbar step-owners" id="stepOwnerBar" hidden>
+                        <span class="step-owners__label">Owner</span>
+                        <div class="step-filters" id="stepOwnerFilters"></div>
                     </div>
                     <div class="step-body">
                         <div class="step-rail" id="stepRail">
@@ -10415,6 +10608,25 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
             var STEP_KINDS = [['all', 'All'], ['failed', 'Failed'], ['bdd', 'Scenarios'], ['plain', 'Tests']];
 
+            // How step_report packs a test's owners into one attribute.
+            var OWNER_SEPARATOR = '|';
+
+            // The owner the rail is filtered to, or 'all'. Kept apart from
+            // stepKind on purpose: the two are different questions, and
+            // "this team's failures" needs both answered at once.
+            var stepOwner = 'all';
+
+            // The choice standing for "nobody wrote an owner". A sentinel no
+            // team can be called, rather than '' - which is what an owner
+            // attribute reads as when it is absent, and would make the pill
+            // indistinguishable from a team named by the empty string.
+            var UNOWNED = '\u0000unowned';
+
+            function stepOwnersOf(item) {
+                var packed = item.getAttribute('data-owner') || '';
+                return packed ? packed.split(OWNER_SEPARATOR) : [];
+            }
+
             function stepItems() {
                 return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-test'));
             }
@@ -10448,6 +10660,18 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     return status === 'FAIL' || status === 'ERROR';
                 }
                 return item.getAttribute('data-kind') === stepKind;
+            }
+
+            function stepMatchesOwner(item) {
+                if (stepOwner === 'all') { return true; }
+
+                // A test nobody claimed is a finding rather than a gap - it is
+                // the one row a triage list must not hide - so it gets a filter
+                // of its own instead of only ever being in "all".
+                var owners = stepOwnersOf(item);
+                if (stepOwner === UNOWNED) { return owners.length === 0; }
+
+                return owners.indexOf(stepOwner) !== -1;
             }
 
             function toggleStepSuite(head) {
@@ -10491,6 +10715,72 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     button.onclick = function() {
                         stepKind = kind[0];
                         renderStepFilters();
+                        // The owner counts are counted inside the kind, so they
+                        // are stale the moment the kind changes.
+                        renderStepOwners();
+                        filterSteps();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            function renderStepOwners() {
+                var bar = document.getElementById('stepOwnerBar');
+                var target = document.getElementById('stepOwnerFilters');
+                if (!bar || !target) { return; }
+
+                // Counted against the kind filter rather than against the whole
+                // run, so "Failed" then an owner reads as that team's failures
+                // and the count on the pill is the number the rail will show.
+                var counts = {};
+                var owned = 0;
+                var unowned = 0;
+
+                stepItems().forEach(function(item) {
+                    if (!stepMatchesKind(item)) { return; }
+
+                    var owners = stepOwnersOf(item);
+                    if (!owners.length) { unowned += 1; return; }
+
+                    owned += 1;
+                    owners.forEach(function(owner) {
+                        counts[owner] = (counts[owner] || 0) + 1;
+                    });
+                });
+
+                // Nobody wrote an owner, so there is no dimension to offer.
+                bar.hidden = owned === 0;
+                if (bar.hidden) { stepOwner = 'all'; return; }
+
+                if (stepOwner !== 'all' && stepOwner !== UNOWNED && !counts[stepOwner]) { stepOwner = 'all'; }
+                if (stepOwner === UNOWNED && !unowned) { stepOwner = 'all'; }
+
+                var names = Object.keys(counts).sort(function(a, b) {
+                    // Most tests first, then alphabetically, so the teams
+                    // carrying the suite are the ones in reach.
+                    return counts[b] - counts[a] || a.localeCompare(b);
+                });
+
+                var choices = [['all', 'All', owned + unowned]];
+                names.forEach(function(name) { choices.push([name, name, counts[name]]); });
+                if (unowned) { choices.push([UNOWNED, 'Unowned', unowned]); }
+
+                target.innerHTML = '';
+                choices.forEach(function(choice) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (stepOwner === choice[0] ? ' is-active' : '');
+                    button.textContent = choice[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = choice[2];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        stepOwner = choice[0];
+                        renderStepOwners();
                         filterSteps();
                     };
 
@@ -10535,7 +10825,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 var stillVisible = false;
 
                 stepItems().forEach(function(item) {
-                    var matches = stepMatchesKind(item) &&
+                    var matches = stepMatchesKind(item) && stepMatchesOwner(item) &&
                         (!needle || (item.getAttribute('data-search') || '').indexOf(needle) !== -1);
 
                     item.hidden = !matches;
@@ -10556,7 +10846,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 // search opens the groups that hold one. Clearing the box
                 // leaves them as they are rather than shutting a group the
                 // reader opened by hand.
-                if (needle || stepKind !== 'all') {
+                if (needle || stepKind !== 'all' || stepOwner !== 'all') {
                     stepSuites().forEach(function(suite) {
                         if (suite.querySelector('.step-test:not([hidden])')) { suite.classList.remove('is-shut'); }
                     });
@@ -10765,6 +11055,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 }
 
                 renderStepFilters();
+                renderStepOwners();
                 filterSteps();
             }
 
