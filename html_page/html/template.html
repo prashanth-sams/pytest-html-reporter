@@ -7020,6 +7020,8 @@
             <a class="tablink" href="#api-logs" onclick="openPage('attachments', this, 'var(--rail-active-text)', 'var(--rail-active-bg)', 'groove'); refreshAttachments();">
                 <i class="fa fa-exchange" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> API Logs
             </a>
+            <!-- Ascending: the files worth opening the tab for are the ones
+                 at the bottom of the percentage. -->
             <a class="tablink" href="#coverage" onclick="openPage('coverage', this, 'var(--rail-active-text)', 'var(--rail-active-bg)', 'groove'); executeDataTable('#cov',4,'asc')">
                 <i class="fa fa-shield" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Coverage
             </a>
@@ -7606,14 +7608,19 @@
                         settle(execCopy(text));
                     }
 
+                    // The metrics tables are built by whatever shows them,
+                    // not here. DataTables walks every row to build its model
+                    // and then detaches all but the first page, so on a large
+                    // run this was most of a second spent behind the loading
+                    // overlay, on three tabs nobody had opened yet. Every route
+                    // into them -- the rail, a #hash the report was opened
+                    // with, a deep link to one test's row -- asks for its own
+                    // table, and executeDataTable is `retrieve: true`, so
+                    // asking twice costs nothing. Analytics has always been
+                    // built this way; these three now are too.
                     window.onload = function() {
                         failureScreenshots();
                         bindShotBox();
-                        executeDataTable('#sm', 2);
-                        executeDataTable('#tm', 3);
-                        // Ascending: the files worth opening the tab for are
-                        // the ones at the bottom of the percentage.
-                        executeDataTable('#cov', 4, 'asc');
                     };
                 </script>
             </div>
@@ -9065,10 +9072,10 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     // two tab names that begin the same way - #test-metrics and
                     // #test-steps - are still the tabs they name.
                     //
-                    // Deferred to window.load when the page is still coming up:
-                    // the table this pages through is built there, and until
-                    // the loader has gone the flash saying which row it is would
-                    // burn out behind it.
+                    // Deferred to window.load when the page is still coming
+                    // up: scrollToTestRow builds the table it pages through,
+                    // and until the loader has gone the flash saying which row
+                    // it is would burn out behind it.
                     if (hash.indexOf('test-') === 0) {
                         if (document.readyState === 'complete') {
                             scrollToTestRow(hash);
