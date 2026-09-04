@@ -156,6 +156,34 @@ def _to_float(value):
         return None
 
 
+# A per-test duration past this is not a measurement of anything. Reports
+# written before the duration was taken from pytest's own phase timings billed
+# a test that merged a bundle mid-run with the time since whatever start the
+# merge had installed - the epoch, or a shard's own stamp - and those archives
+# are still on disk. Read back literally, one of them draws a 56-year bar in
+# the slowest-tests chart and carries every total on the tab with it.
+#
+# A day, because that is the line past which the number is more likely to be a
+# subtraction gone wrong than a test: nothing this tab is for - which bands are
+# filling up, which ten tests to look at next - survives a single row being
+# larger than every other row put together, and the run's own Test Metrics
+# table still prints whatever was recorded either way.
+MAX_DURATION = 24 * 60 * 60
+
+
+def _plausible(duration):
+    """A duration, or None where the archive holds something that cannot be one.
+
+    None rather than zero, which is the same answer this gives for a build
+    archived before durations were recorded at all: unknown, so it is left out
+    of the totals instead of being drawn as a test that took no time.
+    """
+    if duration is None: return None
+    if duration < 0 or duration > MAX_DURATION: return None
+
+    return duration
+
+
 def _read_json(path):
     try:
         with open(path, encoding='utf-8') as handle:
@@ -194,7 +222,7 @@ def _normalise(data, stamp):
         for test in (suite.get('tests') or {}).values():
             name = str(test.get('test_name', ''))
             state = outcome(test.get('status'))
-            duration = _to_float(test.get('duration'))
+            duration = _plausible(_to_float(test.get('duration')))
 
             counts[state] += 1
             if duration is not None:
@@ -567,7 +595,12 @@ def _duration_text(seconds):
     if seconds < 60: return '%ss' % round(seconds, 1)
 
     minutes, rest = divmod(int(round(seconds)), 60)
-    return '%dm %02ds' % (minutes, rest)
+    if minutes < 60: return '%dm %02ds' % (minutes, rest)
+
+    # Past an hour the seconds are noise, and the reader of "608889402m 03s"
+    # is left doing the division themselves.
+    hours, minutes = divmod(minutes, 60)
+    return '%dh %02dm' % (hours, minutes)
 
 
 def _tile(value, label, note='', grade=''):

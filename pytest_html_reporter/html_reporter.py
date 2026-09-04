@@ -187,6 +187,11 @@ class HTMLReporter(object):
         # its own: every test has these three, whether or not it has any more.
         self._phase_ms = {}
 
+        # When the test currently running started, on this object rather than
+        # on ConfigVars: the fallback for a duration has to be a clock nothing
+        # else in the process is allowed to reach.
+        self._test_start = None
+
         # Age-based retention, alongside --archive-count. A run on a schedule
         # wants "the last 30 days": a build count has to be retuned every time
         # the schedule changes, and says nothing about how far back the report
@@ -366,8 +371,7 @@ class HTMLReporter(object):
         ConfigVars._test_name = item.name
         set_phase('teardown')
 
-        _test_end_time = time.time()
-        ConfigVars._duration = _test_end_time - ConfigVars._start_execution_time
+        ConfigVars._duration = self._test_duration()
 
         # Before the yield, because the fixture finalizers run inside it and the
         # one that quits the browser is usually the first of them. This is the
@@ -386,8 +390,30 @@ class HTMLReporter(object):
 
         self.append_test_record(item)
 
+    def _test_duration(self):
+        """How long the test that just ran took, in seconds.
+
+        Summed from the timings pytest itself reported for setup, call and
+        teardown, not measured against a clock here. This used to be
+        ``time.time() - ConfigVars._start_execution_time``, and that start is
+        process-global state a merge writes to as well - so a test that merged
+        a shard bundle while it ran was billed every second since the epoch,
+        which is how a two-millisecond unit test reached the slowest-tests
+        chart at 1788535128s and took the whole tab's totals with it.
+
+        The clock is still the fallback, for a record whose phases never
+        arrived - and it is this object's own, which no other module touches.
+        """
+        if self._phase_ms:
+            return sum(self._phase_ms.values()) / 1000.0
+
+        if not self._test_start: return 0.0
+
+        return max(0.0, time.time() - self._test_start)
+
     def pytest_runtest_setup(self, item):
-        ConfigVars._start_execution_time = time.time()
+        self._test_start = time.time()
+        ConfigVars._start_execution_time = self._test_start
         self._log_sections = {}
 
         # A retry runs the whole protocol again, so these are emptied per
@@ -801,6 +827,11 @@ class HTMLReporter(object):
         # that phase, which is after the record was built - so the tab would
         # otherwise show every test tearing down in no time at all.
         record['phases'] = dict(self._phase_ms)
+
+        # And the duration with it, for the same reason: measured over the
+        # three phases, a test's time is only complete once the third of them
+        # has been reported.
+        record['duration'] = round(self._test_duration(), 2)
 
     def append_test_record(self, item):
         """Store one finished test as a plain dict.
@@ -1585,7 +1616,14 @@ class HTMLReporter(object):
 
     def generate_json_data(self, base):
         self.json_data['date'] = self._date()
-        self.json_data['start_time'] = ConfigVars._start_execution_time
+        # Not ConfigVars._start_execution_time: every pytest_runtest_setup
+        # overwrites that, so the build was stamped with the moment its last
+        # test started setting up. Analytics orders builds on this number and
+        # labels every point on its charts with it, so the trend read as a run
+        # that happened minutes after it did. _build_time is what a merge sets
+        # to the matrix's own start; a plain run has the session's.
+        self.json_data['start_time'] = (
+            self._build_time or self._sessionstarttime or ConfigVars._start_execution_time)
         self.json_data['total_suite'] = len(ConfigVars._test_suite_name)
 
         suite = self.json_data['content']['suites']

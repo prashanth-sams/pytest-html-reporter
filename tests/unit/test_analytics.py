@@ -21,6 +21,7 @@ from pytest_html_reporter.analytics import (
     OTHER,
     UNOWNED,
     UNRATED,
+    _duration_text,
     _owner_headline,
     _severity_headline,
     duration_buckets,
@@ -287,6 +288,34 @@ def test_an_archive_without_durations_is_read_as_unmeasured(tmp_path):
 
     assert builds[0]["duration"] is None
     assert builds[1]["duration"] == 0.4
+
+
+def test_a_duration_that_cannot_be_one_is_read_as_unmeasured(tmp_path):
+    """An epoch stamp written where a duration belongs is not a duration.
+
+    Reports written before the duration came from pytest's own phase timings
+    billed a test that merged a shard bundle mid-run with every second since
+    1970, and those archives are still on disk. Summed, one of them is the
+    whole "time in tests" tile; drawn, it is the only bar the slowest-tests
+    chart has room for.
+    """
+    base = _history(tmp_path, _build(1000.0, [("sane", "PASS", 0, 0.4),
+                                              ("epoch", "PASS", 0, 1788535128.1),
+                                              ("negative", "PASS", 0, -3.0)]))
+    build = read_builds(base)[0]
+    tests = build["tests"]
+
+    assert tests["tests/test_thing.py::epoch"]["duration"] is None
+    assert tests["tests/test_thing.py::negative"]["duration"] is None
+    assert build["duration"] == 0.4
+
+
+def test_a_long_run_is_read_in_hours():
+    """Minutes stop being a unit somewhere, and "608889402m 03s" is past it."""
+    assert _duration_text(0.25) == "250ms"
+    assert _duration_text(9.4) == "9.4s"
+    assert _duration_text(125) == "2m 05s"
+    assert _duration_text(3600 * 3 + 60 * 7) == "3h 07m"
 
 
 # --------------------------------------------------------------------------
