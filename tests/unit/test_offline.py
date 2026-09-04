@@ -21,7 +21,6 @@ def rendered_page():
             vendor_assets=vendor_assets(),
             icon_styles=icon_styles(),
             favicon=image("favicon.png"),
-            loader_image=image("loader.gif"),
             custom_logo=image("logo.png"),
         )
     )
@@ -73,7 +72,7 @@ def test_fancybox_is_not_redistributed():
 def test_the_pictures_the_page_needs_travel_in_it():
     page = rendered_page()
 
-    for name in ("favicon.png", "loader.gif", "logo.png"):
+    for name in ("favicon.png", "logo.png"):
         assert os.path.isfile(os.path.join(PACKAGE_DIR, "images", name)), name
         assert image(name).startswith("data:image/"), name
         assert image(name) in page, name

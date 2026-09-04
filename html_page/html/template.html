@@ -1057,6 +1057,26 @@
                     vertical-align: middle;
                 }
 
+                /* The loading overlay.
+
+                   The spinner was an animated GIF, and the overlay left on a
+                   jQuery fade. Both of those are stepped by the main thread:
+                   Firefox drives image animation off its refresh driver, and
+                   WebKit off a timer, while jQuery's fade is a rAF callback.
+                   Bringing a report up is one long block of main-thread work -
+                   parsing the page, then building its tables and charts - and
+                   on those two engines the spinner sat frozen through all of
+                   it and the overlay then jumped away rather than faded. Only
+                   Chrome looked right, and only because it gets through the
+                   same work in a third of the time.
+
+                   A rotate-only CSS animation and an opacity transition are
+                   both run on the compositor instead, so the spinner keeps
+                   turning and the overlay still fades however long the page
+                   behind it takes. Nothing here animates a property that
+                   would pull the animation back onto the main thread - no
+                   width, no colour, no box-shadow - and that is the point of
+                   it, not a stylistic choice. */
                 .loader {
                     position: fixed;
                     left: 0px;
@@ -1064,7 +1084,69 @@
                     width: 100%;
                     height: 100%;
                     z-index: 9999;
-                    background: url('%(loader_image)%') 50% 50% no-repeat var(--bg-wrapper);
+                    background: var(--bg-wrapper);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 1;
+                    transition: opacity 300ms ease;
+                }
+
+                .loader.is-done {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
+                .loader__spinner {
+                    position: relative;
+                    width: 84px;
+                    height: 84px;
+                    border-radius: 50%;
+                    /* The status palette, in the order the dashboard doughnut
+                       reads it, so the report opens on the colours it is about
+                       to draw with. A browser too old for conic-gradient keeps
+                       the turning ring and loses only the wheel of colour in
+                       it. */
+                    background: var(--status-pass);
+                    background: conic-gradient(
+                        var(--status-pass)     0deg  60deg,
+                        var(--status-skip)    60deg 120deg,
+                        var(--status-xfail)  120deg 180deg,
+                        var(--status-fail)   180deg 240deg,
+                        var(--status-error)  240deg 300deg,
+                        var(--status-xpass)  300deg 360deg);
+                    animation: loader-spin 1.05s linear infinite;
+                    /* Asks for the layer up front, so the first turn is
+                       composited rather than starting on the main thread and
+                       being handed over a few frames later - which is exactly
+                       the window this is meant to cover. */
+                    will-change: transform;
+                }
+
+                /* The hole. Inside the turning element, so it turns too, which
+                   costs nothing and keeps the whole spinner to a single layer. */
+                .loader__spinner::after {
+                    content: '';
+                    position: absolute;
+                    top: 20%;
+                    right: 20%;
+                    bottom: 20%;
+                    left: 20%;
+                    border-radius: 50%;
+                    background: var(--bg-wrapper);
+                }
+
+                @keyframes loader-spin {
+                    from { transform: rotate(0deg); }
+                    to   { transform: rotate(360deg); }
+                }
+
+                /* A reader who has asked for less motion gets a still ring
+                   rather than nothing to look at. */
+                @media (prefers-reduced-motion: reduce) {
+                    .loader__spinner {
+                        animation: none;
+                    }
                 }
 
                 .card-wrapper {
@@ -6983,7 +7065,7 @@
                 control.setAttribute('title', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
             });
         </script>
-        <div class="loader"></div>
+        <div class="loader"><div class="loader__spinner"></div></div>
 
         <div class="shot-box" id="shotBox" role="dialog" aria-modal="true" aria-label="Screenshot">
             <div class="shot-box__stage"><img class="shot-box__image" id="shotBoxImage" src="" alt="" /></div>
@@ -9139,12 +9221,32 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     return;
                 }
 
-                $('.loader').fadeOut(300, function(){
+                var overlay = document.querySelector('.loader');
+                if (!overlay) {
+                    resizeAllCharts();
+                    return;
+                }
+
+                // The overlay leaves on the CSS opacity transition declared
+                // against .loader, not on a jQuery fade, so the last of the
+                // load landing on top of it cannot stutter the way out; see
+                // the note on .loader in the stylesheet.
+                //
+                // Timed rather than driven off transitionend: the event does
+                // not come at all if the transition never starts - a reader
+                // who has asked for less motion, a browser that skips it for
+                // a hidden tab - and the overlay would then be left sitting
+                // over a finished report.
+                overlay.classList.add('is-done');
+
+                setTimeout(function() {
+                    overlay.style.display = 'none';
+
                     // Run across a few frames to catch the fully-settled layout.
                     requestAnimationFrame(resizeAllCharts);
                     setTimeout(resizeAllCharts, 150);
                     setTimeout(resizeAllCharts, 400);
-                });
+                }, 300);
             });
         </script>
         <script>

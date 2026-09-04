@@ -1509,7 +1509,6 @@ class HTMLReporter(object):
             vendor_assets=vendor_assets(),
             icon_styles=icon_styles(),
             favicon=image('favicon.png'),
-            loader_image=image('loader.gif'),
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
             title=escape_report_text(ConfigVars._title),
