@@ -839,30 +839,59 @@ link - one ``MARKER=URL`` per line, where ``{}`` is where the marker's argument 
 
 Then write the markers on the tests::
 
-    @pytest.mark.jira("PROJ-123")
+    @pytest.mark.owner("search-team")
+    @pytest.mark.jira("SRCH-12")
     @pytest.mark.testcase("C4471")
-    @pytest.mark.owner("payments-team")
-    def test_a_declined_card_is_rejected():
+    def test_searching_for_a_product():
         ...
 
-The ids arrive on the test as clickable badges, grouped under the marker they were written as - a ``Jira`` row, a
-``Testcase`` row - so a bare ``PROJ-123`` never has to say which system it belongs to. A test that closes two tickets
-gets two badges in one row. ``--report-link-pattern`` does the same from the command line and adds to whatever the ini
-file set.
+The ids arrive as clickable badges, grouped under the marker they were written as - a ``Jira`` row, a ``Testcase``
+row - so a bare ``SRCH-12`` never has to say which system it belongs to. A test that closes two tickets gets two
+badges in one row. ``--report-link-pattern`` does the same from the command line and adds to whatever the ini file
+set.
 
-``owner`` needs no pattern and gets a row of its own, ahead of the tags: it answers *who do I tell*, which is not the
-same question as *what is this test about*, and it is what somebody reading a red run is looking for. Give it a
-pattern too and it links - to a team page, a rota, a Slack channel.
+**writing an owner**
 
-Both markers are registered for you, so ``--strict-markers`` is happy and no run prints
+``jira`` and ``testcase`` are names *you* invent, which is why ``report_link_pattern`` has to tell the plugin they
+exist. ``owner`` is different: it is **built in and needs no configuration at all**. Write it and the badge, the
+rail's owner filter and the Analytics roll-up all appear::
+
+    import pytest
+
+    # every test in the file
+    pytestmark = pytest.mark.owner("platform-team")
+
+    # one test
+    @pytest.mark.owner("search-team")
+    def test_searching_for_a_product():
+        ...
+
+    # a whole class
+    @pytest.mark.owner("checkout-team")
+    class TestBasket:
+        def test_the_basket_totals_correctly(self):
+            ...
+
+They **stack rather than override**, which is what "owners" plural means. A test inside that class carries
+``checkout-team`` *and* ``platform-team``; write the marker twice on one test and it carries both. Nearest scope
+comes first, each badge says where it was written - *from the module*, *from the function* - and a test with two
+owners is counted once for each of them in the roll-up, because picking one would take the other team off the hook
+for a test they had put their name on.
+
+Giving ``owner`` a pattern is optional and only makes the badge clickable - a team page, a rota, a Slack channel::
+
+    report_link_pattern =
+        owner = https://github.com/orgs/acme/teams/{}
+
+Every one of these markers is registered for you, so ``--strict-markers`` is happy and no run prints
 ``PytestUnknownMarkWarning`` for the markers this plugin asked you to write.
 
 The ids also reach the **JUnit xml**, as properties on the testcase itself::
 
-    <testcase classname="tests.test_pay" name="test_a_declined_card_is_rejected" time="0.412">
+    <testcase classname="tests.test_search" name="test_searching_for_a_product" time="0.412">
       <properties>
-        <property name="owner" value="payments-team"/>
-        <property name="jira" value="PROJ-123"/>
+        <property name="owner" value="search-team"/>
+        <property name="jira" value="SRCH-12"/>
         <property name="testcase" value="C4471"/>
       </properties>
     </testcase>
