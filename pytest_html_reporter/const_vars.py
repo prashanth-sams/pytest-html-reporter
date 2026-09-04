@@ -73,7 +73,8 @@ class ConfigVars:
     _screenshots = []
     _attachments = []
     _steps = []
-    _step_local = None
+    _step_open = None
+    _step_epoch = 0
     _step_phase = 'call'
     _step_limit = 500
     _bdd = None

@@ -15,6 +15,7 @@ import pytest
 
 from pytest_html_reporter.step_report import (
     _attach_chip,
+    _tree_order,
     _kind_badge,
     _params_text,
     _pluralise,
@@ -293,3 +294,97 @@ def test_a_plain_pytest_test_names_no_scenario():
     """This is what the tab keys off to show a scenario as a scenario."""
     assert _scenario({"bdd": None}) == ""
     assert _scenario({}) == ""
+
+
+# -------------------------------------------------------------- tree order ---
+
+def _owned(*steps):
+    return list(enumerate(steps))
+
+
+def _titles(ordered):
+    return [step["title"] for _index, step in ordered]
+
+
+def test_a_sequential_test_is_left_in_the_order_it_ran():
+    # Nothing concurrent, so the order steps opened in already is the order the
+    # tree reads. This is every test that has ever used the tab.
+    ordered = _tree_order(_owned(
+        _step(id=0, parent=None, title="Check out"),
+        _step(id=1, parent=0, title="Total the basket"),
+        _step(id=2, parent=0, title="Charge the card"),
+        _step(id=3, parent=None, title="Log out"),
+    ))
+
+    assert _titles(ordered) == ["Check out", "Total the basket", "Charge the card", "Log out"]
+
+
+def test_concurrent_children_go_under_the_sibling_that_opened_them():
+    # Three gathered legs open before any of their children do, so read down
+    # the buffer all three children land under the last leg - same depths, same
+    # durations, wrong parents.
+    ordered = _tree_order(_owned(
+        _step(id=0, parent=None, title="Leg A"),
+        _step(id=1, parent=None, title="Leg B"),
+        _step(id=2, parent=None, title="Leg C"),
+        _step(id=3, parent=0, title="Parse A"),
+        _step(id=4, parent=1, title="Parse B"),
+        _step(id=5, parent=2, title="Parse C"),
+    ))
+
+    assert _titles(ordered) == ["Leg A", "Parse A", "Leg B", "Parse B", "Leg C", "Parse C"]
+
+
+def test_the_indexes_travel_with_the_steps():
+    # The index is what the bar width and the screenshots of a step are keyed
+    # by, so reordering the steps and not those would file both on a sibling.
+    ordered = _tree_order(_owned(
+        _step(id=0, parent=None, title="Leg A"),
+        _step(id=1, parent=None, title="Leg B"),
+        _step(id=2, parent=0, title="Parse A"),
+    ))
+
+    assert [index for index, _step in ordered] == [0, 2, 1]
+
+
+def test_a_step_whose_parent_is_in_another_phase_is_a_root_here():
+    # A fixture holding a step open across the whole test belongs to Set up,
+    # and the test body it spans is not a step of it.
+    ordered = _tree_order(_owned(
+        _step(id=1, parent=0, title="Add to cart"),
+        _step(id=2, parent=1, title="Pick a size"),
+    ))
+
+    assert _titles(ordered) == ["Add to cart", "Pick a size"]
+
+
+def test_a_record_written_before_steps_had_parents_still_renders():
+    # Bundles are read back off disk, and one written by an older version - or
+    # by hand, in a test - names no parent and sometimes no id either.
+    ordered = _tree_order(_owned(
+        {"title": "log in", "status": "FAIL", "phase": "call"},
+        {"title": "check out", "status": "FAIL", "phase": "call"},
+    ))
+
+    assert _titles(ordered) == ["log in", "check out"]
+
+
+def test_a_parent_that_names_it_back_does_not_hang_or_lose_it():
+    # Nothing this process wrote can do it - a parent always opened first, so
+    # its id is always the smaller - but a bundle is somebody else's output.
+    ordered = _tree_order(_owned(
+        _step(id=0, parent=1, title="Ouroboros"),
+        _step(id=1, parent=0, title="Snake"),
+        _step(id=2, parent=2, title="Itself"),
+    ))
+
+    assert sorted(_titles(ordered)) == ["Itself", "Ouroboros", "Snake"]
+
+
+def test_a_thousand_deep_does_not_take_the_run_down_with_it():
+    # The depth a step is drawn at is capped; the depth it is allowed to reach
+    # is not, so the walk cannot be the recursion it would obviously be.
+    deep = [_step(id=index, parent=index - 1 if index else None, title="step %d" % index)
+            for index in range(3000)]
+
+    assert len(_tree_order(_owned(*deep))) == 3000

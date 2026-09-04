@@ -409,9 +409,10 @@ tab, where the ring, the per-file split and the trend all have room.
 ### 16. Test steps — SHIPPED
 Nested, individually timed steps with per-step attachments, after Allure's steps feature.
 
-*Shipped as:* `pytest_html_reporter/steps.py` (the `step` decorator / context manager),
-`markers.py` (#6), `bdd.py` (pytest-bdd), `step_report.py` (rendering), eight `Step*` components, a
-`Test Steps` tab, a `Steps` column on Test Metrics, and `--report-steps` / `--report-step-limit`.
+*Shipped as:* `pytest_html_reporter/steps.py` (the `step` decorator / context manager, sync and
+`async`), `markers.py` (#6), `bdd.py` (pytest-bdd), `step_report.py` (rendering), eight `Step*`
+components, a `Test Steps` tab, a `Steps` column on Test Metrics, and `--report-steps` /
+`--report-step-limit`.
 
 **A tab of its own, not a panel inside Test Suites.** Allure keeps steps inside its suites view; the cost
 is a high-level page you can no longer skim, and the high-level page is the one most people open first.
@@ -449,9 +450,33 @@ fixture* — one `Open a session` swallowing the test that used it.
 *Bars are scaled within the test.* The question in front of a step tree is always "which part of this test
 was slow", never "which test was slow" — scaling across the run draws a flat line for every test but one.
 
-*Steps are per-thread.* One stack shared by every thread came back nested in whatever order the threads
-interleaved: a tree that never existed. Each thread nests within itself, and a background thread's steps
-land at the top level.
+*Steps are per-context, not per-thread.* One stack shared by every thread came back nested in whatever
+order the threads interleaved: a tree that never existed. A `threading.local` fixed that and did nothing
+whatever for `async`, because asyncio runs every task on the one thread — three gathered legs pushed onto
+the same stack and came back three deep inside one another, with an attachment made in one filed under
+whichever sibling was open. The stack is a `ContextVar` holding an immutable tuple: a task starts from a
+copy of the context that created it, so a leg still nests under the step that fanned it out while keeping
+its own steps to itself, and a new thread starts from an empty context exactly as before. The tuple has to
+be immutable — a list would be the same list in every task, which is where this came in.
+
+*An `async def` step that raised was reported green.* Calling one only builds a coroutine, so `@step` closed
+the step on that — nought milliseconds, PASS — and the work ran, and failed, long after. Detecting it means
+following the `__wrapped__` chain as well as asking `iscoroutinefunction`, since a decorator stacked above
+leaves a plain function with the `async def` behind it, which is the same failure wearing a hat.
+
+*The tree is walked, not read down the page.* Steps are buffered as they open, which is pre-order right up
+until something runs concurrently: three gathered legs all go in before any of their children, and rendering
+the flat list indents every one of those children under the *last* leg. Right depths, right durations, wrong
+parents. Each step records the step it is a step of, and the tab walks that — with an explicit stack, since
+the depth a step is *drawn* at is capped and the depth it may reach is not. Threads had been drawing the same
+wrong tree since steps shipped.
+
+*Open steps are registered, not only stacked.* A task that was cancelled leaves a step open in a context
+nothing can reach, and a step that just stops being mentioned reads as a step that never ran. Every open
+step is registered as it starts and swept at the end of the test. The same handle is what closes a step
+held across a `yield` in an async fixture, where pytest-asyncio runs each half on a task of its own: it is
+closed on the frame the block is holding rather than off a stack that never saw it, because a fixture that
+worked perfectly must not be reported as the place the test died.
 
 **A failing test's screenshot is shown on the step that threw.** The picture was already in the
 report twice over — the `Screens` column and the gallery — and neither says *where* in the test it

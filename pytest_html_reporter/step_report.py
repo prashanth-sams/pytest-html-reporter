@@ -224,6 +224,57 @@ def _line(step, width, attachments, shots, record):
     ))
 
 
+def _tree_order(owned):
+    """One phase's steps in the order the tree reads, rather than the order
+    they started.
+
+    The two are the same thing until something runs concurrently. Steps are
+    buffered as they open, so three gathered coroutines - or three threads -
+    put all three siblings in before any of their children, and a list read
+    straight down indents every one of those children under the *last* sibling.
+    Same depths, same durations, wrong parents.
+
+    A step whose parent is not in this phase is a root here: one held open by a
+    fixture across a whole test belongs to Set up, and the test body it spans
+    is not a step of it.
+
+    Walked with an explicit stack. Recursion would be the obvious way to write
+    it and a suite whose steps nest a thousand deep would take the run down
+    with it - the depth a step is *drawn* at is capped, the depth it is allowed
+    to reach is not.
+    """
+    present = set(step.get('id') for _index, step in owned if step.get('id') is not None)
+    roots, children = [], {}
+
+    for entry in owned:
+        step = entry[1]
+        parent = step.get('parent')
+
+        if parent is not None and parent in present and parent != step.get('id'):
+            children.setdefault(parent, []).append(entry)
+        else:
+            roots.append(entry)
+
+    ordered, seen = [], set()
+    pending = list(reversed(roots))
+
+    while pending:
+        index, step = pending.pop()
+        if index in seen: continue
+
+        seen.add(index)
+        ordered.append((index, step))
+        pending.extend(reversed(children.get(step.get('id'), ())))
+
+    # Nothing is dropped. A record is read back off a bundle written by another
+    # process and another version, and a step missing from the tab altogether
+    # is a worse answer than one drawn at the wrong indent.
+    if len(ordered) != len(owned):
+        ordered += [entry for entry in owned if entry[0] not in seen]
+
+    return ordered
+
+
 def _phases(record):
     """The three phase blocks of one test, with its steps filed under them.
 
@@ -243,8 +294,8 @@ def _phases(record):
 
     blocks = ''
     for phase, label in PHASES.items():
-        owned = [(index, step) for index, step in enumerate(steps)
-                 if (step.get('phase') or 'call') == phase]
+        owned = _tree_order([(index, step) for index, step in enumerate(steps)
+                             if (step.get('phase') or 'call') == phase])
 
         lines = ''.join(_line(step, widths.get(index, 0), attachments,
                               shots.get(index) or [], record)

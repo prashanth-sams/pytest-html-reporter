@@ -22,12 +22,23 @@ drained by every finished test whatever the mode says, and holds nothing but
 built-in types - an xdist worker has to pickle the whole record back to the
 controller that writes the report.
 
-Steps are recorded on the thread that ran the test. One opened in a worker
-thread would nest itself under whatever the main thread happened to have open,
-so it is left alone rather than guessed at; see ``_stack``.
+Steps are recorded against whoever ran them - a thread, or an asyncio task -
+so that work fanned out concurrently comes back as the siblings it was rather
+than nested inside whichever sibling happened to start first; see ``_state``.
+
+An ``async`` test spells a step the same two ways, with ``await`` in front of
+what it is timing::
+
+    @step("Send the notification")
+    async def notify(user): ...
+
+    async with step("Check out"):
+        await cart.pay()
 """
 
+import contextvars
 import functools
+import inspect
 import threading
 import time
 
@@ -84,29 +95,71 @@ def _steps():
     return ConfigVars._steps
 
 
-def _local():
-    """Per-thread step state: what is open, and where this phase started.
+# What is open, and where the current phase started, for whoever is running:
+# a thread, or an asyncio task. Held in a ContextVar rather than a
+# threading.local because asyncio runs every task on the one thread - three
+# gathered coroutines pushing onto a per-thread stack come back nested three
+# deep inside one another, a tree that never existed, and an attachment made
+# in one of them is filed under whichever sibling happened to be open.
+#
+# The value is a tuple, and it is replaced rather than edited. A task starts
+# from a copy of the context that created it, so a mutable stack would be the
+# *same* list in every one of them and we would be back to sharing one;
+# replacing the tuple keeps a task's steps to itself while still letting them
+# nest under whatever was already open when it was started.
+_STATE = contextvars.ContextVar('pytest_html_reporter.steps')
 
-    Kept per thread. A test that fans work out to a pool would otherwise have
-    every thread pushing onto one stack, and the steps would come back nested
-    inside each other in whatever order the threads happened to interleave -
-    a tree that never existed. Each thread nests within itself instead, and a
-    background thread's steps land at the top level where they belong.
+# (epoch, stack, floor, raised), where the stack holds (frame, started) pairs.
+_EMPTY = (0, (), 0, None)
+
+
+def _epoch():
+    """Which test the state found in a context belongs to."""
+    value = getattr(ConfigVars, '_step_epoch', 0)
+
+    return value if isinstance(value, int) else 0
+
+
+def _state():
+    """This context's step state, dropped if it outlived the test that made it.
+
+    A context can outlast the test that used it - a pooled worker thread's
+    does, since the thread is handed to the next test still holding whatever
+    it was left with. Its stack names steps that have already been taken and
+    rendered, so counting depth from it would indent the next test's first
+    step underneath somebody else's. The epoch is stamped on write and checked
+    here, and a stale stack is dropped rather than carried forward.
     """
-    local = getattr(ConfigVars, '_step_local', None)
-    if local is None:
-        local = ConfigVars._step_local = threading.local()
+    state = _STATE.get(_EMPTY)
 
-    if getattr(local, 'stack', None) is None:
-        local.stack = []
-        local.floor = 0
+    return state if state[0] == _epoch() else _EMPTY
 
-    return local
+
+def _store(stack, floor, raised):
+    _STATE.set((_epoch(), stack, floor, raised))
 
 
 def _stack():
     """The steps currently open, innermost last."""
-    return _local().stack
+    return _state()[1]
+
+
+def _open_frames():
+    """Every step open anywhere, in the order they were opened.
+
+    ``take_steps`` closes what is left in here, and cannot go by the stacks: a
+    step opened inside a task that was cancelled, or on a thread that has since
+    ended, is open in a context nothing can reach any more - and a step that
+    just stops being mentioned reads as a step that never ran.
+
+    Keyed by ``id`` because a frame is a dict and dicts do not hash. Nothing is
+    registered that the buffer is not also holding, so no id is handed to
+    something else while it is still in here.
+    """
+    if not isinstance(getattr(ConfigVars, '_step_open', None), dict):
+        ConfigVars._step_open = {}
+
+    return ConfigVars._step_open
 
 
 def phase():
@@ -125,8 +178,8 @@ def set_phase(name):
     """
     ConfigVars._step_phase = name if name in PHASES else 'call'
 
-    local = _local()
-    local.floor = len(local.stack)
+    epoch, stack, floor, raised = _state()
+    _store(stack, len(stack), raised)
 
 
 def limit():
@@ -143,18 +196,21 @@ def take_steps():
     present as its own - the bug screenshots had before every record started
     claiming the pending image.
 
-    Anything still open is closed here. A ``with`` block that never exited
-    means the test died inside it, and a step that just stops being mentioned
+    Anything still open is closed here, wherever it was opened. A ``with``
+    block that never exited means the test died inside it - or that a task
+    holding one was cancelled - and a step that just stops being mentioned
     reads as a step that never ran.
     """
-    local = _local()
+    with _LOCK:
+        pending = list(_open_frames().values())
+        _open_frames().clear()
 
-    for frame, started in reversed(local.stack):
-        if frame is not None: _close(frame, started, 'FAIL', '')
+    for frame, started in reversed(pending):
+        _close(frame, started, 'FAIL', '')
 
-    del local.stack[:]
-    local.floor = 0
-    local.raised = None
+    # Every stack still holding any of these is stale from here on: this
+    # context's, and any a pooled thread or a finished task is sitting on.
+    ConfigVars._step_epoch = _epoch() + 1
 
     steps = _steps()
     ConfigVars._steps = []
@@ -183,9 +239,10 @@ def start(title, params=(), kind='step'):
     The stack is pushed either way, so the steps still running keep nesting
     correctly around the ones that were dropped.
     """
-    local = _local()
-    stack = local.stack
-    depth = min(max(len(stack) - local.floor, 0), DEPTH_MAX)
+    epoch, stack, floor, raised = _state()
+    depth = min(max(len(stack) - floor, 0), DEPTH_MAX)
+    started = time.time()
+    parent = _parent(stack[floor:])
 
     with _LOCK:
         steps = _steps()
@@ -205,8 +262,16 @@ def start(title, params=(), kind='step'):
                 # belongs. The index is the step's own place in the buffer,
                 # which is stable because nothing is ever removed from it.
                 'id': len(steps),
+                # The step this one is a step *of*. Depth alone says how far to
+                # indent, which is the same answer for two steps of different
+                # parents - and steps are buffered in the order they started,
+                # so concurrent work puts every sibling before any of their
+                # children and the reader is left attributing all of them to
+                # the last sibling. Rendering walks this instead.
+                'parent': parent,
             }
             steps.append(frame)
+            _open_frames()[id(frame)] = (frame, started)
 
             # Said once, as a step of its own, rather than dropped in silence:
             # a tree that stops halfway reads as a test that stopped there.
@@ -215,11 +280,65 @@ def start(title, params=(), kind='step'):
                     'title': 'more steps not recorded - raise --report-step-limit to keep them',
                     'kind': 'step', 'phase': phase(), 'depth': depth,
                     'status': 'SKIP', 'ms': 0, 'params': [], 'error': '', 'id': len(steps),
+                    'parent': parent,
                 })
 
-    stack.append((frame, time.time()))
+    _store(stack + ((frame, started),), floor, raised)
 
     return frame
+
+
+def _parent(stack):
+    """The step a step opened now would be a step of, by id, or None.
+
+    Read from the phase's own slice of the stack, so that it agrees with the
+    depth counted from the same place: a step drawn at the left margin is a
+    step with no parent, and one held open by a fixture across the whole test
+    does not adopt the test body.
+    """
+    for frame, _started in reversed(stack):
+        if frame is not None: return frame['id']
+
+    return None
+
+
+def _at(stack, entry):
+    """Where this entry is on the stack, innermost first, or None."""
+    for index in range(len(stack) - 1, -1, -1):
+        if stack[index] is entry: return index
+
+    return None
+
+
+def _finish(entry, status='PASS', error=''):
+    """Close the step an opened block is holding, wherever the block ended up.
+
+    Normally the entry is on top of this context's stack and is taken off it.
+    It is not when a block was entered in one context and left in another - an
+    async fixture holding a step open across its ``yield`` is resumed on a task
+    of its own, whose stack was copied before the step existed. The frame is
+    closed on its own there, because the block did exit: leaving it behind for
+    ``take_steps`` to sweep up would report a fixture that worked perfectly as
+    the place the test died.
+
+    Whatever sat above it on the stack goes too. A step opened with ``start``
+    and never stopped would otherwise stay there for the rest of the test,
+    indenting everything after it underneath a block that had already closed.
+    """
+    if entry is None: return
+
+    epoch, stack, floor, raised = _state()
+    index = _at(stack, entry)
+
+    if index is not None: _store(stack[:index], floor, raised)
+
+    frame, started = entry
+    if frame is None: return
+
+    with _LOCK:
+        _open_frames().pop(id(frame), None)
+
+    _close(frame, started, status, _text(error, ERROR_MAX))
 
 
 def stop(status='PASS', error='', params=None):
@@ -232,14 +351,14 @@ def stop(status='PASS', error='', params=None):
     stack = _stack()
     if not stack: return
 
-    opened, started = stack.pop()
-    if opened is None: return
+    entry = stack[-1]
 
     # pytest-bdd only knows what a step was called with once it has run it, so
     # the parameters can arrive at the close rather than at the open.
-    if params: opened['params'] = [[_text(n, VALUE_MAX), _value(v)] for n, v in params]
+    if params and entry[0] is not None:
+        entry[0]['params'] = [[_text(n, VALUE_MAX), _value(v)] for n, v in params]
 
-    _close(opened, started, status, _text(error, ERROR_MAX))
+    _finish(entry, status, error)
 
 
 def open_step():
@@ -284,11 +403,11 @@ def _first_sighting(exception):
     identical-looking failures. One slot is enough because an exception only
     ever propagates through steps that are still open under it.
     """
-    local = _local()
+    epoch, stack, floor, raised = _state()
 
-    if getattr(local, 'raised', None) is exception: return False
+    if raised is exception: return False
 
-    local.raised = exception
+    _store(stack, floor, exception)
 
     return True
 
@@ -306,6 +425,20 @@ class step(object):
         with step("Add to cart", sku="A-12"):
             cart.add(sku)
 
+    An ``async`` test writes both the same way. ``@step`` on an ``async def``
+    times the call, not the building of its coroutine, and ``async with`` holds
+    the step open across everything awaited inside it::
+
+        @step("Send the notification")
+        async def notify(user): ...
+
+        async with step("Check out"):
+            await cart.pay()
+
+    Steps opened in coroutines running concurrently - gathered, or in a task
+    group - are siblings, not a chain, and each of them keeps its own idea of
+    what an attachment made inside it belongs to.
+
     A decorated function's own arguments fill in the ``{placeholders}`` of its
     title and are kept as the step's parameters, so the report shows the call
     that was actually made rather than the sentence it was written from.
@@ -320,26 +453,53 @@ class step(object):
         self.title = title
         self.params = params
 
+        # What each open block of this step is holding, innermost last. Held
+        # here rather than read back off the stack on the way out, because the
+        # context that leaves the block is not always the one that entered it.
+        # A list because one `step` object can be entered more than once - a
+        # decorator's is built fresh per call, but nothing stops a caller
+        # keeping one and reusing it.
+        self._open = []
+
     def __enter__(self):
         start(self.title, sorted(self.params.items()))
+        self._open.append(_stack()[-1])
 
         return self
 
     def __exit__(self, kind, exception, traceback):
+        entry = self._open.pop() if self._open else None
+
         if exception is None:
-            stop()
+            _finish(entry)
         else:
             # The message goes on the step that raised, and the steps it was
             # raised inside are marked failed without it. One exception walking
             # out through four steps otherwise prints the same traceback four
             # times, and the innermost - the only one that says where - is the
             # one furthest down the page.
-            stop(_outcome(exception),
-                 _error_text(exception) if _first_sighting(exception) else '')
+            _finish(entry, _outcome(exception),
+                    _error_text(exception) if _first_sighting(exception) else '')
 
         return False
 
+    async def __aenter__(self):
+        return self.__enter__()
+
+    async def __aexit__(self, kind, exception, traceback):
+        return self.__exit__(kind, exception, traceback)
+
     def __call__(self, function):
+        if _awaits(function):
+            @functools.wraps(function)
+            async def wrapper(*args, **kwargs):
+                bound = _bind(function, args, kwargs)
+
+                async with step(_fill(self.title, bound), **dict(self.params, **bound)):
+                    return await function(*args, **kwargs)
+
+            return wrapper
+
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
             bound = _bind(function, args, kwargs)
@@ -350,6 +510,31 @@ class step(object):
         return wrapper
 
 
+def _awaits(function):
+    """True if calling this hands back something that still has to be awaited.
+
+    Worth going to some trouble over, because getting it wrong is silent: the
+    plain wrapper would time the *building* of the coroutine, close the step at
+    nought milliseconds and record PASS on a call that had not run yet - so an
+    ``async def`` step that goes on to raise is reported green.
+
+    ``iscoroutinefunction`` does not look through ``functools.wraps``, and a
+    decorator stacked above this one - a retry, a rate limiter - leaves a plain
+    function with the ``async def`` behind it. The ``__wrapped__`` chain those
+    leave is followed to find it, and the visited ids are kept because a chain
+    pointed back at itself would otherwise be walked forever.
+    """
+    seen = set()
+
+    while function is not None and id(function) not in seen:
+        if inspect.iscoroutinefunction(function): return True
+
+        seen.add(id(function))
+        function = getattr(function, '__wrapped__', None)
+
+    return False
+
+
 def _bind(function, args, kwargs):
     """A call's arguments by name, as far as they can be worked out.
 
@@ -358,8 +543,6 @@ def _bind(function, args, kwargs):
     run.
     """
     try:
-        import inspect
-
         bound = inspect.signature(function).bind_partial(*args, **kwargs)
         bound.apply_defaults()
 

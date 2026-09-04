@@ -6,12 +6,12 @@ pytest-html-reporter
    :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
    :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.0
+.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.1
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
-.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.0
-    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.0
+.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.1
+    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.1
 
 .. image:: https://pepy.tech/badge/pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter
@@ -36,7 +36,7 @@ Features
   - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
 * Analytics - flaky tests, standing failures, failures grouped by exception, pass-rate drift and where the run's time goes, read across every archived build
-* Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did
+* Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did; ``async`` suites included, where work run concurrently comes back as the siblings it was
 * Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
 * Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
 * Archives / History
@@ -754,6 +754,34 @@ fixture is filed under ``Set up`` or ``Tear down`` rather than swallowing the te
 A step that raises is recorded as failed, with the message, and **the exception carries on out**. The message is kept
 on the step that actually raised; the steps it was raised inside are marked failed without repeating it, so one
 failure is printed once rather than once per level.
+
+async tests
+"""""""""""""""""""""""""""
+
+An ``async`` suite writes both spellings the same way, with ``await`` in front of what is being timed. Nothing has to
+be installed and no setting turns it on - ``pytest-asyncio``, ``anyio`` and ``trio`` all work as they are::
+
+    @step("Send the notification")
+    async def notify(user):
+        await mailer.send(user)
+
+    async def test_checkout():
+        async with step("Check out"):
+            await cart.pay()
+
+The step is held open across everything awaited inside it, so ``@step`` on an ``async def`` times **the call**, not
+the building of its coroutine - which also means an async step that raises is recorded as failed, with its message,
+rather than passing at nought milliseconds before the work has run.
+
+Work run **concurrently comes back as the siblings it was**. Coroutines gathered, or started in a task group, each get
+a branch of their own under the step that fanned them out - with their own steps underneath them - rather than a chain
+nested in whatever order they happened to interleave. Anything attached inside one lands on that one::
+
+    async with step("Fetch the catalogue"):
+        await asyncio.gather(fetch("books"), fetch("music"), fetch("film"))
+
+Threads behave the same way and always did: a step opened in a background thread nests within that thread rather than
+under whatever the main one happened to have open.
 
 anything attached lands on the step
 """""""""""""""""""""""""""""""""""
