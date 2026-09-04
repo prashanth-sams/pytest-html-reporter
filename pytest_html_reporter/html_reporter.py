@@ -1647,6 +1647,20 @@ class HTMLReporter(object):
             json.dump(self.json_data, outfile)
 
     def update_archives_template(self, base):
+        # Emptied first, for the reason update_trends() is: these live on the
+        # class, and the archive section is rebuilt from what is on disk, so
+        # anything a render earlier in this process left behind does not belong
+        # in it. That leftover build was drawn as a second "build #1" above the
+        # real one - numbered from a stale _archive_count - and its body
+        # carried a canvas with an id the real newest build also had. Two
+        # canvases, one id: the chart drawn into the phantom read the real
+        # build's figures, so a build showing 7 tests was charted as 1526.
+        # Rebound rather than cleared in place, so a caller holding the old
+        # container - the suite's own isolation fixtures do - keeps it.
+        ConfigVars._archive_tab_content = ""
+        ConfigVars._archive_body_content = ""
+        ConfigVars.archives = {}
+
         f = glob.glob(base + '/archive/*.json')
         cf = glob.glob(base + '/output.json')
         if len(f) > 0:
