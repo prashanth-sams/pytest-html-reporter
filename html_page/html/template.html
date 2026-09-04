@@ -9263,80 +9263,125 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
         </script>
 
         <script>
-            for(var i=0; i<%(archive_count)%; i++) {
-                var archiveCanvas = document.getElementById("archive-chart-"+i);
-                if (!archiveCanvas) { continue; }
-                var MeSeContext = archiveCanvas.getContext("2d");
+            // One chart per archived build, drawn when its canvas nears the
+            // viewport rather than here, while the parser waits.
+            //
+            // Every Chart.js instance measures its canvas -- a forced layout
+            // against the whole page -- installs a resize monitor of its own
+            // and animates its first draw. Doing that for every build up front
+            // is what made a long-lived report slow to open: at a few hundred
+            // builds it is seconds of blocked parsing, and hundreds of resize
+            // monitors and scroll listeners left behind, for charts nobody has
+            // scrolled to. Drawn on approach, the cost of opening the report is
+            // flat in the size of the archive instead of linear in it.
+            (function () {
+                var ID_PREFIX = 'archive-chart-';
                 var archives = %(archives)%;
-                var pass = archives[i].pass;
-                var fail = archives[i].fail;
-                var skip = archives[i].skip;
-                var xpass = archives[i].xpass;
-                var xfail = archives[i].xfail;
-                var error = archives[i].error;
-                var total = archives[i].total;
 
-                var MeSeData = {
-                    labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
-                    datasets: [{
-                        label: "Test",
-                        data: [pass, fail, skip, xpass, xfail, error],
-                        _theme: {
-                            backgroundColor: ['--status-pass', '--status-fail', '--status-skip',
-                                              '--status-xpass', '--status-xfail', '--status-error'],
-                            hoverBackgroundColor: ['--chart-hover-pass', '--chart-hover-fail', '--chart-hover-skip',
-                                                   '--chart-hover-xpass', '--chart-hover-xfail', '--chart-hover-error'],
-                            hoverBorderColor: ['--chart-border-pass', '--chart-border-fail', '--chart-border-skip',
-                                               '--chart-border-xpass', '--chart-border-xfail', '--status-error'],
-                            // Chart.js separates the slices with its own default
-                            // #fff border: invisible on a white card, a white cage
-                            // on a dark one. Pinned to the card it sits on.
-                            borderColor: '--surface-card'
+                // Found rather than counted. The count the archive rows are
+                // numbered from is empty when the archive is switched off, and
+                // an empty loop bound is a syntax error, not an empty loop.
+                var canvases = document.querySelectorAll('canvas[id^="' + ID_PREFIX + '"]');
+
+                function drawArchiveChart(canvas) {
+                    var archive = archives[canvas.id.slice(ID_PREFIX.length)];
+                    if (!archive) { return; }
+
+                    var MeSeData = {
+                        labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
+                        datasets: [{
+                            label: "Test",
+                            data: [archive.pass, archive.fail, archive.skip,
+                                   archive.xpass, archive.xfail, archive.error],
+                            _theme: {
+                                backgroundColor: ['--status-pass', '--status-fail', '--status-skip',
+                                                  '--status-xpass', '--status-xfail', '--status-error'],
+                                hoverBackgroundColor: ['--chart-hover-pass', '--chart-hover-fail', '--chart-hover-skip',
+                                                       '--chart-hover-xpass', '--chart-hover-xfail', '--chart-hover-error'],
+                                hoverBorderColor: ['--chart-border-pass', '--chart-border-fail', '--chart-border-skip',
+                                                   '--chart-border-xpass', '--chart-border-xfail', '--status-error'],
+                                // Chart.js separates the slices with its own default
+                                // #fff border: invisible on a white card, a white cage
+                                // on a dark one. Pinned to the card it sits on.
+                                borderColor: '--surface-card'
+                            }
+                        }]
+                    };
+
+                    // Built through themedChart, which resolves the tokens
+                    // against the theme in force now -- so a chart drawn after
+                    // the reader has toggled the theme comes up in it, without
+                    // restyleCharts() having anything to say about a chart that
+                    // did not exist when the toggle happened.
+                    themedChart(canvas.getContext("2d"), {
+                        type: 'horizontalBar',
+                        data: MeSeData,
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            responsive: true,
+                            scales: {
+                                yAxes: [{
+                                    stacked: true
+                                }]
+                            },
+                            tooltips: {
+                              // Chart.js keeps the colours it was handed, so the tokens are
+                              // named here too and re-read by restyleCharts() on a theme change.
+                              _theme: {
+                                  backgroundColor: '--chart-tooltip-bg',
+                                  titleFontColor: '--chart-tooltip-title',
+                                  bodyFontColor: '--chart-tooltip-body',
+                                  borderColor: '--chart-tooltip-border',
+                                  multiKeyBackground: '--chart-tooltip-border'
+                              },
+                              backgroundColor: themeValue('--chart-tooltip-bg'),
+                              titleFontSize: 10,
+                              titleFontColor: themeValue('--chart-tooltip-title'),
+                              bodyFontColor: themeValue('--chart-tooltip-body'),
+                              bodyFontSize: 12,
+                              displayColors: false,
+                              borderColor: themeValue('--chart-tooltip-border'),
+                              borderWidth: 2,
+                              multiKeyBackground: themeValue('--chart-tooltip-border'),
+                              cornerRadius: 2,
+                              caretSize: 5,
+                              caretPadding: 5,
+                              xPadding: 5,
+                              yPadding: 5
+                          }
                         }
-                    }]
-                };
+                    });
+                }
 
-                var MeSeChart = themedChart(MeSeContext, {
-                    type: 'horizontalBar',
-                    data: MeSeData,
-                    options: {
-                        legend: {
-                            display: false
-                        },
-                        responsive: true,
-                        scales: {
-                            yAxes: [{
-                                stacked: true
-                            }]
-                        },
-                        tooltips: {
-                          // Chart.js keeps the colours it was handed, so the tokens are
-                          // named here too and re-read by restyleCharts() on a theme change.
-                          _theme: {
-                              backgroundColor: '--chart-tooltip-bg',
-                              titleFontColor: '--chart-tooltip-title',
-                              bodyFontColor: '--chart-tooltip-body',
-                              borderColor: '--chart-tooltip-border',
-                              multiKeyBackground: '--chart-tooltip-border'
-                          },
-                          backgroundColor: themeValue('--chart-tooltip-bg'),
-                          titleFontSize: 10,
-                          titleFontColor: themeValue('--chart-tooltip-title'),
-                          bodyFontColor: themeValue('--chart-tooltip-body'),
-                          bodyFontSize: 12,
-                          displayColors: false,
-                          borderColor: themeValue('--chart-tooltip-border'),
-                          borderWidth: 2,
-                          multiKeyBackground: themeValue('--chart-tooltip-border'),
-                          cornerRadius: 2,
-                          caretSize: 5,
-                          caretPadding: 5,
-                          xPadding: 5,
-                          yPadding: 5
-                      }
+                function onApproach(entries, observer) {
+                    for (var i = 0; i < entries.length; i++) {
+                        if (!entries[i].isIntersecting) { continue; }
+
+                        // Dropped before it is drawn, not after: a canvas is
+                        // only good for one chart, and Chart.js throws on one
+                        // that is already in use.
+                        observer.unobserve(entries[i].target);
+                        drawArchiveChart(entries[i].target);
                     }
-                });
-            }
+                }
+
+                // Safari below 12.1 has no IntersectionObserver. There the
+                // charts are drawn up front, exactly as they always were.
+                var observer = window.IntersectionObserver ? new IntersectionObserver(onApproach, {
+                    // A screen early, so a build's bars are already drawn by
+                    // the time its row is scrolled to. The canvas is sized by
+                    // the stylesheet either way, so nothing moves when one is
+                    // filled in -- it is only the drawing that arrives late.
+                    rootMargin: '400px 0px'
+                }) : null;
+
+                for (var i = 0; i < canvases.length; i++) {
+                    if (observer) { observer.observe(canvases[i]); }
+                    else { drawArchiveChart(canvases[i]); }
+                }
+            })();
         </script>
 
         <script>

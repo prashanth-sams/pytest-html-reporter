@@ -1507,7 +1507,6 @@ class HTMLReporter(object):
             test_suites_error=str(ConfigVars._test_error_list),
             archive_status=str(ConfigVars._archive_tab_content),
             archive_body_content=str(ConfigVars._archive_body_content),
-            archive_count=str(ConfigVars._archive_count),
             archives=str(ConfigVars.archives),
             max_failure_suite_name_final=escape_report_text(ConfigVars.max_failure_suite_name_final),
             max_failure_suite_count=str(ConfigVars.max_failure_suite_count),
