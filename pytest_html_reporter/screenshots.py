@@ -22,6 +22,7 @@ from io import BytesIO
 from PIL import Image
 
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.steps import open_step
 
 
 # When the reporter takes a picture nobody asked for.
@@ -88,8 +89,18 @@ def add(image=None, png=None, label=""):
     handed over. Bytes are kept as bytes on purpose - they are already a png,
     and decoding one only to encode it again is time spent on every screenshot
     of every test to arrive back where it started.
+
+    The step that was open when the picture was taken is kept with it, the way
+    an attachment keeps one, so the Test Steps tab can show it against the step
+    it belongs to rather than only against the test. -1 for a picture taken
+    outside any step - which includes every automatic one, since those are
+    taken from the teardown hook, by which time nothing is open. Those are
+    filed against the step that threw instead, when the tree is built.
     """
-    _pending().append({"image": image, "png": png, "label": str(label)})
+    step = open_step()
+
+    _pending().append({"image": image, "png": png, "label": str(label),
+                       "step": -1 if step is None else step["id"]})
 
 
 def save(entry, path):
@@ -231,22 +242,78 @@ def targets(handle, depth=0):
     return found
 
 
+def _cached(fixturedef):
+    """What a fixture handed over, if it has already been asked for.
+
+    ``cached_result`` is (value, key, exception) and only exists once the
+    fixture has run. The third is what it raised, and a fixture that raised has
+    no value to photograph.
+    """
+    cached = _attr(fixturedef, "cached_result")
+    if not isinstance(cached, tuple) or len(cached) != 3: return None
+
+    return None if cached[2] is not None else cached[0]
+
+
+def resolved(item):
+    """Fixture values this test used that never reached ``funcargs``.
+
+    A test that names its browser in its own signature has it in ``funcargs``,
+    and for years that was the whole story. A **pytest-bdd** scenario does not:
+    the generated test function takes no fixtures at all, and each step asks
+    for what it needs through ``request.getfixturevalue`` as it runs - so a
+    Gherkin suite driving a browser was holding a page that nothing here could
+    see, and a failing scenario was never photographed. Nothing said so; it
+    simply produced no picture.
+
+    These are read out of the request's own cache rather than asked for by
+    name: ``getfixturevalue`` on a name the test never used would *build* it,
+    which at teardown means starting a browser to photograph it.
+    """
+    defs = _attr(_attr(item, "_request"), "_fixture_defs")
+    if not isinstance(defs, dict):
+        defs = {}
+
+    found = {}
+    for name, fixturedef in defs.items():
+        value = _cached(fixturedef)
+        if value is not None: found[str(name)] = value
+
+    return found
+
+
 def handles(item):
     """(label, object) for everything this test was holding that may be a browser.
 
     The fixtures named above come first, then whatever else the test was
-    handed, and last the test class's own attributes - a ``unittest`` suite
-    puts its driver on ``self`` in ``setUp`` rather than in a fixture.
+    handed, then everything it reached for while it ran, and last the test
+    class's own attributes - a ``unittest`` suite puts its driver on ``self``
+    in ``setUp`` rather than in a fixture.
     """
     found = []
+    seen = set()
+
     funcargs = _attr(item, "funcargs")
     funcargs = funcargs if isinstance(funcargs, dict) else {}
 
-    for name in FIXTURES:
-        if name in funcargs: found.append((name, funcargs[name]))
+    # The same page usually arrives twice - named by the test and cached by the
+    # request - and photographing it twice would put two of one picture on the
+    # row. `capture` dedupes by target as well; this keeps the list itself
+    # honest about what the test was holding.
+    def offer(name, value):
+        if name in seen: return
 
-    for name, value in funcargs.items():
-        if name not in FIXTURES: found.append((name, value))
+        seen.add(name)
+        found.append((name, value))
+
+    values = dict(resolved(item))
+    values.update(funcargs)
+
+    for name in FIXTURES:
+        if name in values: offer(name, values[name])
+
+    for name, value in values.items():
+        if name not in FIXTURES: offer(name, value)
 
     instance = _attr(item, "instance")
     if instance is not None:

@@ -1,5 +1,42 @@
+import os
+import sys
+
+import pytest
+
 from pytest_html_reporter.html_reporter import HTMLReporter
+from pytest_html_reporter.junit import junit_path
+from pytest_html_reporter.shards import (
+    report_shard,
+    report_shard_merge,
+    report_shard_reset,
+    report_shard_run,
+    reset_shard_dir,
+    sanitise_id,
+    shard_dir,
+    shards_root,
+)
 from pytest_html_reporter.util import archive_count, clean_screenshots, custom_title, report_path
+
+
+def report_base(path):
+    """The folder a --html-report value writes into, before there is a reporter.
+
+    pytest_configure has to know where a shard's own directory goes, and it has
+    to settle it before HTMLReporter is even constructed. This mirrors the
+    directory half of HTMLReporter.report_path deliberately line for line,
+    oddities included - including the `'.html' in path` test that treats a
+    folder called ./my.html.d as a file - because the two answers naming
+    different folders is far worse than either of them being surprising: the
+    shard would clean one directory and then write its screenshots into
+    another, and the merge would find a bundle whose images were not there.
+    """
+    if '.html' in path:
+        folder = '.' if '.html' in path.rsplit('/', 1)[0] else path.rsplit('/', 1)[0]
+        if folder == '': folder = '.'
+    else:
+        folder = path
+
+    return os.path.abspath(os.path.expanduser(os.path.expandvars(folder)))
 
 
 def pytest_addoption(parser):
@@ -189,6 +226,69 @@ def pytest_addoption(parser):
              "on an interactive run with a desktop to open into), always or none",
     )
 
+    group.addoption(
+        "--report-shard",
+        action="store",
+        dest="report_shard",
+        default="",
+        metavar="ID",
+        help="name this process as one leg of a sharded run, e.g. 1/4; it writes "
+             "its records to <report>/shards/<ID> and no report of its own, for "
+             "'pytest-html-reporter merge' to turn into one build",
+    )
+
+    group.addoption(
+        "--report-shard-merge",
+        action="store_true",
+        dest="report_shard_merge",
+        default=False,
+        help="after writing this leg's shard, merge every shard beside it and "
+             "render one report; for sequential legs on one machine, so three "
+             "runs need three commands rather than four",
+    )
+
+    group.addoption(
+        "--report-shard-run",
+        action="store",
+        dest="report_shard_run",
+        default="",
+        metavar="TOKEN",
+        help="name the CI run this leg belongs to, so that a --report-shard-merge "
+             "leg merges only the shards of this run; taken from the CI system's "
+             "own variables when it is not given",
+    )
+
+    group.addoption(
+        "--report-shard-reset",
+        action="store_true",
+        dest="report_shard_reset",
+        default=False,
+        help="delete <report>/shards before this leg writes into it, so a leg that "
+             "was renamed or removed since the last run cannot leave a bundle "
+             "behind for this run to merge; for the first leg of a sequential run",
+    )
+
+    group.addoption(
+        "--report-junit",
+        action="store",
+        dest="report_junit",
+        default="",
+        metavar="PATH",
+        help="also write a JUnit xml of this run to PATH, for a CI system that "
+             "reads xml; date and time placeholders (%%Y, %%m, %%d, %%H, %%M, "
+             "...) are expanded",
+    )
+
+    group.addoption(
+        "--report-junit-xpass",
+        action="store",
+        dest="report_junit_xpass",
+        default=None,
+        choices=("pass", "fail", "skip"),
+        help="how an xpassed test is written to the JUnit xml: pass (default, "
+             "which is what pytest's own --junitxml does), fail or skip",
+    )
+
     parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
@@ -299,6 +399,46 @@ def pytest_addoption(parser):
         default="",
     )
 
+    parser.addini(
+        "report_shard",
+        help="name this run as one leg of a sharded run, e.g. 1/4; it writes its "
+             "records under the report folder and no report of its own",
+        default="",
+    )
+
+    parser.addini(
+        "report_shard_merge",
+        help="whether this leg also merges every shard beside it and renders one "
+             "report: 1, true, yes or on",
+        default="",
+    )
+
+    parser.addini(
+        "report_shard_run",
+        help="name the CI run this leg belongs to, so that a merging leg merges "
+             "only the shards of this run",
+        default="",
+    )
+
+    parser.addini(
+        "report_shard_reset",
+        help="whether this leg deletes <report>/shards before writing into it: "
+             "1, true, yes or on",
+        default="",
+    )
+
+    parser.addini(
+        "report_junit",
+        help="also write a JUnit xml of this run to this path",
+        default="",
+    )
+
+    parser.addini(
+        "report_junit_xpass",
+        help="how an xpassed test is written to the JUnit xml: pass, fail or skip",
+        default="",
+    )
+
 
 def pytest_configure(config):
     # Resolved once, and written back, so that anything reading the option
@@ -307,7 +447,71 @@ def pytest_configure(config):
     path = report_path(config)
     config.option.path = path
 
-    clean_screenshots(path)
+    # Settled here, before the reporter exists, because the answer decides
+    # which folder gets emptied below - and getting that wrong empties a
+    # sibling shard's screenshots. sanitise_id is called for its usage error:
+    # an id made entirely of separators comes out empty, and a shard with an
+    # empty id would write over the report base itself.
+    shard = report_shard(config)
+    shard_id = sanitise_id(shard)
+
+    # Written back for the same reason as the path above: an xdist worker is
+    # handed a copy of these options and has to file its screenshots in this
+    # shard's folder. The raw value is what travels, not the sanitised one -
+    # sanitising is deterministic, so the worker derives the same directory
+    # either way, while the raw value is also the label the merged report
+    # shows for this leg, and "1/4" reads better there than "1-4".
+    config.option.report_shard = shard
+    config.option.report_shard_merge = report_shard_merge(config)
+
+    # Resolved and written back for the same reason again, and once: the token
+    # is written into this leg's bundle and compared against every other
+    # bundle's by a merging leg, so every process of this run has to answer the
+    # same one - including an xdist worker, which is a separate process with a
+    # separate environment handed a copy of these options.
+    config.option.report_shard_run = report_shard_run(config)
+
+    if config.option.report_shard_merge and not shard_id:
+        raise pytest.UsageError(
+            "--report-shard-merge needs --report-shard to name this shard")
+
+    # Before the leg's own directory is dealt with, because this takes that
+    # directory with it. Asked for on the first leg of a sequential run and
+    # nowhere else: the legs of one run are pointed at one persistent
+    # --html-report, so <base>/shards accumulates, and a leg that was renamed
+    # or dropped since the last run leaves a bundle behind that the next
+    # --report-shard-merge would report as part of this build - six tests when
+    # four ran. Not implied by --report-shard or --report-shard-merge, and
+    # deliberately not: it deletes the other legs' work.
+    if report_shard_reset(config):
+        reset_shard_dir(shards_root(report_base(path)))
+
+    if shard_id:
+        # Only this leg's own directory, never the whole report folder: the
+        # legs of one matrix are told to write into one --html-report, and a
+        # second leg that swept the folder clean would take the first leg's
+        # screenshots with it and leave the merge with records naming pictures
+        # that are no longer there.
+        #
+        # The whole directory rather than clean_screenshots' pytest_screenshots
+        # subfolder, because the bundle is in there too: a records.json from a
+        # previous run of this same leg would otherwise survive, and if that
+        # run collected more tests than this one does, its records are what the
+        # merge reads.
+        reset_shard_dir(shard_dir(report_base(path), shard_id))
+
+        # A shard that is not also the merge leg renders nothing, so it would
+        # write no xml either - said out loud rather than silently, because
+        # the alternative a CI author expects is four shard xmls plus the
+        # merged one, and a `**/*.xml` glob that found all five would count
+        # every test in the matrix twice.
+        if junit_path(config) and not config.option.report_shard_merge:
+            sys.stderr.write(
+                "pytest-html-reporter: --report-junit is ignored on a shard; "
+                "pass --junit-xml to `pytest-html-reporter merge`, or run this "
+                "leg with --report-shard-merge\n")
+    else:
+        clean_screenshots(path)
 
     title = config.getoption("title")
     custom_title(title)

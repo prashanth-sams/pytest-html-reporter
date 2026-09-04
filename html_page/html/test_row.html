@@ -1,4 +1,4 @@
-<tr>
+<tr id="%(anchor)%">
     <td class="jump-cell" data-jump="suite" data-target="%(sindex)%" tabindex="0" role="link"
         title="Open this suite in Test Steps"
         style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(sname)%</td>
@@ -8,8 +8,12 @@
     <td>%(stat)%</td>
     <td>%(dur)%</td>
     <td class="metric-num metric-rerun"><span class="metric-pill">%(rerun)%</span></td>
+    <!-- The last few characters of a cut message fade out instead of ending in
+         an ellipsis. The ellipsis is still here, hidden: a CSV and a print-out
+         carry the cell's text and cannot carry a gradient, and a message that
+         was cut short with nothing to say so is a trap in both. -->
     <td style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">
-        %(msg)%
+        %(msg)%<span class="msg-fade">%(msg_tail)%</span><span class="msg-cut">%(msg_cut)%</span>
         %(floating_error_text)%
     </td>
     <td class="log-cell" data-logs="%(log_count)%">

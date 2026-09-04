@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name="pytest-html-reporter",
-    version="0.3.9",
+    version="0.4.0",
     author="Prashanth Sams",
     author_email="sams.prashanth@gmail.com",
     maintainer="Prashanth Sams",
@@ -56,6 +56,13 @@ setup(
     entry_points={
         "pytest11": [
             "reporter = pytest_html_reporter.plugin",
+        ],
+        # The merge of a sharded run is its own process, not another pytest
+        # run: a report folder has exactly one writer per build, and a fifth
+        # pytest started in it to do the merging would clean_screenshots away
+        # the images it was sent to collect.
+        "console_scripts": [
+            "pytest-html-reporter = pytest_html_reporter.cli:main",
         ],
     },
 )

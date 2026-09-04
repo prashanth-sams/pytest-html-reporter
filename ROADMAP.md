@@ -43,25 +43,97 @@ rows of "slowest test: no time at all" reads as a chart that failed to load rath
 suite. It sits beside a duration histogram, which answers the question the top-10 cannot: two
 thousand tests at 300ms each is a different problem from ten tests at a minute.
 
-### 4. Copy-error and copy-rerun-command buttons
+### 4. Copy-error and copy-rerun-command buttons — SHIPPED
 Next to each failure message, a copy icon for the full traceback and one that yields
 `pytest path/to/test.py::test_name`. Suite name and test name are both already in the row —
 it is string concatenation.
 
 *Why:* removes the most repeated manual step in day-to-day triage.
 *Effort:* ~20 lines.
-*Shipped as:* the copy half only - the rerun-command button was built and then dropped as unwanted.
-`FloatingError` now renders an expand and a copy button carrying the error in `data-` attributes,
+*Shipped as:* both halves, the copy button first and the rerun command after it.
+`FloatingError` now renders an expand, a copy and a rerun button carrying the error and the command
+in `data-` attributes. The command is built from the test's node id rather than by concatenating the
+two names in the row: those are what a person reads, and a test inside a class is listed under its
+own name where pytest wants the class in front of it. A node id a shell would not read as one word
+is quoted, since a parametrised test's brackets are a glob pattern to zsh.
 and the `(...)` link and its per-row Bootstrap modal are gone: the full error opens in the same
 overlay the `Logs` column uses, which gave the dialog a `Copy` button and a `<pre>` body for free.
 The old modal's `<p>` had been collapsing every traceback into one run-on line. One delegated click
 handler serves the rows, because DataTables rebuilds them on each sort, search and page change.
 
-### 5. Deep-linkable rows
+Since #5 there are four of these buttons, and the tick that replaces an icon is the same tick for
+all of them — so a click also puts a word in the middle of the page: `Error copied`, `Command
+copied`, `Link copied`, faded in and gone in a second and a half. That is both the half that is
+legible from wherever the pointer is, 22 pixels of button at the end of a long row not being it,
+and the half that says *which* of the three landed. A refused clipboard — which is what `file://`
+gets in some browsers — says `Press Ctrl+C to copy` there rather than leaving a button that did
+nothing and no reason why. It takes no clicks, so the row underneath stays live while it is up. It
+also shows what went onto the clipboard rather than only a word about it, four lines of it, with
+anything past that faded out rather than cut off square — the preview is `aria-hidden`, because the
+panel is a live region and a traceback read out after `Error copied` is not the news.
+
+The four of them also fold away. At one button per action a table of forty failures carries 160 of
+them for the one somebody wants, so they collapse behind the `...` — width and opacity rather than
+`display: none`, which cannot be transitioned and leaves nothing to animate — and unfold along the
+row a tenth of a second apart when it is pressed. One row is open at a time, and a click anywhere
+else or Escape shuts it: this is the set of actions on one failure, not a mode the table stays in.
+
+Their widths are taken in **one step**, with only the opacity and the transform animated. Growing
+the widths reflowed the cell on every frame of the animation, so a strip with no room left on its
+line jumped to the next one part-way through, at whichever frame it stopped fitting. Settling the
+layout in one go leaves a single known move, which `slideRowActions` animates by putting the strip
+back where it was and letting it travel — the row's height still changes in one step, but following
+the strip is what makes the new line read as somewhere it went rather than somewhere it reappeared.
+
+The cut message itself no longer ends in an ellipsis either — its last eight characters fade out,
+which is the answer the report title already gave to the same question and costs none of a narrow
+cell's width. Painted on those characters rather than as a mask down the cell's right-hand edge, so
+it lands on the end of the text wherever the line wraps; and the gradient names `--text-body`
+rather than `currentcolor`, because painting text with a background means `color: transparent` and
+`currentcolor` would then fade from nothing to nothing. The ellipsis stays in the cell, hidden: the
+CSV, Excel and print exports are built from cell text, they cannot carry a gradient, and a message
+cut short with nothing to say so is a trap in a file read a week later.
+
+### 5. Deep-linkable rows — SHIPPED
 The template already listens for `hashchange` (`template.html:2990`). Give each test row an
 anchor id so a failure can be pasted into Slack and open directly. Pairs with #4.
 
 *Effort:* ~15 lines.
+*Shipped as:* `row_anchor` in `util.py` and `anchor_for_row` on the reporter, an `id` on every
+`<tr>`, a fourth `msg-link` button in `FloatingError`, and `scrollToTestRow` / `pageToTestRow` /
+`markTestRow` behind a `#test-...` branch in `openPageFromHash`.
+
+**The id the rows already had was the one thing the anchor could not be.** `runt` numbers them
+`suite-row` in the order they are written, and it is what the Logs, Data and Steps buttons open
+their panels by — but a link is pasted into a chat window and opened hours later, against whatever
+report is at that address by then. A positional anchor still *resolves*: it opens whichever test
+has since taken that place, with nothing on the page to say it is not the one that was sent. The
+anchor is built from the node id instead, so it survives three tests being added in front of it,
+and a link into a CI job's latest report keeps pointing at the same test build after build.
+
+**Readable, not a bare hash.** The node id flattened to letters, digits and dashes and cut back to
+a whole word, with six hex digits of the *whole* node id after it. The slug is what says which test
+a link opens while it is still sitting in the chat window; the digits are what keep two tests apart
+when the slug is cut to the same string, or when they differ only in the punctuation the slug drops
+— `test_one[a-b]` beside `test_one[a_b]`. Percent-escaping the node id instead would have kept it
+exact, but a fragment of `%5B` and `%3A%3A` is not a link anyone reads, and brackets do not survive
+every chat client's own linkifier intact.
+
+**The row is found through the DataTables API, not with `getElementById`.** Only the current page
+of the table is in the document, so a row on page four is not there to be found at all: its
+position in the filtered, sorted set is what its page is computed from, and the table is paged to
+it before anything is scrolled. Every filter hiding it is cleared first — the search box, the
+column searches, and the status chips (#2), which are a column search with a piece of state of
+their own, so clearing one without the other leaves the chips holding the counts of a filter that
+is no longer on.
+
+Three smaller decisions. The tab is opened by calling `openPage` directly rather than clicking the
+nav link, whose `href` would replace the row anchor in the URL with `#test-metrics` — the same
+thing the archive deep link had to do, for the same reason. The jump waits for `window.load` when
+the page is still coming up, because the table it pages through is built there and the flash saying
+which row it is would otherwise burn out behind the loader. And a node id that appears twice —
+`pytest-repeat`, or a rerun collected rather than merged — has its repeats numbered: two rows
+answering to one link is invalid HTML, and it would silently open the first of them.
 
 ---
 
@@ -134,12 +206,46 @@ counted against a test, or a test skipped for three builds between two passes re
 only ever describe the current run, because a number that was never stored is a number no later
 build can show; archives written before it have no key and are read as *not measured*, never as zero.
 
-### 9. Failure grouping by exception type
+### 9. Failure grouping by exception type — SHIPPED
 Parse the first line of each captured error and group — "12 failures, 9 are `TimeoutException`".
 Pure post-processing on `_current_error`.
 
 *Why:* turns a wall of red into one actionable insight.
 *Effort:* ~30 lines.
+*Shipped as:* `exception_type` / `failure_counts` / `failure_types` / `failure_headline` in
+`analytics.py`, the `AnalyticsFault` component, and a **Why this run failed** card sat directly
+under the Analytics tiles. It reads the current build alone, so it is the one panel on that tab
+that is answerable on a first run — which is when a red suite most needs it — and it is left out
+entirely on a green one rather than standing empty.
+
+**Not the first line.** A failure is stored as pytest's `E` lines with the marker stripped, but an
+*error* keeps the whole traceback as printed, and the first line of that is a source frame. So the
+whole message is read, and which end wins depends on what is found: a name spelled like an
+exception is taken from the *last* line that has one, because a chained failure prints the original
+traceback first and the exception that actually surfaced last — which is the one pytest itself
+reports — while anything else is taken from the first. Colour escapes are stripped before matching;
+they sit between the start of a line and the name.
+
+**Anchored, or an assertion diff becomes a failure mode.** What a test compared can be anything at
+all, including the text of somebody else's exception, and pytest prints it back as `- ValueError:
+nope`. Matching only at the start of a line keeps a diff out of the grouping. The same anchoring is
+what keeps Selenium's `Message:` continuation lines from becoming a type of their own.
+
+**A bare `assert` is read as an `AssertionError`.** pytest prints those with no type name at all,
+and they are far too common a failure to leave in the unclassified pile. Anything genuinely naming
+nothing — a fixture that could not be found, a message the reporter never captured — lands in
+`Unclassified`, which is ranked last however large it grows: a panel headed by "Unclassified: 40"
+has answered nothing.
+
+**"and N more" opens.** A truncated list that ends at a count says how much is being kept back and offers no way to
+see it, so every one on the tab — the failure groups, the exception types past the eighth, and the four movement cards,
+which had the same dead end — opens a searchable, scrollable dialog. It shows the card's own items rather than a copy:
+a card writes out every name it has and hides the tail behind `is-extra`, and opening one is that class coming off, so
+there is no second list in a data attribute to drift from the first and no name written into the page twice.
+
+Movement against the previous build rides along for free, since the archives are already lined up:
+a group that the last build did not have at all says `new` rather than `+3`, which reads as three
+more of something that was already there.
 
 ---
 
@@ -347,11 +453,160 @@ was slow", never "which test was slow" — scaling across the run draws a flat l
 interleaved: a tree that never existed. Each thread nests within itself, and a background thread's steps
 land at the top level.
 
+**A failing test's screenshot is shown on the step that threw.** The picture was already in the
+report twice over — the `Screens` column and the gallery — and neither says *where* in the test it
+was taken, which is the one thing this tab knows. The automatic capture runs from the teardown hook
+with nothing open, so those are filed against the step carrying the error rather than by asking the
+stack: a photograph of the browser at the end of a failing test is a photograph of the state that
+step left behind. One attached mid-test carries its own step id, the way an attachment does, which
+is what puts a picture on a step of a test that passed; anything left over goes under `Test body`,
+because a test that named no steps is the ordinary case and the body is where it ran.
+
+Finding the browser at all had to be fixed first. **A pytest-bdd scenario was never photographed.**
+Its generated test function takes no fixtures — each step asks for what it needs through
+`request.getfixturevalue` while it runs — so the page never reached `item.funcargs`, which was the
+only place the capture looked, and a Gherkin suite driving a browser silently produced no pictures.
+Fixture values are now also read out of the request's cache, and read rather than asked for by name:
+`getfixturevalue` on a fixture the test never used would *build* it, which at teardown means
+starting a browser in order to photograph it.
+
 The tab's own durations are summed from the per-phase milliseconds rather than the record's
 seconds-rounded-to-two-places, where every test faster than 5ms arrived as a flat `0`. Step trees are
 parked outside the metrics table for the same reason logs and attachments are, and a retry reports the
 steps of the attempt that stuck — the failing attempt's tree beside a green test would describe a run that
 did not happen.
+
+---
+
+### 17. Sharded and cross-machine runs - SHIPPED
+A suite split over four CI machines had no answer here at all. `-n` has been handled since the
+beginning, because xdist's workers report back to one controller and that controller writes the
+report - but four *processes* on four boxes have no controller between them, and each of them knows
+a quarter of the run. Four of them pointed at one output folder do not produce one build; they
+produce four, overwriting each other, and every longitudinal feature this report has is then reading
+a history in which a quarter of the suite appears and disappears on every step: `Archives` gains
+four entries per CI run, the six-point trend window holds a run and a half, `Suite Highlights`
+counts a suite once per shard, and `Analytics`' movement cards report one shard's tests as "New
+tests" and another's as "No longer run" for ever. The same shape turns up on one machine as soon as
+a job runs unit, integration and e2e as three separate `pytest` invocations into one report folder,
+which is common and which nothing here handled either.
+
+*Shipped as:* `pytest_html_reporter/shards.py` (the bundle format, its reader and the option
+helpers), `merge.py` (the merge itself), `junit.py` (one JUnit writer for both callers), `shim.py`
+(the `Config` stand-in the render path is driven through), `cli.py` and `__main__.py`;
+`--report-shard`, `--report-shard-merge`, `--report-shard-run`, `--report-shard-reset`,
+`--report-junit` and `--report-junit-xpass` with six matching ini keys; the `pytest-html-reporter`
+console script with its `merge`, `junit` and `inspect` subcommands; `reset_config_vars()` in
+`const_vars.py`; and the extraction of `pytest_terminal_summary`'s post-yield body into
+`HTMLReporter.render()`, which is what lets a merge drive the existing pipeline instead of
+reimplementing it.
+
+**The shard is a lossless record dump, not a report.** A leg writes
+`<report>/shards/<id>/records.json` plus its own screenshots and writes nothing else - no
+`report.html`, no `output.json`, no archive rotation. That single invariant is what makes everything
+downstream honest: one build per CI run, one rotation, one trend point, one entry per test in the
+histories Analytics reconstructs. The records need no serialiser because `append_test_record`
+already builds every one of them out of JSON-safe built-ins so an xdist worker can ship them through
+`config.workeroutput`, so logs, steps, attachments, phases, meta, bdd, worker and index all travel
+untouched.
+
+Rejected, with the reason each time:
+
+*Merging `output.json` files.* The obvious move, and it cannot work: `append_suite_metrics_row`
+keeps `{status, message, test_name, rerun, duration}` per test - no node id, no logs, no steps, no
+attachments, no phases. A merge built on it produces correct totals over an empty report and cannot
+name a single test in a JUnit file.
+
+*Merging per-shard JUnit XMLs with `junitparser` or `junit-merge`.* It sums the counts rather than
+recounting the elements, and it leaves duplicates in - and a duplicate testcase is read differently
+by every consumer, GitLab pinning the first and Jenkins the last, so two CI systems report different
+outcomes for the same test. The XML is therefore built *from records*, once, and its counts are
+recomputed from the elements actually emitted.
+
+*Routing cross-shard duplicates through `store_test_record`.* That path exists to fold
+`pytest-rerunfailures` attempts and only fires when `pluginmanager.hasplugin("rerunfailures")` is
+true **in the merging process** - so a merged report's contents would depend on what happens to be
+installed on the machine doing the merging, which is not a decision a merge is entitled to make.
+Duplicate handling is an explicit five-way policy instead, and the shim answers `hasplugin` with
+`False` so the question cannot be asked by accident.
+
+*Running pytest a second time in the merge directory* to get a report out of the existing plugin
+path. `pytest_configure` calls `clean_screenshots(path)`, which would `rmtree` the images the merge
+had just staged.
+
+*Averaging the shards' coverage percentages.* Four numbers over four different slices of the code
+average to nothing, and the result would be archived into the trend for ever. A merge with nothing
+combined records **no** `coverage` key at all, so `archived_coverage()` reads the build as *not
+measured* rather than as zero, and the tab says what to run. The merge also never calls
+`discover_coverage`, which searches `os.getcwd()`: a stale `coverage.json` in the merging job's
+working directory would otherwise become the build's number.
+
+*Base64-embedding screenshots in the bundle.* It inflates the JSON by a third over the bytes, forces
+a whole matrix's images through one `json.loads`, and could not be rendered anyway - both screenshot
+templates build `pytest_screenshots/<name>.png` by literal concatenation into an `href` **and** a
+`src`, so a data URI would come out as `src="pytest_screenshots/data:image/png;base64,....png"`. The
+pngs travel as files inside the bundle directory.
+
+*Putting the bundle straight in the report base, sharing the report's own `pytest_screenshots`.*
+That layout deletes its own sources on `merge ./report --html-report ./report`, which is the most
+natural command anybody would type. A shard is a subtree - `<base>/shards/<id>/` - so the merge
+clearing `<base>/pytest_screenshots` cannot reach it.
+
+*`--expect-shards N` as the answer to stale bundles.* It catches a leg that never finished, which is
+a real gap, but not the one that actually bit: a leg deleted between two CI runs leaves a bundle
+behind and the **count is still right**. That needed the run token instead.
+
+*A clock heuristic for "this bundle is old".* There is none to have. Every bundle beside a merging
+leg was written before it, whether by this run or yesterday's, and any threshold picked here would
+be a guess presented as a fact. So nothing is guessed: a token filters when there is one,
+`--report-shard-reset` clears when there is not, and every merge prints one provenance line per
+bundle - id, test count, local finish time - so a leg from yesterday is visible in the log of the
+run that merged it.
+
+Bugs found on the way, most of them in code this feature only walked past:
+
+- **`clean_screenshots` destroyed an earlier leg's images in the sequential case.** The shard branch
+  cannot use it at all; it resets the leg's own directory outright, because a stale `records.json`
+  from a previous run of the *same* leg has to go too - if that run collected more tests than this
+  one does, its records are what the merge would read.
+- **A shard id containing a literal `.html`** - `--report-shard=v1.html` - made its own cleanup a
+  silent no-op, since `clean_screenshots` short-circuits on any path containing `.html`. Fixed by
+  not going through it.
+- **Two ids that sanitise alike buried each other in silence.** `1/4` and `1-4` name one directory;
+  the second leg to write now compares the stored label with its own and says so, and stays quiet
+  for the everyday case of one leg re-running.
+- **A cross-shard screenshot was reported as missing while sitting on disk.** Under the default fold
+  the survivor is the last shard's record, back-filled with a *loser's* screenshot list - so a test
+  photographed on shard 1 and passed on shard 2 named images that staging then looked for under
+  shard 2. `--strict` failed merges over files that were never missing. Each screenshot entry now
+  carries the bundle it came from.
+- **A bundle from a newer release turned a finished pytest run into an INTERNALERROR.**
+  `--report-shard-merge` runs from `pytest_terminal_summary`, so one stale artifact produced a
+  traceback, no report and no verdict *after* every test had run. Caught and named at the dispatch
+  site, pointing at the bundle that was written.
+- **A mistyped `--report-junit` path cost the HTML report.** The XML write sits before the `if
+  self._records:` guard deliberately, so an empty run still owes CI a document - but unguarded it
+  took `report.html`, `output.json` and the archive rotation with it, without even changing the exit
+  code.
+- **`run.collected` read 0 on every parallel leg**, because `pytest_collection_modifyitems` never
+  fires on an xdist controller; and the merge summary named a report the empty-records guard had
+  never written.
+- `_date()` returned *today*, so a matrix that started before midnight and was merged after it was
+  dated - and therefore sorted in the trend, for ever - a day late. And
+  `ConfigVars._start_execution_time`, which names the archive file and labels the trend point, holds
+  the last test's setup time by the time the report is written; the merge overrides both rather than
+  trusting them.
+
+Four gaps left open on purpose. **True global collection order is unrecoverable** - no shard knows
+the whole suite's order, so `--order shard` and `--order name` are both deterministic and neither is
+"what pytest would have collected"; under the default, a folded duplicate sorts at the *last*
+shard's position. **A leg that never finishes is invisible** - it writes no bundle, and the merge
+cannot know it was expected; `--strict` plus a job-level count is the CI-side mitigation.
+**Concurrent legs on one machine are not serialised** against a `--report-shard-merge` leg, which
+the sequential flow makes moot by being sequential and the matrix flow makes moot by merging
+elsewhere. **An empty merge writes the XML but no HTML**, because CI is owed a `tests="0"` document
+while a page with nothing on it is not worth writing; it is the one place the two outputs do not
+track each other, and it is said out loud rather than left to be discovered.
 
 ---
 
@@ -361,5 +616,5 @@ did not happen.
 `output.json`, and address the two most common complaints about HTML reporters: "I can't see the
 logs" and "I can't filter to just the failures."
 
-#1, #2 and #7 have shipped; #4 is what is left of that set. #13 shipped separately, off issue #191,
-#14 off #223 and #15 off #203.
+All four have shipped, #4 and the deep links (#5) that pair with it last. #13 shipped separately, off
+issue #191, #14 off #223 and #15 off #203.

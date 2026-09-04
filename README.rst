@@ -6,12 +6,12 @@ pytest-html-reporter
    :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
    :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.3.9
+.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.0
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
-.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=master
-    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=master
+.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.0
+    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.0
 
 .. image:: https://pepy.tech/badge/pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter
@@ -35,20 +35,22 @@ Features
   - Trends
   - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
-* Analytics - flaky tests, standing failures, pass-rate drift and where the run's time goes, read across every archived build
+* Analytics - flaky tests, standing failures, failures grouped by exception, pass-rate drift and where the run's time goes, read across every archived build
 * Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did
 * Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
 * Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
 * Archives / History
-* Screenshots - a failing Selenium or Playwright test is photographed automatically, with no hook, fixture or import; ``attach`` still takes an image of your own, from anything that can produce a PNG
+* Screenshots - a failing Selenium or Playwright test is photographed automatically, with no hook, fixture or import; ``attach`` still takes an image of your own, from anything that can produce a PNG.
 * Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
 * Captured logs per test (stdout, stderr and ``logging``)
 * Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
+* Deep links - every test row has an address of its own, copied from a button beside the failure, opening the report on that row whatever page of the table it has ended up on
 * Light and dark themes - a switch at the foot of the side nav, remembered per reader, following the operating system until it is touched
 * Custom side-nav links to any page of your own
 * Opens the finished report in a browser on a local run, and stays quiet on a build agent
 * Test Rerun support
 * Parallel run support (``pytest-xdist``)
+* Sharded and cross-machine runs - a matrix that splits the suite over four machines, or three legs run one after another, are merged into one build by ``pytest-html-reporter merge``: one set of totals, one archived build, one JUnit XML
 * Dedicated GitHub Action
 
 Installation
@@ -340,6 +342,12 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_link =
         Coverage=htmlcov/index.html
         CI job=https://ci.example.com/job/42
+    report_shard =
+    report_shard_merge = false
+    report_shard_run =
+    report_shard_reset = false
+    report_junit = ./reports/junit.xml
+    report_junit_xpass = pass
 
 ``report_logs`` takes the same values as ``--report-logs`` (``all`` / ``failed`` / ``none``) and ``report_log_limit``
 the same as ``--report-log-limit`` (a character count, or ``0`` for no limit). ``report_attachments`` and
@@ -359,12 +367,26 @@ location without going through ``addopts``.
 ``--archive-since``. Retention is a property of the job rather than of one run, so the ini file is usually the better
 place for it: set it once and every invocation, however it is started, keeps the same window.
 
+``report_junit`` and ``report_junit_xpass`` mirror ``--report-junit`` and ``--report-junit-xpass``, and are the
+sensible place for both: a JUnit file is something the job wants from every run rather than something you remember to
+ask for.
+
+The four ``report_shard`` keys are listed above for completeness and left empty, which is their default and a run
+that shards nothing. They mirror ``--report-shard``, ``--report-shard-merge``, ``--report-shard-run`` and
+``--report-shard-reset``, and the first of them is per-leg by nature, so the command line is where it usually
+belongs - the ini twin is for a job that generates a config file per leg anyway. ``report_shard_run`` left empty is
+the useful case rather than a gap: the run token is then taken from the CI system's own variables. The two boolean
+keys take ``1``, ``true``, ``yes`` or ``on``.
+
 **Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
 ``--report-link`` entries are added to the ones set in the ini file the same way; ``--archive-count``,
 ``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``, ``--report-attachments``,
-``--report-attachment-limit``, ``--report-screenshots``, ``--report-coverage``, ``--report-coverage-file`` and
-``--report-coverage-limit`` override their ini values
+``--report-attachment-limit``, ``--report-screenshots``, ``--report-coverage``, ``--report-coverage-file``,
+``--report-coverage-limit``, ``--report-shard``, ``--report-shard-run``, ``--report-junit`` and
+``--report-junit-xpass`` override their ini values. ``--report-shard-merge`` and ``--report-shard-reset`` are
+switches rather than values: the flag turns the behaviour on, and so does a truthy ini key, so there is nothing on
+the command line that turns off an ini file that has already said yes
 
 **Note:** If you fail to provide ``--html-report`` tag, it consider your project's home directory as the base
 
@@ -942,6 +964,17 @@ Six figures across the top, then the panels behind them:
 * **Always failing** - tests that have failed every build they were in, two builds running or more.
 * **Builds analysed** and **time in tests**, against the median build.
 
+**Why this run failed** sits under the figures and groups this run's failures by the exception each one came out of -
+*12 failures, 9 are* ``TimeoutException`` - with the share of the run each group holds, how it has moved since the last
+build, and the tests in it named rather than only counted: nine timeouts through one page object and nine unrelated
+waits are different mornings. A group with more tests than fit ends in *and 9 more*, which opens the whole list in a
+searchable, scrollable dialog - as do the ``and N more`` lines on the four movement cards below. Errors are grouped beside failures, as they are counted everywhere else on the tab;
+``xfail`` is not, being an outcome the suite asked for. The type is read back out of the message pytest printed, since
+that is all an archived build ever holds - the exception that surfaced from a chained failure, a bare ``assert`` read as
+an ``AssertionError``, and a message naming nothing left in ``Unclassified``, which is held at the bottom of the list
+however large it grows. The panel reads the current build alone, so unlike everything below it it says something on a
+first run; a green run has nothing to group and the card is left out entirely.
+
 ``Pass rate across builds`` plots the drift; the axis is *not* pinned to 0-100, because a suite that lives between 96%
 and 99% is exactly the one whose two-point drops matter. ``What moved, build to build`` stacks what changed at each
 step - fixed, regressed, added, dropped. ``Where the time goes`` buckets this run's tests by duration, which a
@@ -949,7 +982,7 @@ slowest-tests list cannot tell you: two thousand tests at 300ms each is a differ
 minute. ``Test base growth`` shows the suite being added to, or quietly shrinking.
 
 Underneath, four cards name what changed since the previous build - **newly failing**, **newly fixed**, **new tests**
-and **no longer run** - and then a searchable, sortable row per test: its verdict, its recent outcomes as a strip of
+and **no longer run**, each opening its full list on the same dialog - and then a searchable, sortable row per test: its verdict, its recent outcomes as a strip of
 one block per build, its pass rate, how many times it has flipped, its retries, how long its current streak has run
 for and its duration. It opens worst-behaved first, so the list to work through is already the list on screen.
 
@@ -1001,6 +1034,321 @@ reads the same as a serial one. Nothing needs to be configured, and running with
 
 **Note:** results are handed over when a worker finishes, so tests from a worker that crashes outright (rather than
 failing) are not in the report - pytest reports the crash itself
+
+sharded runs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``-n`` splits a suite across the cores of one machine and needs nothing configured. Splitting the same suite across
+four machines is the case where something does: each of those four processes knows a quarter of the run, and not one
+of them is in a position to write the report. A build here is one set of totals, one archived ``output.json``, one
+point on the trend and one entry in every per-test history the ``Analytics`` tab reads back over - and four processes
+writing four reports into one folder do not add up to that. They overwrite each other and manufacture four builds out
+of one run.
+
+So a leg of a sharded run writes no report at all. ``--report-shard`` names this process as one leg of a run; it
+writes that leg's records, and the screenshots those records name, into ``<report>/shards/<id>/`` and stops there.
+Reading the bundles back and building the one report is a separate command, ``pytest-html-reporter merge``, installed
+alongside the plugin - ``python -m pytest_html_reporter merge`` is the same program under another name, for a CI image
+that puts console scripts somewhere ``PATH`` cannot see them.
+
+Four machines, and one job afterwards that merges what they uploaded::
+
+    $ pytest -k shard1 --html-report=./report --report-shard=1/4      # on machine 1; 2/4, 3/4, 4/4 on the rest
+    $ pytest-html-reporter merge ./artifacts --html-report ./report --junit-xml ./report/junit.xml
+
+The flag names the leg; it does not choose the tests. Which quarter of the suite this machine runs is still your
+``-k`` expression, your file list or whatever ``pytest-split`` and friends work out - the shard id is only how the
+merge tells the four apart afterwards.
+
+``merge`` takes the directories to look in and searches them recursively, so pointing it at the folder CI unpacked
+four job artifacts into is the everyday shape; a ``records.json`` can also be named outright. Anything under there
+that is not a bundle is walked past and said so, rather than parsed hopefully. ``--html-report`` says where the one
+build goes and takes the same folder-or-``.html``-file value the pytest flag does.
+
+The same suite as three legs running one after another on one machine, where a fourth command to merge them is a
+fourth thing to remember::
+
+    $ pytest tests/unit        --html-report=./report --report-shard=1-unit --report-shard-reset
+    $ pytest tests/integration --html-report=./report --report-shard=2-integration
+    $ pytest tests/e2e         --html-report=./report --report-shard=3-e2e --report-shard-merge
+
+``--report-shard-merge`` on the *last* leg makes that leg merge every shard beside it and render the build itself, so
+three runs need three commands rather than four. It is only legal with ``--report-shard``, and the leg carrying it is
+not otherwise a special leg - it writes its own bundle first and then renders from all of them, itself included.
+``--report-shard-reset`` on the *first* leg is not decoration either; the part below on a persistent ``shards/``
+directory is about why.
+
+A shard id becomes a directory name and part of a screenshot path inside the report, so it is sanitised down to
+letters, digits, dots, dashes and underscores: ``1/4`` is filed under ``shards/1-4/`` while the report still labels
+that leg ``1/4``, which is what you typed and what reads better. An id made entirely of separators is a usage error
+rather than a silent fallback, since a leg with an empty id would write over the report base itself. Two ids that
+sanitise to the same string - ``1/4`` and ``1-4``, or ``ubuntu 22.04`` and ``ubuntu-22.04`` - name one directory, and
+the second leg to write says so rather than quietly burying the first.
+
+A leg can be parallel as well as sharded. ``-n 4 --report-shard=1/4`` writes one bundle from the controller holding
+all four workers' records, not four bundles, because the shard is written from the same place the report would have
+been.
+
+**A shard writes no report, no** ``output.json`` **and rotates no archive.** That is the mechanism rather than a side
+effect of it: it is what stops four legs turning one CI run into four builds in ``Archives``, four points on the
+trend, and a run history in which a quarter of the suite appears and disappears on every step. If a leg leaves a
+``pytest_html_report.html`` behind, it was not a shard.
+
+**Coverage has to be combined before it is merged.** Four coverage percentages cannot be averaged into a fifth that
+means anything, and the merge will not invent one. Nor does it go looking for a ``coverage.json`` beside itself, the
+way a plain run does: a stale one in the merging job's working directory would become this build's number and be
+archived into the trend for ever. Combine the data first and hand the merge the answer::
+
+    $ coverage combine && coverage json
+    $ pytest-html-reporter merge ./artifacts --html-report ./report --report-coverage-file coverage.json
+
+``--coverage-data`` is the other half of it - point it at the ``.coverage`` data files the legs uploaded, or at the
+directories holding them, and the merge combines them itself when the ``coverage`` package is importable. When
+neither is given, the ``Coverage`` tab says which of the shards measured anything and what to run instead. A build
+that measured nothing is recorded as *not measured*, never as zero.
+
+..
+
+        when the same test ran in two shards
+
+A matrix that overlaps, a leg re-run by hand, a ``-k`` expression that selects a test twice - each of them ends with
+one node id in two bundles, and something has to decide which of the two the report shows. ``--on-duplicate`` is that
+decision, and it is taken here rather than by whichever plugins happen to be installed on the machine doing the
+merging:
+
+=========================  ==============================================================================
+``--on-duplicate``         What happens to a node id that ran in more than one shard
+=========================  ==============================================================================
+``merge`` *(default)*      The attempts are folded into one row and counted as reruns, the way a
+                           ``pytest-rerunfailures`` retry already is: the last shard's outcome, with its
+                           ``rerun`` count raised by the attempts it now stands for. A screenshot,
+                           attachment or step list the survivor does not have is taken from the latest
+                           attempt that does, so a failure photographed on shard 1 is not lost because
+                           shard 2 then passed
+``first``                  Keep the first shard's row and drop the rest
+``last``                   Keep the last shard's row and drop the rest
+``worst``                  Keep the most severe - ERROR, then FAIL, xPASS, SKIP, xFAIL, PASS. Two shards
+                           reporting the same status resolve to the earlier one, so the answer does not
+                           depend on which artifact was downloaded first
+``error``                  Stop, naming every node id and the shards it ran in, and write nothing
+=========================  ==============================================================================
+
+Every fold is printed whichever mode is in force, because a report that silently dropped half of a test's history is
+the one thing this cannot be quiet about.
+
+**Note:** under the default ``--order shard``, a folded row sorts at the *last* shard's position rather than where
+the node id first appeared, so changing which shard runs an overlapping test last also moves its row in the table.
+``--order name`` sorts by suite and test name instead and does not move.
+
+Collection errors are not duplicates and are not counted as any. Every process collects the whole suite, so a module
+that will not import is *expected* to be reported by all four legs; those fold to one row without a word, and an
+``ERROR`` from one leg beats a ``SKIP`` from another - a file that failed to import on one machine failed to import.
+
+..
+
+        a persistent shards/ directory
+
+The four-machine flow hands the merge exactly this run's artifacts and has none of the following problem. The
+sequential flow has it, because every leg is pointed at one persistent ``--html-report`` and ``<report>/shards``
+therefore accumulates: a leg renamed, split or deleted between two CI runs leaves its bundle sitting in there, and the
+next run's ``--report-shard-merge`` picks it up and reports tests that did not run. Four tests ran, the build says
+six, and nothing on the page says where the other two came from.
+
+No clock tells those two apart from inside a single leg. Every bundle beside a merging leg was written before it,
+whether ten minutes ago by this run or yesterday by the last one. So there are two answers, and a run wants one of
+them.
+
+``--report-shard-reset`` on the first leg deletes ``<report>/shards`` before that leg writes into it, so whatever the
+last run left behind is gone before this one writes a byte. It is never implied by ``--report-shard`` or by
+``--report-shard-merge``: it deletes the other legs' work, and a flag that does that has to be the one you typed.
+
+``--report-shard-run=TOKEN`` names the run a leg belongs to. A merging leg carrying a token merges only the bundles
+carrying the same one, and says on stderr how many it put aside, naming both tokens and how to stop them
+accumulating::
+
+    pytest-html-reporter: 1 bundle under ./report/shards came from another run and was not merged -
+    this run's token is run-42 and they carry: stale (run-41)
+    pytest-html-reporter: clear ./report/shards between runs, or give the first leg of a run
+    --report-shard-reset, to stop them accumulating
+
+You will rarely have to pass it. Given nothing, the token is derived from the CI system's own variables - GitHub
+Actions (the run id *and* the attempt, so a re-run of a matrix does not answer its first attempt's token), GitLab,
+Jenkins, CircleCI, Buildkite, Azure Pipelines, Travis, AppVeyor and Drone - and every token carries the name of the
+system it came from, so Jenkins build 41 and Drone build 41 cannot collide. The ``report_shard_run`` ini key sits
+between the flag and that fallback. On a laptop, where none of those variables exist, the token is empty.
+
+**Be plain about what an empty token means: a merging leg with no token merges every bundle it finds.** That is the
+only honest thing it can do - an empty token says nothing about which run a bundle came from, and refusing to merge on
+the strength of it would break every matrix that does not run on a CI system this plugin recognises. It is why
+``--report-shard-reset`` exists, and why every merge, in both flows, prints one line per bundle it merged::
+
+    pytest-html-reporter: merged shard 1-unit: 12 tests, finished 2026-09-03 09:12:41
+    pytest-html-reporter: merged shard 2-integration: 30 tests, finished 2026-09-03 09:14:02
+
+The times are local, on the same clock as the CI log they are read beside. Nothing is guessed and nothing is
+suppressed: yesterday's leg cannot be told from one that finished ten minutes ago by any means available in here, but
+it can be *shown*, and a bundle that finished the previous afternoon is obvious on the line that says so.
+
+In a CI file, the matrix flow is the one to reach for, because the merge is handed this run's artifacts and nothing
+else::
+
+    jobs:
+      test:
+        strategy:
+          matrix:
+            shard: [1, 2, 3, 4]
+        steps:
+          - run: pytest --html-report=./report --report-shard=${{ matrix.shard }}/4
+          - uses: actions/upload-artifact@v4
+            with:
+              name: shards-${{ matrix.shard }}
+              path: report/shards
+
+      report:
+        needs: test
+        steps:
+          - uses: actions/download-artifact@v4
+            with:
+              path: ./artifacts
+          - run: pytest-html-reporter merge ./artifacts --html-report ./report --junit-xml ./report/junit.xml
+
+For the sequential flow on one machine, the first leg takes ``--report-shard-reset`` and the last takes
+``--report-shard-merge``, and the run token then covers the case where somebody runs a leg by hand in between.
+
+**Note:** the sequential flow is sequential by definition, and nothing serialises a ``--report-shard-merge`` leg
+against a sibling leg still writing. Two legs running at once into one ``--html-report`` are safe for their own
+bundles - separate directories, each written atomically - but a merge that starts while another leg is still going
+renders whatever had landed by then. If the legs are concurrent, use the four-machine flow and merge once at the end.
+
+..
+
+        what the merge tells you
+
+``merge`` prints what it merged, what it decided and where it wrote, and answers with one of three exit codes. ``2``
+means nothing was produced at all: a usage error, no bundles found under the paths given (which are named back,
+because the usual cause is a CI step that unpacked the artifacts one directory deeper than the merge was told), a
+bundle written by a newer pytest-html-reporter than the one merging, a ``--start-time`` that is not a time, or
+``--on-duplicate error`` finding a duplicate.
+
+Two flags ask for a ``1``, and they answer different questions. ``--exit-code`` is about the tests: exit 1 when the
+merged build holds any failure or error. ``--strict`` is about the merge being complete: exit 1 when anything was
+quarantined, unreadable, folded, collapsed or missing. **The report is written either way**, which is why those are
+1 and not 2 - a merge that exits 1 has still produced the page that explains why. A ``--junit-xml`` that could not be
+written answers 1 for the same reason, the report being on disk by then; the same failure out of the ``junit``
+subcommand, whose only output that is, answers 2. Short of a usage error nothing
+stops a merge: an unreadable file in the artifact folder, and two files claiming one shard id, are both noted and
+carried past, since a retried CI leg whose artifact landed twice is recoverable and not worth losing a build over.
+That is exactly the kind of thing ``--strict`` is for.
+
+Two more subcommands take the same discovery and ordering flags. ``pytest-html-reporter junit ... -o FILE`` writes
+only the XML, for a pipeline that publishes to a test-results service and has no use for the HTML.
+``pytest-html-reporter inspect`` writes nothing at all and prints one line per bundle plus the summary of the merge
+they would produce, with ``--json`` for a machine to read it - the fastest way to answer "did all four artifacts
+arrive, and are they the four I think" before anything is built. ``merge --dry-run`` asks the same question of the
+whole merge.
+
+junit xml
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Most CI systems read a JUnit XML and know nothing about an HTML page: it is what puts a failed test on a merge
+request, in a test-results tab, in a flaky-test history. ``--report-junit`` writes one from the same records the
+report is built from, so the two cannot disagree with each other::
+
+    $ pytest tests/ --html-report=./report --report-junit=./report/junit.xml
+
+It works on any run this plugin can report on - plain, ``-n 4``, or the ``--report-shard-merge`` leg of a sharded
+run, where the document covers the whole matrix rather than that leg. The path takes the same ``%Y`` / ``%m`` / ``%H``
+placeholders ``--html-report`` does, and ``report_junit`` is the ini twin. This is complementary to
+``pytest --junitxml`` rather than a replacement for it, and a run may pass both - but never for the same slice of the
+tests, which is why **a shard that is not the merge leg refuses to write one** and says so on stderr: a CI glob of
+``**/*.xml`` that found four shard files plus the merged one would count every test in the matrix twice.
+
+One ``<testsuite>`` is written, not one per shard, because run-level timing across several is ambiguous and every
+consumer flattens them anyway; which shard a test ran in is in ``<properties>`` and again in that testcase's
+``<system-out>``, since GitLab ignores properties entirely and Jenkins reads them only with ``keepProperties`` on.
+``tests``, ``failures``, ``errors`` and ``skipped`` are counted from the elements actually written rather than summed
+from what any input claimed - Jenkins recounts the children regardless, and a document whose header contradicts its
+own body is worse than one that repeats itself.
+
+Every status this plugin can store has one place to land, and the table is closed:
+
+=========================  ==============================================================================
+Record status              What is written, and what it counts as
+=========================  ==============================================================================
+``PASS``                   A bare ``<testcase/>``; passed
+``xPASS``                  A bare ``<testcase/>``; passed - which is what pytest's own writer does with a
+                           non-strict xpass, and non-strict is the only kind that reaches here.
+                           ``--report-junit-xpass`` moves it
+``FAIL``                   ``<failure>``, the first line of the message as its ``message`` and the whole
+                           message as the body; a failure
+``ERROR``                  ``<error message='failed on setup with "..."'>``, or ``on teardown`` when the
+                           test got as far as its body; an error. One record is always exactly one
+                           testcase, so a call failure and a teardown error are not counted twice
+``SKIP``                   ``<skipped type="pytest.skip" message="the reason">`` with
+                           ``path:line: reason`` as the body; skipped
+``xFAIL``                  ``<skipped type="pytest.xfail" message="the reason"/>``, body empty; skipped
+collection ``ERROR``       ``<error message="collection failure">`` on a testcase named
+                           ``(collection error)``; an error
+collection ``SKIP``        ``<skipped type="pytest.skip" message="collection skipped">`` on a
+                           testcase named ``(module skipped)``; skipped
+anything else              ``<error message="unrecognised status ...">`` and a warning naming the test;
+                           an error
+=========================  ==============================================================================
+
+``xFAIL`` is ``skipped`` and never ``failure``, deliberately. Azure DevOps' outcome model is failed-if-failure-or-
+error, so mapping expected failures onto ``failure`` turns every suite that documents its known bugs red across
+Jenkins, GitLab and Azure at once - and the whole reason to mark a test ``xfail`` is that its failure is not news.
+
+``--report-junit-xpass`` is the one thing on that table a team can move, because teams disagree about it::
+
+    $ pytest tests/ --report-junit=./junit.xml --report-junit-xpass=fail
+
+=========================  ==============================================================================
+``--report-junit-xpass``   How an unexpectedly passing test is written down
+=========================  ==============================================================================
+``pass`` *(default)*       A bare passing testcase, as ``pytest --junitxml`` writes it
+``fail``                   A ``<failure>`` - for a team whose policy is that a fixed test must have its
+                           ``xfail`` marker removed
+``skip``                   A ``<skipped type="pytest.xpass">``, visible in the report without going red
+=========================  ==============================================================================
+
+A value that is none of those fails the run rather than falling back to the default: the whole point of setting it is
+that you disagree with the default.
+
+Three places this deviates from ``pytest --junitxml`` on purpose, all three because the file is read by a machine that
+groups things:
+
+* **A collection error keeps a dotted** ``classname``. pytest's own address mangling is given a *file* node id here
+  and produces an empty ``classname`` for it, and every consumer that groups by classname - GitLab does, in practice -
+  then files every broken module in the repository together under one nameless heading. The classname is the dotted
+  path of the file that would not import, and the name says which of the two things happened to it.
+* **A skip's body is the reason, parsed.** This plugin records a skip as the ``(path, line, reason)`` tuple pytest
+  hands it, so the reason is dug back out and written as the ``message``, with ``path:line: reason`` as the body. A
+  tuple repr is never dumped into an attribute a build server will show somebody.
+* **Reruns are one testcase carrying a count**, never one element per attempt. Emitting one per attempt inflates
+  ``tests`` and makes a flaky test read red in GitLab, which pins the first duplicate, and green in Jenkins, which
+  pins the last. The count is in ``<system-out>`` as ``reruns: 2`` and in ``<properties>``. pytest's own writer has
+  no rerun handling at all - a ``rerun`` outcome matches none of passed, failed or skipped and the element is
+  silently dropped - so this is an improvement on it rather than a departure from it.
+
+Two smaller things worth knowing. A testcase's ``time`` is the sum of its phase milliseconds rather than the report's
+rounded ``duration``, which omits teardown and quantises anything quick to ``0.0`` - Azure computes the end of a run
+as its timestamp plus the sum of those numbers, and a forty-minute matrix would otherwise read as instantaneous. And
+every attribute and body is escaped the way pytest escapes its own: messages are stored raw here, HTML-escaped only
+at render time, so a terminal control byte out of a failing test would otherwise sail through into an unparseable
+canonical CI file.
+
+The merge writes the same document for a whole matrix, with ``--junit-xml`` on ``merge`` or
+``pytest-html-reporter junit ... -o FILE``. Its ``timestamp`` is the earliest shard's start and its ``time`` the span
+of the whole matrix, never the merging machine's clock; its ``hostname`` is the shards' single host, or the literal
+``merged`` when they ran on more than one, never the box doing the merging, which ran no tests. ``--junit-hostname``
+and ``--junit-suite-name`` override those, ``--junit-logging`` says which tests carry their captured output, and
+``--junit-attachments`` writes the ``[[ATTACHMENT|...]]`` lines that GitLab and Azure both understand, pointed at the
+staged screenshots relative to the XML.
+
+**Note:** a run or a merge that collected nothing still writes a valid ``tests="0"`` document - CI is owed an answer -
+while the HTML report is written only when there is something to put in it. A pipeline step that publishes both will
+see one arrive without the other in that case, which is the one place the two outputs do not track each other.
 
 
 Is there a demo available for this gem?

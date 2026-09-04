@@ -1,3 +1,6 @@
+import copy
+
+
 class ConfigVars:
     _total = _executed = 0
     _pass = _fail = 0
@@ -15,6 +18,7 @@ class ConfigVars:
     _asxfail = 0
     _asrerun = 0
     _current_error = ""
+    _xfail_reason = ""
     _suite_name = None
     _test_name = None
     _test_suite_name = []
@@ -130,3 +134,31 @@ class ConfigVars:
     _analytics_bucket_labels = '[]'
     _analytics_buckets = '[]'
     _analytics_slowest = '[]'
+    _analytics_faults = ''
+    _analytics_fault_note = ''
+    _analytics_fault_state = 'is-empty'
+
+
+# Every attribute as it stood at import, so a process that renders a second
+# time can start from the same slate the first one did.
+_PRISTINE = {name: copy.deepcopy(value)
+             for name, value in vars(ConfigVars).items()
+             if not name.startswith('__')}
+
+
+def reset_config_vars():
+    """Put every ConfigVars attribute back to the value it had at import.
+
+    ConfigVars is class-level state, and one render leaves its marks all over
+    it. generate_json_data accumulates _aspass.._asrerun with +=, and the
+    template renders that family rather than the one update_counts assigns, so
+    a second render in the same process doubles every number on the dashboard
+    without raising anything. The merge command renders once per process today
+    and this still runs first, because "today" is not a guarantee.
+
+    Not a substitute for the test suite's _isolate_config_vars fixtures: those
+    save the values they find and put those back, which is what a test run
+    needs. This resets to import-time and restores nothing.
+    """
+    for name, value in _PRISTINE.items():
+        setattr(ConfigVars, name, copy.deepcopy(value))

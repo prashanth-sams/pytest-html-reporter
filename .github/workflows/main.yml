@@ -18,8 +18,12 @@ jobs:
         run: |
           pip3 install -r requirements.txt
           pip3 install -e .
+      # `coverage run -m pytest` rather than `pytest --cov`: this package is a
+      # pytest11 plugin, so pytest imports all of it before pytest-cov starts
+      # tracing and every import-time line is counted as missed. See .coveragerc.
       - name: Run Tests
         run: |
-          python3 -m pytest --cov ./pytest_html_reporter/ tests/unit/
+          python3 -m coverage run -m pytest tests/unit/
+          python3 -m coverage report -m
           coveralls --service=github
           bash <(curl -s https://codecov.io/bash)

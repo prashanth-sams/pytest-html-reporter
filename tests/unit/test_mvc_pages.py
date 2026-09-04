@@ -108,36 +108,52 @@ def test_floating_error():
     sname = get_random_string()
     name = get_random_string()
 
-    floating_error = FloatingError(full_msg=full_msg, has_full="1", sname=sname, name=name)
+    cmd = "pytest tests/test_a.py::test_one"
+
+    floating_error = FloatingError(full_msg=full_msg, has_full="1", cmd=cmd, sname=sname, name=name)
     soup = BeautifulSoup(str(floating_error), "html.parser")
 
     actions = soup.find("span", class_="msg-actions")
     assert actions["data-error"] == full_msg
+    assert actions["data-cmd"] == cmd
     assert actions["data-suite"] == sname
     assert actions["data-test"] == name
     assert actions["data-full"] == "1"
 
-    # An expand and a copy, in that order, and neither carries any text: the
-    # ellipsis is all the cell contributes to the table's search index and to
-    # its CSV, Excel and print exports.
+    # The one button the row rests as, then - once it is pressed - an expand, a
+    # copy, the command that runs this one test again and the link that opens
+    # the report on this row, in that order. None of them carries any text, so
+    # the cluster adds nothing at all to the table's search index or to its CSV,
+    # Excel and print exports.
     assert [button["title"] for button in actions.findAll("button")] \
-        == ["Show the full error", "Copy the full error"]
-    assert actions.get_text(strip=True) == "\u2026"
+        == ["Show what can be done with this failure",
+            "Show the full error", "Copy the full error",
+            "Copy the command that runs this test again",
+            "Copy a link to this test"]
+
+    # The four that fold away are the four that are marked as folding away.
+    folding = [button for button in actions.findAll("button")
+               if "msg-btn--action" in button["class"]]
+    assert len(folding) == 4
+    assert actions.get_text(strip=True) == ""
 
 
 def test_floating_error_offers_no_expand_when_nothing_was_cut():
     """The message fits in the cell, so there is nothing to open a panel for -
     but it is still worth copying."""
-    floating_error = FloatingError(full_msg="boom", has_full="", sname="s", name="n")
+    floating_error = FloatingError(full_msg="boom", has_full="", cmd="pytest s::n", sname="s", name="n")
     soup = BeautifulSoup(str(floating_error), "html.parser")
 
     actions = soup.find("span", class_="msg-actions")
 
-    # Both buttons stay in the markup and `data-full` hides the expand one, the
+    # Every button stays in the markup and `data-full` hides the expand one, the
     # same way `data-logs` hides the Logs button on a test that captured nothing.
     assert actions["data-full"] == ""
     assert actions.find("button", class_="msg-open") is not None
     assert actions.find("button", class_="msg-copy") is not None
+    assert actions.find("button", class_="msg-rerun") is not None
+    assert actions.find("button", class_="msg-link") is not None
+    assert actions.find("button", class_="msg-toggle") is not None
 
 
 def test_screenshot_details():
@@ -207,6 +223,7 @@ def test_test_row():
     stat = get_random_string()
     dur = str(get_random_number())
     msg = get_random_string()
+    msg_tail = get_random_string()
     floating_error_text = get_random_string()
     log_count = str(get_random_number())
     runt = get_random_string()
@@ -215,17 +232,28 @@ def test_test_row():
     attach_count = str(get_random_number())
     shot_count = str(get_random_number())
 
+    anchor = "test-" + get_random_string()
+
     test_row = TestRow(sname=sname, name=name, stat=stat, dur=dur, rerun=rerun, msg=msg,
+                       msg_tail=msg_tail, msg_cut="&hellip;",
                        floating_error_text=floating_error_text, log_count=log_count,
-                       attach_count=attach_count, shot_count=shot_count, runt=runt)
+                       attach_count=attach_count, shot_count=shot_count, runt=runt,
+                       anchor=anchor)
     soup = BeautifulSoup(str(test_row), "html.parser")
+
+    # The row's own address, which is what a link pasted elsewhere lands on.
+    assert soup.find("tr")["id"] == anchor
 
     cells = soup.findAll("td")
 
     for node, expected in zip(cells, [sname, name, stat, dur, rerun]):
         assert node.text.strip() == expected
 
-    assert re.search(rf"{msg}[\s\n]*{floating_error_text}", cells[5].text.strip())
+    # The message, the few characters of it that fade out, the ellipsis the
+    # exports carry in place of that fade, then the buttons.
+    assert re.search(rf"{msg}{msg_tail}\u2026[\s\n]*{floating_error_text}", cells[5].text.strip())
+    assert cells[5].find("span", class_="msg-fade").text == msg_tail
+    assert cells[5].find("span", class_="msg-cut").text == "\u2026"
 
     log_cell = cells[6]
     assert log_cell["data-logs"] == log_count
@@ -265,7 +293,7 @@ def test_test_shot():
     ts = get_random_string()
     tc = get_random_string()
 
-    shot = TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc)
+    shot = TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc, group="metrics")
     soup = BeautifulSoup(str(shot), "html.parser")
 
     path = "pytest_screenshots/%s.png" % screen_name
@@ -273,9 +301,13 @@ def test_test_shot():
     link = soup.find("a", class_="shot-thumb")
     assert link["href"] == path
     assert link["data-caption"] == "SUITE: %s :: SCENARIO: %s" % (ts, tc)
-    # Its own group: arrowing off a row and into a screenshot from a tab the
-    # reader is not looking at is not what the arrow keys are for.
+    # The gallery the arrow keys walk. One thumbnail template serves the table
+    # and the Test Steps tree, and each names its own group: arrowing off a row
+    # and into a screenshot from a tab the reader is not looking at is not what
+    # the arrow keys are for.
     assert link["data-fancybox"] == "metrics"
+    assert str(TestShot(screen_name=screen_name, ts=ts, tc=tc, tip=tc,
+                        group="steps")).count('data-fancybox="steps"') == 1
     assert link.find("img")["src"] == path
     assert link.find("img")["loading"] == "lazy"
 

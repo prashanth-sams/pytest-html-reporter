@@ -1,0 +1,33 @@
+# Coverage has to be started before pytest is, not by it.
+#
+# This package registers itself through the `pytest11` entry point, so pytest
+# imports the whole of pytest_html_reporter while it is loading its plugins -
+# which happens before pytest-cov installs its tracer. Every import line, class
+# body and module-level constant is therefore already executed by the time
+# measurement begins, and `pytest --cov` counts all of it as missed: about 800
+# statements, or twenty points of the total, none of which any test could ever
+# cover.
+#
+#     python -m pytest --cov ./pytest_html_reporter/ tests/unit/   ->  69%
+#     python -m coverage run --source=pytest_html_reporter -m pytest tests/unit/
+#     python -m coverage report -m                                 ->  95%
+#
+# Same tests, same code; only the moment the tracer starts is different. Use
+# the second form - `coverage run -m pytest` starts the tracer before pytest
+# imports anything, so the import-time lines are measured along with the rest.
+
+[run]
+source = pytest_html_reporter
+
+# The subprocess-driven tests (18 of the unit modules run a real pytest in a
+# child process) are not measured even so: the child's cwd is a tmp_path, and
+# a relative source there resolves to nothing. They are integration tests whose
+# assertions are about the rendered page, and the same code paths are covered
+# in-process by the unit tests beside them, so this is left alone rather than
+# papered over with a parallel-mode combine that would double-count them.
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError

@@ -191,6 +191,17 @@ def _captions(page):
         r'data-fancybox="images" data-caption="SUITE: .*? :: SCENARIO: (.*?)"', page)
 
 
+def _tips(page):
+    """What the thumbnails on the Test Metrics rows say they are.
+
+    Scoped to the table's own gallery: the same pictures are on the Test Steps
+    tab as well now, filed against the step that failed, and those carry a
+    title about the step rather than about the row.
+    """
+    return re.findall(
+        r'<a class="shot-thumb"[^>]*data-fancybox="metrics".*?title="(.*?)"', page, re.S)
+
+
 def _images(tmp_path):
     directory = tmp_path / "report" / "pytest_screenshots"
     return sorted(os.listdir(str(directory))) if directory.is_dir() else []
@@ -388,8 +399,7 @@ def test_two_pictures_on_one_row_say_which_browser_each_came_from(tmp_path):
             assert False
     ''')
 
-    tips = re.findall(r'<a class="shot-thumb".*?title="(.*?)"', page, re.S)
-    assert tips == ["test_fails \u2014 driver", "test_fails \u2014 other"]
+    assert _tips(page) == ["test_fails \u2014 driver", "test_fails \u2014 other"]
 
 
 def test_one_picture_on_a_row_is_named_by_the_test_alone(tmp_path):
@@ -398,8 +408,7 @@ def test_one_picture_on_a_row_is_named_by_the_test_alone(tmp_path):
             assert False
     ''')
 
-    tips = re.findall(r'<a class="shot-thumb".*?title="(.*?)"', page, re.S)
-    assert tips == ["test_fails"]
+    assert _tips(page) == ["test_fails"]
 
 
 def test_a_browser_that_died_does_not_take_the_report_with_it(tmp_path):

@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pytest_html_reporter.const_vars import ConfigVars
+import pytest
+
+from pytest_html_reporter.const_vars import ConfigVars, reset_config_vars
 from pytest_html_reporter.util import (
     build_info,
     capture_notice,
@@ -390,3 +392,68 @@ def test_safe_link_drops_a_scheme_that_would_run_something():
 def test_safe_link_reads_a_windows_drive_letter_as_a_path():
     """A one-character scheme is a drive letter everywhere it actually occurs."""
     assert safe_link("C:/builds/htmlcov/index.html") == "C:/builds/htmlcov/index.html"
+
+
+# --------------------------------------------------------------------------
+# starting a render from a clean slate
+# --------------------------------------------------------------------------
+
+@pytest.fixture
+def _restore_config_vars():
+    """Put the whole class back afterwards, not only the names a test names.
+
+    reset_config_vars reaches every attribute there is, so a test that calls
+    it leaves far more behind it than it is about, and this file has no
+    _isolate_config_vars fixture of its own to catch that.
+    """
+    saved = {name: value for name, value in vars(ConfigVars).items() if not name.startswith("__")}
+    yield
+    for name, value in saved.items():
+        setattr(ConfigVars, name, value)
+
+
+def test_reset_config_vars_restores_a_string_a_list_and_a_dict(_restore_config_vars):
+    """One render leaves its marks all over ConfigVars, and a process that
+    renders twice - the merge, which builds one report out of several runs'
+    records - starts from whatever the first one left. generate_json_data
+    accumulates its dashboard counters with +=, so a second render doubles
+    every number on the page without raising anything.
+    """
+    ConfigVars._title = "MERGED RUN"
+    ConfigVars._test_pass_list = ["tests/test_a.py"]
+    ConfigVars.archives = {"output_1.json": ["1"]}
+
+    reset_config_vars()
+
+    assert ConfigVars._title == "PYTEST REPORT"
+    assert ConfigVars._test_pass_list == []
+    assert ConfigVars.archives == {}
+
+
+def test_reset_config_vars_does_not_disturb_what_an_isolating_fixture_saved(_restore_config_vars):
+    """The suite isolates ConfigVars by saving the objects it finds and putting
+    those same objects back, so reset_config_vars has to rebind each attribute
+    rather than empty it where it stands: a fixture holding the live list would
+    otherwise be handed an emptied one to restore, and every _isolate_config_vars
+    in the suite would quietly stop isolating anything.
+    """
+    ConfigVars._test_pass_list = ["tests/test_a.py"]
+    ConfigVars.archives = {"output_1.json": ["1"]}
+    saved = {name: getattr(ConfigVars, name) for name in ("_test_pass_list", "archives")}
+
+    reset_config_vars()
+
+    assert saved["_test_pass_list"] == ["tests/test_a.py"]
+    assert saved["archives"] == {"output_1.json": ["1"]}
+
+    # And what the reset put there is nobody else's object either: filling it
+    # in must not reach back into the import-time values the next reset reads.
+    ConfigVars._test_pass_list.append("tests/test_b.py")
+    reset_config_vars()
+
+    assert ConfigVars._test_pass_list == []
+
+    for name, value in saved.items():
+        setattr(ConfigVars, name, value)
+
+    assert ConfigVars._test_pass_list == ["tests/test_a.py"]
