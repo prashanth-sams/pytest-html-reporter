@@ -5179,6 +5179,38 @@
                    at a glance. */
                 .step-badge--owner   { background-color: var(--status-skip-tint); color: var(--status-skip-fg-heavy); }
 
+                /* How bad, as a ladder rather than as five more tags. The
+                   colours are the ramp itself - a `blocker` has to be findable
+                   in a rail of forty badges without reading any of them - and
+                   the bottom two share slate on purpose: `minor` and `trivial`
+                   are both "not today", and inventing a distinct colour for
+                   each would give the eye something to chase that is not
+                   worth chasing. */
+                /* A level outside the five gets no colour of its own. It
+                   matches nothing below, so it lands here - drawn as the plain
+                   word it is, which is the honest look for a typo and keeps it
+                   quieter than every level it does not outrank. Written at one
+                   class of specificity so the five below can override it. */
+                [class*="--severity-"] { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+
+                .step-badge--severity-blocker  { background-color: var(--status-error-tint); color: var(--status-error-fg); }
+                .step-badge--severity-critical { background-color: var(--status-fail-tint); color: var(--status-fail-fg-heavy); }
+                .step-badge--severity-normal   { background-color: var(--status-info-tint); color: var(--status-info-fg); }
+                .step-badge--severity-minor    { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+                .step-badge--severity-trivial  { background-color: var(--status-slate-tint); color: var(--status-slate-fg); opacity: 0.8; }
+
+                /* A severity an outer scope wrote and a nearer one overrode.
+                   Shown, because the tab promises every marker and because it
+                   is the answer when a level nobody typed on this test is the
+                   one deciding its colour - but struck through, so it is never
+                   read as a second severity the test also has. */
+                .step-badge--severity-past {
+                    background-color: transparent;
+                    color: var(--text-muted);
+                    border: 1px dashed var(--border-hairline);
+                    text-decoration: line-through;
+                }
+
                 /* A badge that opens something. It keeps the colour of the kind
                    it is - a linked owner is still an owner - and earns the arrow
                    and the underline, which are what say it can be clicked in a
@@ -6070,6 +6102,10 @@
                    nothing here and a card saying so is worse than no card. */
                 .an-owners.is-empty { display: none; }
 
+                /* And the same again for the panel beside it: a suite that
+                   never rated a test has nothing to say here. */
+                .an-severity.is-empty { display: none; }
+
                 /* The table is six columns of small numbers and one name that
                    can be any length at all, so it scrolls inside its own box
                    rather than widening the page. */
@@ -6138,6 +6174,21 @@
                     color: var(--status-slate-fg);
                     font-style: italic;
                 }
+
+                /* The same ramp the rail's badges use. The table is sorted by
+                   the ladder rather than by its numbers, and the colour is
+                   what makes that order legible as an order. */
+                /* And the same fallback the badges have: a level outside
+                   the five matches none of the rules below and must not
+                   inherit the chip's own colour, which is louder than every
+                   level it does not outrank. */
+                [class*="owner-chip--severity-"] { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+
+                .owner-chip--severity-blocker  { background-color: var(--status-error-tint); color: var(--status-error-fg); }
+                .owner-chip--severity-critical { background-color: var(--status-fail-tint); color: var(--status-fail-fg-heavy); }
+                .owner-chip--severity-normal   { background-color: var(--status-info-tint); color: var(--status-info-fg); }
+                .owner-chip--severity-minor    { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+                .owner-chip--severity-trivial  { background-color: var(--status-slate-tint); color: var(--status-slate-fg); opacity: 0.8; }
 
                 .owner-row__tests {
                     text-align: left;
@@ -7612,6 +7663,33 @@
                             </div>
                         </div>
 
+                        <!-- Under "who owns what", and the question asked
+                             before it: that panel says whose morning this is,
+                             this one says whether anybody's morning is ruined.
+                             Hidden outright for a suite that never rated a
+                             test. -->
+                        <div class="metrics-card an-severity %(analytics_severity_state)%">
+                            <div class="an-chart__head">
+                                <i class="fa fa-shield" aria-hidden="true"></i>How much it matters
+                                <span class="an-chart__note">%(analytics_severity_note)%</span>
+                            </div>
+                            <div class="owner-scroll">
+                                <table class="owner-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Severity</th>
+                                            <th>Tests</th>
+                                            <th>Pass rate</th>
+                                            <th>Failing</th>
+                                            <th>Flaky</th>
+                                            <th>Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>%(analytics_severities)%</tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="an-solo-note">
                             <i class="fa fa-info-circle" aria-hidden="true"></i>
                             <span>
@@ -7792,6 +7870,14 @@
                     <div class="metrics-toolbar step-toolbar step-owners" id="stepOwnerBar" hidden>
                         <span class="step-owners__label">Owner</span>
                         <div class="step-filters" id="stepOwnerFilters"></div>
+                    </div>
+                    <!-- A third dimension for the same reason owner is a
+                         second: "this team's blockers" is one question, and it
+                         needs all three answered at once. Hidden outright when
+                         nobody rated a test. -->
+                    <div class="metrics-toolbar step-toolbar step-owners" id="stepSeverityBar" hidden>
+                        <span class="step-owners__label">Severity</span>
+                        <div class="step-filters" id="stepSeverityFilters"></div>
                     </div>
                     <div class="step-body">
                         <div class="step-rail" id="stepRail">
@@ -10622,9 +10708,26 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             // indistinguishable from a team named by the empty string.
             var UNOWNED = '\u0000unowned';
 
+            // The severity the rail is filtered to, or 'all'. A third question
+            // alongside kind and owner - "this team's blockers" needs all
+            // three at once - and the same sentinel trick for the tests
+            // nobody rated.
+            var stepSeverity = 'all';
+            var UNRATED = '\u0000unrated';
+
+            // The ladder, worst first. The pills are drawn in this order and
+            // not by how many tests are at each level: severity is the one
+            // filter here whose choices outrank each other, and sorting it by
+            // popularity would hide that.
+            var SEVERITY_ORDER = ['blocker', 'critical', 'normal', 'minor', 'trivial'];
+
             function stepOwnersOf(item) {
                 var packed = item.getAttribute('data-owner') || '';
                 return packed ? packed.split(OWNER_SEPARATOR) : [];
+            }
+
+            function stepSeverityOf(item) {
+                return item.getAttribute('data-severity') || '';
             }
 
             function stepItems() {
@@ -10674,6 +10777,18 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 return owners.indexOf(stepOwner) !== -1;
             }
 
+            function stepMatchesSeverity(item) {
+                if (stepSeverity === 'all') { return true; }
+
+                var level = stepSeverityOf(item);
+
+                // A test nobody rated is a gap worth being able to see on its
+                // own, the same way an unowned test is.
+                if (stepSeverity === UNRATED) { return !level; }
+
+                return level === stepSeverity;
+            }
+
             function toggleStepSuite(head) {
                 head.parentNode.classList.toggle('is-shut');
             }
@@ -10716,8 +10831,10 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         stepKind = kind[0];
                         renderStepFilters();
                         // The owner counts are counted inside the kind, so they
-                        // are stale the moment the kind changes.
+                        // are stale the moment the kind changes - and the
+                        // severity counts are counted inside both.
                         renderStepOwners();
+                        renderStepSeverities();
                         filterSteps();
                     };
 
@@ -10781,6 +10898,72 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     button.onclick = function() {
                         stepOwner = choice[0];
                         renderStepOwners();
+                        renderStepSeverities();
+                        filterSteps();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            function renderStepSeverities() {
+                var bar = document.getElementById('stepSeverityBar');
+                var target = document.getElementById('stepSeverityFilters');
+                if (!bar || !target) { return; }
+
+                // Counted inside the two filters above it rather than against
+                // the whole run, so the number on a pill is the number of rows
+                // the rail will actually show when it is pressed.
+                var counts = {};
+                var rated = 0;
+                var unrated = 0;
+
+                stepItems().forEach(function(item) {
+                    if (!stepMatchesKind(item) || !stepMatchesOwner(item)) { return; }
+
+                    var level = stepSeverityOf(item);
+                    if (!level) { unrated += 1; return; }
+
+                    rated += 1;
+                    counts[level] = (counts[level] || 0) + 1;
+                });
+
+                // Nobody rated a test, so there is no dimension to offer.
+                bar.hidden = rated === 0;
+                if (bar.hidden) { stepSeverity = 'all'; return; }
+
+                if (stepSeverity !== 'all' && stepSeverity !== UNRATED && !counts[stepSeverity]) { stepSeverity = 'all'; }
+                if (stepSeverity === UNRATED && !unrated) { stepSeverity = 'all'; }
+
+                // The ladder first, in its own order, then anything else in
+                // this run's data - a word nobody recognises is a typo far
+                // more often than a sixth level, and it sorts after the five
+                // rather than being dropped, because a filter that silently
+                // omits a test is worse than one that shows a typo.
+                var levels = SEVERITY_ORDER.filter(function(level) { return counts[level]; });
+                Object.keys(counts).sort().forEach(function(level) {
+                    if (SEVERITY_ORDER.indexOf(level) === -1) { levels.push(level); }
+                });
+
+                var choices = [['all', 'All', rated + unrated]];
+                levels.forEach(function(level) { choices.push([level, level, counts[level]]); });
+                if (unrated) { choices.push([UNRATED, 'Unrated', unrated]); }
+
+                target.innerHTML = '';
+                choices.forEach(function(choice) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (stepSeverity === choice[0] ? ' is-active' : '');
+                    button.textContent = choice[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = choice[2];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        stepSeverity = choice[0];
+                        renderStepSeverities();
                         filterSteps();
                     };
 
@@ -10826,6 +11009,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
                 stepItems().forEach(function(item) {
                     var matches = stepMatchesKind(item) && stepMatchesOwner(item) &&
+                        stepMatchesSeverity(item) &&
                         (!needle || (item.getAttribute('data-search') || '').indexOf(needle) !== -1);
 
                     item.hidden = !matches;
@@ -10846,7 +11030,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 // search opens the groups that hold one. Clearing the box
                 // leaves them as they are rather than shutting a group the
                 // reader opened by hand.
-                if (needle || stepKind !== 'all' || stepOwner !== 'all') {
+                if (needle || stepKind !== 'all' || stepOwner !== 'all' || stepSeverity !== 'all') {
                     stepSuites().forEach(function(suite) {
                         if (suite.querySelector('.step-test:not([hidden])')) { suite.classList.remove('is-shut'); }
                     });
@@ -11056,6 +11240,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
                 renderStepFilters();
                 renderStepOwners();
+                renderStepSeverities();
                 filterSteps();
             }
 

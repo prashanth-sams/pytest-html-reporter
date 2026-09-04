@@ -20,7 +20,9 @@ from pytest_html_reporter.analytics import (
     MOVEMENT_NAMES,
     OTHER,
     UNOWNED,
+    UNRATED,
     _owner_headline,
+    _severity_headline,
     duration_buckets,
     exception_type,
     failure_headline,
@@ -31,6 +33,7 @@ from pytest_html_reporter.analytics import (
     outcome,
     owner_totals,
     read_builds,
+    severity_totals,
     stability_score,
 )
 from pytest_html_reporter.const_vars import ConfigVars
@@ -949,5 +952,154 @@ def test_the_panel_the_template_asks_for_is_the_one_that_is_filled():
     template = open(TEMPLATE, encoding="utf-8").read()
 
     for name in ("analytics_owners", "analytics_owner_note", "analytics_owner_state"):
+        assert "%%(%s)%%" % name in template
+        assert hasattr(ConfigVars, "_" + name)
+
+
+# --------------------------------------------------------------------------
+# the severity roll-up
+# --------------------------------------------------------------------------
+
+def _rated_build(stamp, tests, suite="tests/test_thing.py"):
+    """A build whose tests carry a severity, as this version writes output.json."""
+    build = _build(stamp, [(name, status, 0, duration)
+                           for name, status, _severity, duration in tests], suite=suite)
+
+    entries = build["content"]["suites"]["0"]["tests"]
+    for position, (_name, _status, severity, _duration) in enumerate(tests):
+        entries[str(position)]["severity"] = severity
+
+    return build
+
+
+def _severities(tmp_path, *builds):
+    return severity_totals(histories(read_builds(_history(tmp_path, *builds))))
+
+
+def test_a_severity_row_counts_the_tests_rated_at_it(tmp_path):
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "blocker", 0.5),
+        ("test_b", "FAIL", "blocker", 0.25),
+        ("test_c", "PASS", "minor", 0.1),
+    ]))
+
+    by_level = {row["severity"]: row for row in rows}
+
+    assert by_level["blocker"]["tests"] == 2
+    assert by_level["blocker"]["failing"] == 1
+    assert by_level["minor"]["tests"] == 1
+    assert by_level["minor"]["failing"] == 0
+
+
+def test_a_test_counts_once_because_it_has_one_severity(tmp_path):
+    """Unlike an owner. record_severity has already picked between the markers."""
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "critical", 0.1),
+    ]))
+
+    assert sum(row["tests"] for row in rows) == 1
+
+
+def test_the_rows_are_the_ladder_rather_than_the_worst_numbers(tmp_path):
+    """A table that put trivial over blocker would argue with the words in it."""
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "FAIL", "trivial", 0.1),
+        ("test_b", "FAIL", "trivial", 0.1),
+        ("test_c", "PASS", "blocker", 0.1),
+        ("test_d", "PASS", "normal", 0.1),
+    ]))
+
+    assert [row["severity"] for row in rows] == ["blocker", "normal", "trivial"]
+
+
+def test_unrated_sorts_last_however_many_tests_are_in_it(tmp_path):
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "", 0.1),
+        ("test_b", "PASS", "", 0.1),
+        ("test_c", "PASS", "", 0.1),
+        ("test_d", "PASS", "trivial", 0.1),
+    ]))
+
+    assert [row["severity"] for row in rows] == ["trivial", UNRATED]
+
+
+def test_a_word_nobody_recognises_sorts_after_the_five(tmp_path):
+    """A typo is not a sixth level and must not outrank blocker."""
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "high", 0.1),
+        ("test_b", "PASS", "blocker", 0.1),
+    ]))
+
+    assert [row["severity"] for row in rows] == ["blocker", "high"]
+
+
+def test_a_severity_is_read_from_the_most_recent_build_that_named_one(tmp_path):
+    """A test raised to blocker this month is a blocker, not an average."""
+    rows = _severities(tmp_path,
+                       _rated_build(1000.0, [("test_a", "PASS", "minor", 0.1)]),
+                       _rated_build(2000.0, [("test_a", "PASS", "blocker", 0.1)]))
+
+    assert [row["severity"] for row in rows] == ["blocker"]
+
+
+def test_a_build_archived_before_severity_existed_reads_as_unrated(tmp_path):
+    rows = severity_totals(histories(read_builds(_history(
+        tmp_path, _build(1000.0, [("test_a", "PASS", 0, 0.1)])))))
+
+    assert [row["severity"] for row in rows] == [UNRATED]
+
+
+def test_the_headline_leads_with_what_is_red_at_the_worst_level(tmp_path):
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "FAIL", "critical", 0.1),
+        ("test_b", "FAIL", "minor", 0.1),
+        ("test_c", "PASS", "blocker", 0.1),
+    ]))
+
+    assert _severity_headline(rows) == "1 critical test failing"
+
+
+def test_the_headline_falls_back_to_how_much_is_unrated(tmp_path):
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "blocker", 0.1),
+        ("test_b", "PASS", "", 0.1),
+    ]))
+
+    assert _severity_headline(rows) == "1 level in use, and 1 of 2 tests unrated"
+
+
+def test_the_headline_says_so_when_every_test_is_rated(tmp_path):
+    rows = _severities(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "blocker", 0.1),
+    ]))
+
+    assert _severity_headline(rows) == "1 level in use, every test rated"
+
+
+def test_a_suite_that_rated_nothing_gets_no_severity_panel(tmp_path):
+    """A table whose only row is Unrated is a table saying nothing."""
+    base = _history(tmp_path, _build(1000.0, [("test_a", "PASS", 0, 0.1)]))
+    generate_analytics(base)
+
+    assert ConfigVars._analytics_severity_state == "is-empty"
+    assert ConfigVars._analytics_severities == ""
+    assert ConfigVars._analytics_severity_note == ""
+
+
+def test_a_suite_that_rated_one_test_gets_the_panel(tmp_path):
+    base = _history(tmp_path, _rated_build(1000.0, [
+        ("test_a", "PASS", "blocker", 0.1),
+    ]))
+    generate_analytics(base)
+
+    assert ConfigVars._analytics_severity_state == ""
+    assert "blocker" in ConfigVars._analytics_severities
+    assert ConfigVars._analytics_severity_note == "1 level in use, every test rated"
+
+
+def test_the_severity_panel_the_template_asks_for_is_the_one_that_is_filled():
+    template = open(TEMPLATE, encoding="utf-8").read()
+
+    for name in ("analytics_severities", "analytics_severity_note", "analytics_severity_state"):
         assert "%%(%s)%%" % name in template
         assert hasattr(ConfigVars, "_" + name)

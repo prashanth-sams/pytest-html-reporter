@@ -14,15 +14,31 @@ half a link, and a suite that configured none of this getting exactly the
 report it had before.
 """
 
+from collections import OrderedDict
+
 import pytest
 
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.junit import junit_document
-from pytest_html_reporter.markers import OWNER_MARKER, describe
-from pytest_html_reporter.step_report import OWNER_SEPARATOR, _facts, _label, _traced
+from pytest_html_reporter.markers import (
+    OWNER_MARKER,
+    SEVERITY_MARKER,
+    describe,
+    severity_rank,
+    severity_value,
+)
+from pytest_html_reporter.step_report import (
+    OWNER_SEPARATOR,
+    _facts,
+    _label,
+    _severity_badges,
+    _traced,
+    generate_steps_view,
+)
 from pytest_html_reporter.util import (
     link_patterns,
     record_owners,
+    record_severity,
     marker_url,
     parse_link_patterns,
     trace_markers,
@@ -306,9 +322,10 @@ def test_a_run_that_named_no_trace_markers_writes_the_document_it_always_did():
     assert case.find("properties") is None
 
 
-def test_the_marker_names_are_the_owner_plus_whatever_was_configured():
-    assert trace_markers({"jira": "u", "testcase": "u"}) == ["owner", "jira", "testcase"]
-    assert trace_markers({}) == ["owner"]
+def test_the_marker_names_are_the_built_in_ones_plus_whatever_was_configured():
+    """Owner and severity need no configuration; everything else is invented."""
+    assert trace_markers({"jira": "u", "testcase": "u"}) == ["owner", "severity", "jira", "testcase"]
+    assert trace_markers({}) == ["owner", "severity"]
 
 
 # ------------------------------------------------------------- the rail ---
@@ -340,3 +357,130 @@ def test_an_owner_marker_with_empty_brackets_owns_nothing():
 def test_a_test_with_no_owner_marker_has_no_owners():
     assert record_owners(_record(_marker("slow"))) == []
     assert record_owners({}) == []
+
+
+# ------------------------------------------------------------ the severity ---
+
+def _severity(*levels, **kw):
+    """A record carrying severity markers, nearest first, as markers() yields them."""
+    scope = kw.pop("scope", "function")
+    scopes = kw.pop("scopes", None) or [scope] * len(levels)
+
+    return _record(*[_marker(SEVERITY_MARKER, level, kind="severity", scope=where)
+                     for level, where in zip(levels, scopes)], **kw)
+
+
+def test_a_severity_is_its_own_kind_of_marker():
+    class Mark:
+        name = SEVERITY_MARKER
+        args = ("critical",)
+        kwargs = {}
+
+    class Function:
+        pass
+
+    class Item:
+        def iter_markers_with_node(self):
+            return [(Function(), Mark())]
+
+    assert describe(Item())["markers"][0]["kind"] == "severity"
+
+
+def test_a_severity_with_empty_brackets_is_an_ordinary_marker():
+    """It is not a sixth level and it is not `normal` - it is unfinished."""
+    class Mark:
+        name = SEVERITY_MARKER
+        args = ()
+        kwargs = {}
+
+    class Function:
+        pass
+
+    class Item:
+        def iter_markers_with_node(self):
+            return [(Function(), Mark())]
+
+    assert describe(Item())["markers"][0]["kind"] == "user"
+
+
+def test_the_ladder_is_ranked_worst_first():
+    assert severity_rank("blocker") < severity_rank("critical") < severity_rank("normal")
+    assert severity_rank("normal") < severity_rank("minor") < severity_rank("trivial")
+
+
+def test_a_word_nobody_recognises_ranks_after_every_level():
+    """A typo is not a sixth level, and must not outrank blocker."""
+    assert severity_rank("high") > severity_rank("trivial")
+
+
+def test_a_level_is_the_same_level_however_it_was_capitalised():
+    """Two spellings of one word must not split a suite's counts in half."""
+    assert severity_value(_marker(SEVERITY_MARKER, "  Critical ")) == "critical"
+
+
+def test_the_nearest_severity_is_the_one_that_applies():
+    """A class rated above its module is somebody correcting the outer word."""
+    record = _severity("critical", "normal", scopes=["class", "module"])
+
+    assert record_severity(record) == "critical"
+
+
+def test_two_at_one_scope_are_read_as_the_worse_of_them():
+    """Nothing is nearer, and reading a blocker down to minor hides work."""
+    record = _severity("minor", "blocker")
+
+    assert record_severity(record) == "blocker"
+
+
+def test_a_test_nobody_rated_is_unrated_rather_than_normal():
+    """Allure defaults; this does not - six hundred unrated tests are not normal."""
+    assert record_severity(_record(_marker("slow"))) == ""
+
+
+def test_the_severity_reaches_the_rail_as_its_own_attribute():
+    """The filter reads it off the button, already resolved to one word."""
+    generate_steps_view(OrderedDict([("tests/test_pay.py", [
+        _severity("critical", "normal", scopes=["function", "module"]),
+    ])]))
+
+    assert 'data-severity="critical"' in ConfigVars._step_tree
+    assert 'data-severity="normal"' not in ConfigVars._step_tree
+
+
+def test_the_overridden_severity_is_shown_and_struck_through():
+    """The tab promises every marker, and says which one decided the colour."""
+    badges = _severity_badges(
+        _severity("critical", "normal", scopes=["function", "module"])["meta"]["markers"],
+        "critical")
+
+    assert "step-badge--severity-critical" in badges
+    assert "step-badge--severity-past" in badges
+    assert "overridden by critical" in badges
+
+
+def test_the_severity_row_stays_out_of_the_row_of_tags(patterns):
+    """It answers `how bad`, which is not what a row of `slow` and `smoke` says."""
+    record = _severity("blocker")
+    record["meta"]["markers"].append(_marker("slow"))
+
+    _linked, plain = _traced([marker for marker in record["meta"]["markers"]
+                              if marker.get("kind") not in ("owner", "severity")])
+
+    assert [marker["name"] for marker in plain] == ["slow"]
+    assert "Severity" in _facts(record)
+
+
+def test_the_severity_reaches_the_xml_once_and_already_resolved():
+    """A testcase carrying both `normal` and `critical` is one nobody can rank."""
+    case = _cases([_severity("critical", "normal", scopes=["function", "module"])],
+                  trace_markers=trace_markers({}))[0]
+
+    pairs = [(p.get("name"), p.get("value")) for p in case.find("properties").findall("property")]
+
+    assert pairs == [("severity", "critical")]
+
+
+def test_a_run_that_rated_nothing_writes_no_severity_property():
+    case = _cases([_record(_marker("slow"))], trace_markers=trace_markers({}))[0]
+
+    assert case.find("properties") is None

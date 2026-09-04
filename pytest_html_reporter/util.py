@@ -18,7 +18,14 @@ from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
 from html_page.report_link import ReportLink
 from pytest_html_reporter.const_vars import ConfigVars
-from pytest_html_reporter.markers import OWNER_MARKER, OWNER_MARKER_KIND
+from pytest_html_reporter.markers import (
+    OWNER_MARKER,
+    OWNER_MARKER_KIND,
+    SEVERITY_MARKER,
+    SEVERITY_MARKER_KIND,
+    severity_rank,
+    severity_value,
+)
 from pytest_html_reporter.screenshots import MODES as SCREENSHOT_MODES
 
 # Re-exported: the package publishes this as ``attach``, and it was defined
@@ -339,7 +346,7 @@ def trace_markers(patterns):
     Sorted so that two runs of one suite differ by their results and not by the
     order a dict happened to hand back.
     """
-    return [OWNER_MARKER] + sorted(patterns or {})
+    return [OWNER_MARKER, SEVERITY_MARKER] + sorted(patterns or {})
 
 
 def marker_url(patterns, marker):
@@ -397,6 +404,42 @@ def record_owners(record):
         if name and name not in owners: owners.append(name)
 
     return owners
+
+
+def record_severity(record):
+    """How much this test failing matters, or '' when nobody said.
+
+    One value, unlike owners, because severity is a ladder and a test cannot be
+    two heights at once - so where owners stack, severities have to be picked
+    between. **The nearest one wins**: a class marked `critical` inside a module
+    marked `normal` means somebody looked at that class and said it was worse
+    than the rest of the file, and the outer word is the one being corrected.
+
+    Two written at the same scope is the case with no obvious answer - nothing
+    is nearer than anything else - so the worse of them is taken. Reading a
+    `blocker` down to `minor` because of the order two decorators happen to sit
+    in is the one mistake here that hides work.
+
+    Nothing is invented when the marker is absent. Allure defaults an unmarked
+    test to `normal`; this does not, because a suite where four tests are
+    marked and six hundred are not is a suite with six hundred *unrated* tests,
+    not six hundred normal ones, and drawing them as rated would bury the four.
+    """
+    levels = []
+
+    for marker in ((record.get('meta') or {}).get('markers') or []):
+        if marker.get('kind') != SEVERITY_MARKER_KIND: continue
+
+        level = severity_value(marker)
+        if level: levels.append((str(marker.get('scope') or ''), level))
+
+    if not levels: return ''
+
+    # The markers arrive nearest first, so the first scope seen is the nearest
+    # one that said anything at all.
+    nearest = levels[0][0]
+
+    return min((level for scope, level in levels if scope == nearest), key=severity_rank)
 
 
 def generate_link_patterns(config):

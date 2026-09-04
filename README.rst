@@ -922,6 +922,7 @@ The ids also reach the **JUnit xml**, as properties on the testcase itself::
     <testcase classname="tests.test_search" name="test_searching_for_a_product" time="0.412">
       <properties>
         <property name="owner" value="search-team"/>
+        <property name="severity" value="critical"/>
         <property name="jira" value="SRCH-12"/>
         <property name="testcase" value="C4471"/>
       </properties>
@@ -929,7 +930,7 @@ The ids also reach the **JUnit xml**, as properties on the testcase itself::
 
 which is the half that matters to Xray, Zephyr and TestRail - they ingest a test's key from a property and never open
 an html report. The property name is the marker name, so a suite that has to emit ``test_key`` writes
-``@pytest.mark.test_key`` and gets exactly that. Only ``owner`` and the markers named in ``report_link_pattern`` are
+``@pytest.mark.test_key`` and gets exactly that. Only ``owner``, ``severity`` and the markers named in ``report_link_pattern`` are
 written, so nothing starts appearing in a file your CI parses without being asked for.
 
 This is deliberately **not** a Jira client. Nothing is fetched, no token is needed and no network is touched: the
@@ -978,6 +979,65 @@ unclaimed should say so, and the line above the table does - *3 owners, and 14 o
 
 Ownership is written into ``output.json`` from this version on, which is what lets the panel read across builds.
 Builds archived by an earlier version carry no owner and are read as unclaimed rather than as anything invented.
+
+how much a failure matters
+""""""""""""""""""""""""""
+
+``severity`` is the second built-in marker, and it answers the question asked *before* "whose is this": forty failures
+at ``trivial`` and two at ``blocker`` are the same number on every other tab and are not remotely the same run. Like
+``owner`` it needs **no configuration at all**::
+
+    @pytest.mark.severity("blocker")
+    def test_a_customer_can_pay():
+        ...
+
+The five levels are Allure's, worst first - ``blocker``, ``critical``, ``normal``, ``minor``, ``trivial`` - because
+whoever writes this marker has almost certainly written it there, and a vocabulary *nearly* the same as a familiar one
+is worse than either. Capitalisation does not matter: ``severity("Critical")`` and ``severity("critical")`` are one
+level, not two.
+
+**One test, one level.** Owners stack; severities are a ladder, and a test cannot be two heights at once - so where
+two markers claim one test, the report picks between them:
+
+* **The nearest wins.** A class marked ``critical`` inside a module marked ``normal`` means somebody looked at that
+  class and said it was worse than the rest of the file, and the outer word is the one being corrected::
+
+      pytestmark = pytest.mark.severity("normal")          # the whole file
+
+      @pytest.mark.severity("critical")                    # ... except this class
+      class TestCheckout:
+          def test_the_basket_totals_correctly(self):      # critical
+              ...
+
+* **Two at the same scope are read as the worse of them.** Nothing is nearer than anything else, and reading a
+  ``blocker`` down to ``minor`` because of the order two decorators happen to sit in is the one mistake here that
+  hides work.
+
+Nothing is hidden by that. The overridden marker is still shown on the ``Test Steps`` tab, struck through and beside
+the one that won, with a tooltip saying where each was written - *normal, from the module - overridden by critical* -
+which is the answer when a level nobody typed on this test is the one deciding its colour::
+
+    SEVERITY   [critical]  [normal]   <- the second one struck through
+
+**A test nobody rated is unrated, not normal.** Allure defaults an unmarked test to ``normal``; this does not, because
+a suite where four tests are marked and six hundred are not is a suite with six hundred *unrated* tests, and drawing
+them as rated would bury the four. A bare ``@pytest.mark.severity`` with no argument is the same: it names no level
+and stays the ordinary marker badge it is.
+
+A word outside the five is kept rather than dropped - a filter that silently omits a test is worse than one that shows
+a typo - but it sorts *after* ``trivial`` everywhere, because an unrecognised severity is a typo far more often than
+it is a sixth level somebody meant, and a typo must not outrank ``blocker``.
+
+The resolved level reaches the **JUnit xml** as a ``severity`` property, written once and already picked between, and
+the rail as a third row of filter pills - drawn in ladder order rather than by how many tests are at each level, and
+counted inside both the kind and the owner above it, so *this team's blockers* is three clicks and the number on the
+pill is what the rail will show. The row is not drawn at all for a run that rated nothing.
+
+The ``Analytics`` tab gains a **How much it matters** panel beside *Who owns what*: one row per level, in ladder order
+rather than worst-numbers-first - a table that put ``trivial`` above ``blocker`` because trivial had more failures
+would be arguing with the words in it - with an ``Unrated`` row last. Its headline leads with the thing somebody came
+to the tab to find out: *1 critical test failing*. As with ownership, a test's severity is read from the most recent
+build that named one, and builds archived by an earlier version are read as unrated.
 
 keeping the file down
 """""""""""""""""""""""""""

@@ -26,6 +26,7 @@ from html_page.analytics_owner import AnalyticsOwner
 from html_page.analytics_row import AnalyticsRow
 from html_page.analytics_tile import AnalyticsTile
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.markers import severity_rank
 from pytest_html_reporter.util import escape_report_text, js_literal
 
 # Bucket edges for the duration histogram, in seconds. Anything past the last
@@ -216,6 +217,10 @@ def _normalise(data, stamp):
                 # because that is what those tests were as far as any report
                 # could tell at the time.
                 'owner': [str(name) for name in (test.get('owner') or [])],
+                # One word or none. Empty for every build archived before
+                # severity was written into the file, which reads as unrated -
+                # what those tests were, as far as any report could tell.
+                'severity': str(test.get('severity') or ''),
             }
 
     return {
@@ -357,6 +362,7 @@ def histories(builds):
                     'suite': test['suite'],
                     'name': test['name'],
                     'owner': [],
+                    'severity': '',
                     'points': [],
                 }
 
@@ -365,6 +371,10 @@ def histories(builds):
             # should page the team that has it today, and a union of every
             # owner it ever had would page both.
             if test['owner']: history['owner'] = list(test['owner'])
+
+            # And for the same reason: a test raised to `blocker` this month is
+            # a blocker, not the average of what it has been rated before.
+            if test['severity']: history['severity'] = test['severity']
 
             history['points'].append({
                 'build': position,
@@ -863,6 +873,137 @@ def _owner_rows(rows):
     return content
 
 
+UNRATED = 'Unrated'
+
+
+def severity_totals(tracked):
+    """One row per severity level: how much of the suite sits at it, and how it behaves.
+
+    The owner table answers "whose morning is this". This one answers the
+    question asked before it: *does any of this matter today*. Forty failures
+    at `trivial` and two at `blocker` are the same number everywhere else on
+    the page and are not remotely the same run.
+
+    A test counts once, unlike the owner roll-up: it has one severity by
+    construction, because ``record_severity`` has already picked between the
+    markers that claimed it.
+    """
+    totals = OrderedDict()
+
+    for history in tracked.values():
+        # This run's tests only, for the same reason the owner table takes
+        # them: a test deleted three builds ago cannot be triaged.
+        if not history['current']: continue
+
+        level = history['severity'] or UNRATED
+        row = totals.get(level)
+        if row is None:
+            row = totals[level] = {'severity': level, 'tests': 0, 'failing': 0,
+                                   'flaky': 0, 'broken': 0, 'rates': [],
+                                   'duration': 0.0}
+
+        row['tests'] += 1
+        if history['outcome'] == 'fail': row['failing'] += 1
+        if history['flaky']: row['flaky'] += 1
+        if history['broken']: row['broken'] += 1
+        if history['pass_rate'] is not None: row['rates'].append(history['pass_rate'])
+        if history['duration']: row['duration'] += history['duration']
+
+    for row in totals.values():
+        row['pass_rate'] = round(sum(row['rates']) / len(row['rates']), 1) if row['rates'] else None
+        row['duration'] = round(row['duration'], 2)
+        row['share'] = 0
+
+    rows = sorted(totals.values(), key=_severity_row_rank)
+
+    widest = max((row['tests'] for row in rows), default=0)
+    for row in rows:
+        row['share'] = int(round(100.0 * row['tests'] / widest)) if widest else 0
+
+    return rows
+
+
+def _severity_row_rank(row):
+    """The ladder, worst first - and not the worst *numbers* first.
+
+    The owner table sorts on behaviour because no team outranks another. These
+    rows do outrank each other, and that order is the whole content of the
+    column: a table that put `trivial` above `blocker` because trivial had more
+    failures would be arguing with the words in it.
+
+    Unrated sorts last however many tests are in it. It is not a level.
+    """
+    return (row['severity'] == UNRATED,
+            severity_rank(row['severity']),
+            row['severity'])
+
+
+def _severity_headline(rows):
+    """The sentence over the severity table, or '' when there is no table.
+
+    It leads with the thing somebody came to the tab to find out - whether
+    anything important is red - and falls back to how much of the suite has
+    never been rated, which is what makes the rest of the table readable or
+    not.
+    """
+    rated = [row for row in rows if row['severity'] != UNRATED]
+    if not rated: return ''
+
+    total = sum(row['tests'] for row in rows)
+    unrated = sum(row['tests'] for row in rows if row['severity'] == UNRATED)
+
+    # The worst level that has anything wrong in it, which is the one line
+    # worth spending the headline on when there is one.
+    hurt = next((row for row in rated if row['failing'] or row['broken']), None)
+    if hurt:
+        count = hurt['failing'] or hurt['broken']
+        return '%d %s %s failing' % (count, hurt['severity'],
+                                     'test' if count == 1 else 'tests')
+
+    text = '%d %s in use' % (len(rated), 'level' if len(rated) == 1 else 'levels')
+
+    if not unrated: return text + ', every test rated'
+
+    return '%s, and %d of %d %s unrated' % (text, unrated, total,
+                                            'test' if total == 1 else 'tests')
+
+
+def _severity_rows(rows):
+    """The severity roll-up as table rows.
+
+    Drawn with the owner table's row, deliberately: the two answer neighbouring
+    questions about the same run with the same six numbers, and giving them two
+    layouts would make readers work out twice that the third column is a pass
+    rate.
+    """
+    content = ''
+
+    for row in rows:
+        if row['broken']: tone = 'bad'
+        elif row['failing'] or row['flaky']: tone = 'warn'
+        else: tone = 'good'
+
+        content += str(AnalyticsOwner(
+            owner=escape_report_text(row['severity']),
+            # The level is in the class so the chip can carry the ladder in its
+            # colour. An unrecognised word gets no colour of its own and reads
+            # as the plain chip it is, which is the honest look for a typo.
+            kind=escape_report_text(
+                'unowned' if row['severity'] == UNRATED
+                else 'severity-%s' % row['severity']),
+            tests=str(row['tests']),
+            share=str(row['share']),
+            rate='--' if row['pass_rate'] is None else '%s%%' % row['pass_rate'],
+            failing=str(row['failing']),
+            flaky=str(row['flaky']),
+            broken=str(row['broken']),
+            duration=escape_report_text(_duration_text(row['duration'])),
+            tone=tone,
+        ))
+
+    return content
+
+
 def _rank(history):
     """Sort key for the stability table: worst behaviour at the top.
 
@@ -1031,6 +1172,16 @@ def generate_analytics(base):
     ConfigVars._analytics_owners = _owner_rows(owners) if named else ''
     ConfigVars._analytics_owner_state = '' if named else 'is-empty'
     ConfigVars._analytics_owner_note = _owner_headline(named, owners)
+
+    # --- how much any of it matters --------------------------------------
+    # Empty, panel and all, for a suite that never rated a test: a table whose
+    # only row is Unrated is a table saying nothing at all.
+    severities = severity_totals(tracked)
+    rated = [row for row in severities if row['severity'] != UNRATED]
+
+    ConfigVars._analytics_severities = _severity_rows(severities) if rated else ''
+    ConfigVars._analytics_severity_state = '' if rated else 'is-empty'
+    ConfigVars._analytics_severity_note = _severity_headline(severities)
 
     ConfigVars._analytics_tiles = tiles
     ConfigVars._analytics_movement = movement

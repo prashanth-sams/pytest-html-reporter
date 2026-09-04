@@ -142,6 +142,9 @@ class ConfigVars:
     _analytics_owners = ''
     _analytics_owner_note = ''
     _analytics_owner_state = 'is-empty'
+    _analytics_severities = ''
+    _analytics_severity_note = ''
+    _analytics_severity_state = 'is-empty'
 
 
 # Every attribute as it stood at import, so a process that renders a second

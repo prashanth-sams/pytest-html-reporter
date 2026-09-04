@@ -41,7 +41,8 @@ from tempfile import NamedTemporaryFile
 import pytest
 
 from pytest_html_reporter import __version__
-from pytest_html_reporter.util import _ini, expand_time
+from pytest_html_reporter.markers import SEVERITY_MARKER
+from pytest_html_reporter.util import _ini, expand_time, record_severity
 
 
 # How an unexpectedly passing test is written down. 'pass' is pytest's own
@@ -502,12 +503,22 @@ def _case_properties(record, opts):
         name = str(marker.get("name") or "")
         if name not in opts.trace_markers: continue
 
+        # Every other marker here is a set - two `jira` markers are two issues
+        # and both belong in the xml - but severity is a ladder, and a testcase
+        # carrying both `normal` and `critical` is one no consumer can rank.
+        # It is written once, below, already resolved.
+        if name == SEVERITY_MARKER: continue
+
         args = marker.get("args") or []
         value = str(args[0]).strip() if args else ""
 
         # A marker with empty brackets names no issue and owns nothing. An
         # empty property is a row every consumer displays and none can use.
         if value: pairs.append((name, value))
+
+    if SEVERITY_MARKER in opts.trace_markers:
+        severity = record_severity(record)
+        if severity: pairs.append((SEVERITY_MARKER, severity))
 
     if not pairs: return None
 

@@ -46,6 +46,49 @@ OWNER_MARKER = 'owner'
 # Analytics roll-up reads it back a build later.
 OWNER_MARKER_KIND = 'owner'
 
+# The marker that says how much a failure here matters. Like ``owner`` it
+# answers a different question from the rest of the row - "how bad", not "what
+# about" - and unlike every other marker it is *ranked*: `blocker` and
+# `trivial` are not two values of one word but two ends of a ladder, and a
+# report that sorted them alphabetically would put the worst one in the middle.
+SEVERITY_MARKER = 'severity'
+SEVERITY_MARKER_KIND = 'severity'
+
+# The ladder, worst first. Allure's five words rather than five of our own:
+# whoever writes this marker has almost certainly written it there, and a
+# vocabulary nearly the same as a familiar one is worse than either.
+SEVERITY_LEVELS = ('blocker', 'critical', 'normal', 'minor', 'trivial')
+
+# Where a word nobody recognises sorts. After every known level rather than
+# before: an unrecognised severity is a typo far more often than it is a sixth
+# level somebody meant, and a typo must not outrank `blocker`.
+UNKNOWN_SEVERITY_RANK = len(SEVERITY_LEVELS)
+
+
+def severity_rank(level):
+    """Where one severity sits on the ladder. Lower is worse."""
+    try:
+        return SEVERITY_LEVELS.index(str(level).strip().lower())
+    except ValueError:
+        return UNKNOWN_SEVERITY_RANK
+
+
+def severity_value(mark):
+    """The level one severity marker names, lowercased, or '' if it names none.
+
+    Lowercased because ``severity("Critical")`` and ``severity("critical")``
+    are the same thing said twice, and a report drawing them as two levels
+    would split a suite's counts in half over a shift key.
+
+    A bare ``@pytest.mark.severity`` with no argument says nothing - it is not
+    a sixth level and it is not `normal`, it is a marker somebody left
+    unfinished - so it names no level and stays the plain marker it is.
+    """
+    args = getattr(mark, 'args', None)
+    if args is None: args = (mark or {}).get('args') or []
+
+    return str(args[0]).strip().lower() if args else ''
+
 
 def _is_internal(mark):
     """True for a marker some other plugin applied as plumbing.
@@ -138,6 +181,11 @@ def _kind(mark):
     """Which of the three things a marker is, as the badge colours say them."""
     if mark.name in BUILTIN_MARKERS: return 'builtin'
     if mark.name == OWNER_MARKER: return 'owner'
+
+    # Only when it actually names a level. A `severity` marker with empty
+    # brackets is not a severity, and giving it the kind anyway would put an
+    # empty badge in the row that exists to say how bad this is.
+    if mark.name == SEVERITY_MARKER and severity_value(mark): return SEVERITY_MARKER_KIND
 
     return 'user'
 

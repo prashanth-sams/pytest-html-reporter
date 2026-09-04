@@ -15,7 +15,7 @@ from pytest_html_reporter.shards import (
     shard_dir,
     shards_root,
 )
-from pytest_html_reporter.markers import OWNER_MARKER
+from pytest_html_reporter.markers import OWNER_MARKER, SEVERITY_LEVELS, SEVERITY_MARKER
 from pytest_html_reporter.util import (
     archive_count,
     clean_screenshots,
@@ -479,6 +479,9 @@ def register_markers(config):
     """
     config.addinivalue_line(
         "markers", "%s(name): who to tell when this test fails" % OWNER_MARKER)
+    config.addinivalue_line(
+        "markers", "%s(level): how much a failure here matters - one of %s"
+                   % (SEVERITY_MARKER, ", ".join(SEVERITY_LEVELS)))
 
     for marker in link_patterns(config):
         config.addinivalue_line(

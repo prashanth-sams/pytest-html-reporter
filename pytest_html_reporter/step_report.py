@@ -30,7 +30,13 @@ from html_page.step_suite import StepSuite
 from html_page.step_test import StepTest
 from html_page.test_shot import TestShot
 from pytest_html_reporter.const_vars import ConfigVars
-from pytest_html_reporter.util import escape_report_text, marker_url, record_owners
+from pytest_html_reporter.markers import SEVERITY_MARKER_KIND, severity_value
+from pytest_html_reporter.util import (
+    escape_report_text,
+    marker_url,
+    record_owners,
+    record_severity,
+)
 
 
 # The phases every test has, in the order they run, as the tab names them.
@@ -50,6 +56,12 @@ GHERKIN = ('given', 'when', 'then', 'and', 'but')
 # A pipe rather than a comma: a team is called "Payments, EU" often enough to
 # matter and is called "Payments|EU" essentially never.
 OWNER_SEPARATOR = '|'
+
+# The badge kind an overridden severity is drawn as. It is still shown - the
+# tab promises every marker, and "the module said normal" is the sentence that
+# explains why a test nobody touched changed colour - but it is drawn as spent
+# rather than as a second severity the test somehow also has.
+SEVERITY_PAST_KIND = 'severity-past'
 
 # A suite path repeats down the whole rail; only its tail tells one from the next.
 SUITE_TAIL_MAX = 34
@@ -378,6 +390,39 @@ def _traced(markers):
     return groups, rest
 
 
+def _severity_badges(markers, effective):
+    """The severity row: the level that applies, then the ones it overrode.
+
+    Nothing is hidden and nothing is drawn twice as loud as it is. A test
+    inside a module marked `normal` and a class marked `critical` carries both
+    markers and always did; what the row has to say is which of them the run
+    was actually rated at, and each badge's tooltip says where its word was
+    written - the answer when a level nobody typed on this test is the one
+    deciding its colour.
+    """
+    badges = ''
+    won = False
+
+    for marker in markers:
+        level = severity_value(marker)
+        scope = str(marker.get('scope') or 'test')
+
+        # The first marker at the effective level is the one that carried it;
+        # a second copy of the same word further out was still overridden.
+        current = level == effective and not won
+        won = won or current
+
+        badges += str(StepBadge(
+            kind=escape_report_text('severity-%s' % level if current else SEVERITY_PAST_KIND),
+            text=escape_report_text(level),
+            title=escape_report_text(
+                '%s, from the %s' % (level, scope) if current
+                else '%s, from the %s - overridden by %s' % (level, scope, effective)),
+        ))
+
+    return badges
+
+
 def _facts(record):
     """What the test says about itself, as a row of labelled facts."""
     meta = record.get('meta') or {}
@@ -401,7 +446,15 @@ def _facts(record):
         facts += str(StepFact(label=_pluralise(len(owners), 'owner'),
                               value=''.join(_badge(marker, bare=True) for marker in owners)))
 
-    linked, plain = _traced([marker for marker in markers if marker.get('kind') != 'owner'])
+    # How bad, next: it is the other question a red run is read with, and the
+    # only marker on the page whose *value* is ranked rather than merely named.
+    severities = [marker for marker in markers if marker.get('kind') == SEVERITY_MARKER_KIND]
+    if severities:
+        facts += str(StepFact(label='Severity',
+                              value=_severity_badges(severities, record_severity(record))))
+
+    linked, plain = _traced([marker for marker in markers
+                             if marker.get('kind') not in ('owner', SEVERITY_MARKER_KIND)])
 
     for name, group in linked.items():
         facts += str(StepFact(label=escape_report_text(_label(name)),
@@ -509,6 +562,7 @@ def generate_steps_view(suites):
                 stat=escape_report_text(record.get('status') or ''),
                 kind='bdd' if record.get('bdd') else 'plain',
                 owner=escape_report_text(OWNER_SEPARATOR.join(record_owners(record))),
+                sev=escape_report_text(record_severity(record)),
                 name=escape_report_text(record.get('test_name') or ''),
                 note=escape_report_text(_note(record)),
                 dur=escape_report_text(duration(_test_ms(record))),

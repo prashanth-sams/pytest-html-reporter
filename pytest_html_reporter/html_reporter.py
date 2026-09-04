@@ -55,6 +55,7 @@ from pytest_html_reporter.util import (
     generate_link_patterns,
     generate_report_links,
     record_owners,
+    record_severity,
     trace_markers,
     generate_run_delta,
 )
@@ -1353,6 +1354,10 @@ class HTMLReporter(object):
                 # version carry no key and are read as unowned, which is what
                 # they were as far as any report could tell.
                 'owner': record_owners(record),
+                # One string, or '' for a test nobody rated - including every
+                # test in every build archived before severity existed, which
+                # is the same thing as far as any reader can tell.
+                'severity': record_severity(record),
             }
 
         self.json_data['content']['suites'][suite_index] = {
@@ -1541,6 +1546,9 @@ class HTMLReporter(object):
             analytics_owners=str(ConfigVars._analytics_owners),
             analytics_owner_note=escape_report_text(ConfigVars._analytics_owner_note),
             analytics_owner_state=str(ConfigVars._analytics_owner_state),
+            analytics_severities=str(ConfigVars._analytics_severities),
+            analytics_severity_note=escape_report_text(ConfigVars._analytics_severity_note),
+            analytics_severity_state=str(ConfigVars._analytics_severity_state),
             environment_rows=str(ConfigVars._environment_rows),
             environment=escape_report_text(ConfigVars._environment_label),
             environment_title=escape_report_text(ConfigVars._environment),

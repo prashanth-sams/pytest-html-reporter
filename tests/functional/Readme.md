@@ -72,6 +72,30 @@ pill, since no other file here mentions an owner:
 pytest tests/functional/ --html-report=./report
 ```
 
+### Severity
+
+`test_severity.py` fills the `Severity` row on each test and the `Severity` pills above
+the rail, under the `Owner` ones:
+
+```
+pytest tests/functional/test_severity.py --html-report=./report
+```
+
+Nothing to configure - `severity` is built in the way `owner` is, and the five levels are
+Allure's: `blocker`, `critical`, `normal`, `minor`, `trivial`, worst first.
+
+It covers every rule that could be silently wrong: a module-level baseline overridden by a
+class and then by a test (**the nearest wins**), two levels written at one scope (**the
+worse wins**), a level that differs only in its capitals, empty brackets that rate nothing,
+and a word outside the five - kept and filterable, but sorted after `trivial`, because a
+typo must not outrank a blocker. The overridden markers are still shown, struck through
+beside the one that won.
+
+Two tests fail on purpose at two different levels, which is what gives the **How much it
+matters** table on `Analytics` something to rank. The `Unrated` row and pill are filled by
+every other file in this folder, none of which mentions a severity.
+
+
 ### Browser tests
 
 `test_selenium.py`, `test_screenshot.py` and `test_playwright.py` drive a real browser
