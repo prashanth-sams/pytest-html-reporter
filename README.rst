@@ -872,11 +872,42 @@ rail's owner filter and the Analytics roll-up all appear::
         def test_the_basket_totals_correctly(self):
             ...
 
-They **stack rather than override**, which is what "owners" plural means. A test inside that class carries
-``checkout-team`` *and* ``platform-team``; write the marker twice on one test and it carries both. Nearest scope
-comes first, each badge says where it was written - *from the module*, *from the function* - and a test with two
-owners is counted once for each of them in the roll-up, because picking one would take the other team off the hook
-for a test they had put their name on.
+**more than one owner**
+
+They **stack rather than override**, which is what "owners" plural means. Write the marker twice and the test carries
+both, on top of anything its module or class already said::
+
+    pytestmark = pytest.mark.owner("platform-team")      # the whole file
+
+    @pytest.mark.owner("payments-team")
+    @pytest.mark.owner("fraud-team")
+    def test_a_suspicious_refund():
+        ...
+
+    @pytest.mark.owner("search-team")
+    def test_searching_for_a_product():
+        ...
+
+The first of those has three owners, and the report says so - a ``3 owners`` row, one badge each, nearest first::
+
+    3 OWNERS   [fraud-team]  [payments-team]  [platform-team]
+
+Nearest first means the decorator closest to the ``def`` leads, then the rest of that test's own, then the class's,
+then the module's. Each badge's tooltip says which of those it came from - *from the function*, *from the module* -
+which is the answer when nobody remembers applying it.
+
+Everywhere a count is taken, **a test with three owners counts once for each of them**. It shows up under all three
+pills in the rail's owner filter, and it adds one to all three rows of the Analytics roll-up - so those two tests
+between them produce four rows totalling five::
+
+    OWNER            TESTS
+    platform-team      2        <- the module's, so both tests
+    fraud-team         1
+    payments-team      1
+    search-team        1
+
+That is deliberate, not double-counting. Picking one owner would quietly take the other team off the hook for a test
+they had put their name on, and the point of the table is that nobody's failures go unclaimed.
 
 Giving ``owner`` a pattern is optional and only makes the badge clickable - a team page, a rota, a Slack channel::
 
