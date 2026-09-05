@@ -40,6 +40,39 @@
 
 ---
 
+## A look at the report
+
+The report follows your operating-system theme and remembers a switch, so every screenshot below comes
+in both - GitHub shows whichever matches the theme you are reading in.
+
+**Dashboard** - totals, trends and the highlights for the run that just finished.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/dashboard-dark.png">
+  <img alt="Dashboard" src="images/dashboard-light.png" width="800">
+</picture>
+
+**Test Suites** - the run broken down suite by suite.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/test-suites-dark.png">
+  <img alt="Test Suites" src="images/test-suites-light.png" width="800">
+</picture>
+
+**Test Metrics** - every test as a searchable, sortable, exportable row.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/test-metrics-dark.png">
+  <img alt="Test Metrics" src="images/test-metrics-light.png" width="800">
+</picture>
+
+**Archives** - previous builds, kept for comparison and trend analysis.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/archives-dark.png">
+  <img alt="Archives" src="images/archives-light.png" width="800">
+</picture>
+
 ## Why pytest-html-reporter ?
 
 `pytest-html` and `allure-pytest` are both mature, widely used projects, and either may well be the
@@ -489,6 +522,13 @@ $ pytest --html-report=./report --report-screenshots=all
 Every screenshot lands in two places: the `Screenshots` gallery, and the `Screens` column of the `Test Metrics`
 row it belongs to - a thumbnail on the row itself, next to the error it explains, that opens full size when clicked.
 
+Every capture lands in the gallery and on the row of the test it belongs to:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/screenshots-dark.png">
+  <img alt="Screenshots" src="images/screenshots-light.png" width="800">
+</picture>
+
 #### Taking the picture yourself
 
 The automatic capture takes the page as it was when the test ended. When the moment matters - a page mid-test, a
@@ -582,6 +622,11 @@ attach_json(requests.get("https://reqres.in/api/users/2").json())
 ```
 
 <img src="images/api_logs.png" alt="Screenshot" width="800">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/api-logs-dark.png">
+  <img alt="API Logs" src="images/api-logs-light.png" width="800">
+</picture>
 
 #### API calls
 
@@ -802,6 +847,13 @@ step, so it is there when you go looking for it rather than only before you need
 It is a tab of its own rather than a panel inside `Test Suites`, which is where Allure keeps the same information.
 The cost of folding it in is a high-level page you can no longer skim, and the high-level page is the one most people
 open first.
+
+The suite drills down to the test, and the test to what it did:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/test-steps-dark.png">
+  <img alt="Test Steps" src="images/test-steps-light.png" width="800">
+</picture>
 
 ### A decorator, for the code the tests share
 
@@ -1227,9 +1279,10 @@ built on - one file you can mail, publish as a CI artifact or open off a stick -
 an empty frame wherever the folder did not travel with it. The link is offered only when the folder was written by
 *this* run, so an `htmlcov` left over from last week is not passed off as current.
 
-<img src="images/test_coverage.png" alt="Test Coverage" width="800">
-
-<img src="images/test_coverage_list.png" alt="Test Coverage List" width="800">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/test-coverage-dark.png">
+  <img alt="Test Coverage" src="images/test-coverage-light.png" width="800">
+</picture>
 
 #### The Test Coverage tab is empty
 
@@ -1318,6 +1371,13 @@ empty axes.
 
 Per-test durations are recorded into `output.json` from this version on, so the duration panels fill from the run
 that produced them; builds archived by an earlier version are read as *not measured* rather than as instant.
+
+The tab reads every build you have kept and lines them up per test:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/analytics-dark.png">
+  <img alt="Analytics" src="images/analytics-light.png" width="800">
+</picture>
 
 ## Customising the report
 
@@ -1664,3 +1724,20 @@ Yes, you can use this demo as an example, https://github.com/prashanth-sams/pyte
 ```
 $ pytest tests/functional/
 ```
+
+---
+
+## Sponsor
+
+<a href="https://pickoh.com/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/pickoh-light.png">
+    <img alt="PICKOH" src="images/pickoh.png" width="200">
+  </picture>
+</a>
+
+`pytest-html-reporter` is sponsored by **[PICKOH](https://pickoh.com/)** - map the countries you have
+visited, plan trips, and join destination communities for weather, tips and attractions.
+
+Their backing is what keeps this plugin free, open source and actively maintained. If the reporter saves
+you time, do take a look at what they are building.
