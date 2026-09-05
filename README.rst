@@ -495,7 +495,9 @@ captures nothing.
    :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b
 
 
-.. image:: https://i.imgur.com/1HSYkdC.gif
+.. image:: images/pytest-html-reporter.gif
+   :alt: pytest-html-reporter report tour
+   :width: 800px
 
 
 api logs / attachments
