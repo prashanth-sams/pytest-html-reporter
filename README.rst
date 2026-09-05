@@ -26,32 +26,98 @@ pytest-html-reporter
 .. image:: https://i.imgur.com/4TYia5j.png
    :alt: pytest-html-reporter
 
-Features
-------------
-* Generic information
 
-  - Overview
-  - Environment
-  - Trends
-  - Highlights - the most failed suite, and the failure delta since the last build
-  - Test suite details
-* Analytics - flaky tests, standing failures, failures grouped by exception, pass-rate drift and where the run's time goes, read across every archived build
-* Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did; ``async`` suites included, where work run concurrently comes back as the siblings it was
-* Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
-* Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
-* Archives / History
-* Screenshots - a failing Selenium or Playwright test is photographed automatically, with no hook, fixture or import; ``attach`` still takes an image of your own, from anything that can produce a PNG.
-* Attachments - Logs API events/calls, JSON and free text kept against the test that produced them
-* Captured logs per test (stdout, stderr and ``logging``)
-* Test Coverage - the percentage, the split by file and the trend across builds, read from whatever measured it
-* Deep links - every test row has an address of its own, copied from a button beside the failure, opening the report on that row whatever page of the table it has ended up on
-* Light and dark themes - a switch at the foot of the side nav, remembered per reader, following the operating system until it is touched
-* Custom side-nav links to any page of your own
-* Opens the finished report in a browser on a local run, and stays quiet on a build agent
-* Test Rerun support
-* Parallel run support (``pytest-xdist``)
-* Sharded and cross-machine runs - a matrix that splits the suite over four machines, or three legs run one after another, are merged into one build by ``pytest-html-reporter merge``: one set of totals, one archived build, one JUnit XML
-* Dedicated GitHub Action
+Features
+--------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Feature
+     - Description
+
+   * - Generic information
+     - Overview, environment, trends, highlights—including the most
+       failed suite and failure delta—and detailed test-suite information.
+
+   * - Analytics
+     - Flaky tests, standing failures, failures grouped by exception,
+       pass-rate drift, and execution-time distribution across every
+       archived build.
+
+   * - Test Steps
+     - Named and timed test steps with nested drill-down from the suite
+       to the test and its individual actions. Supports ``async`` suites
+       and concurrent sibling operations.
+
+   * - Cucumber / Gherkin
+     - ``pytest-bdd`` scenarios work without changes. Given, When, and
+       Then statements appear as individually timed steps with parsed
+       arguments, feature names, scenario names, and tags.
+
+   * - Markers
+     - Displays module-level ``pytestmark`` markers, class markers, and
+       markers added during execution, including the scope of each marker.
+
+   * - Archives / History
+     - Preserves previous builds for historical review, comparison, and
+       trend analysis.
+
+   * - Screenshots
+     - Automatically captures failing Selenium and Playwright tests
+       without requiring hooks, fixtures, or imports. The ``attach``
+       function can also add custom PNG images.
+
+   * - Attachments
+     - Stores API events and calls, JSON data, and free-text attachments
+       against the test that produced them.
+
+   * - Captured Logs
+     - Displays captured ``stdout``, ``stderr``, and ``logging`` output
+       for each test.
+
+   * - Test Coverage
+     - Shows overall coverage, file-level coverage, and coverage trends
+       across builds.
+
+   * - Deep Links
+     - Gives every test row a permanent link that opens the report
+       directly at that test, regardless of its current table page.
+
+   * - Light and Dark Themes
+     - Provides a side-navigation theme switch that remembers the user's
+       choice and follows the operating-system theme until changed.
+
+   * - Custom Side-Navigation Links
+     - Adds links to custom pages directly within the report's side
+       navigation.
+
+   * - Test Reruns
+     - Supports rerun results and preserves retry information in the
+       generated report.
+
+   * - Parallel Execution
+     - Supports parallel test execution using ``pytest-xdist``.
+
+   * - Sharded and Cross-Machine Runs
+     - Combines test shards from parallel machines or sequential stages
+       using ``pytest-html-reporter merge``, producing one set of totals,
+       one archived build, and one JUnit XML file.
+
+   * - JUnit XML
+     - Generates JUnit XML results from regular, parallel, and sharded
+       test runs for integration with CI test-result systems.
+
+   * - Dedicated GitHub Action
+     - Provides a dedicated GitHub Action for integrating report
+       generation into GitHub Actions workflows.
+
+   * - VS Code Extension
+     - Provides integrated access to pytest HTML reports directly within
+       Visual Studio Code.
+
+----
 
 .. image:: images/pytest-html-reporter.gif
    :alt: pytest-html-reporter report tour
