@@ -40,10 +40,12 @@
 
 ---
 
-## Comparison
+## Why pytest-html-reporter ?
 
-How `pytest-html-reporter` compares with `pytest-html` and `allure-pytest`. The same table, kept
-up to date, is at https://prashanth-sams.github.io/pytest-html-reporter.github.io/
+`pytest-html` and `allure-pytest` are both mature, widely used projects, and either may well be the
+better fit for your team. The table below sets out what the three offer side by side so you can judge
+which suits your project; it is kept up to date in the
+[documentation](https://prashanth-sams.github.io/pytest-html-reporter.github.io/).
 
 | Section | Capability | `pytest-html` | `allure-pytest` | `pytest-html-reporter` |
 |---|---|:---:|:---:|:---:|
