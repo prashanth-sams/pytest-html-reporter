@@ -3684,6 +3684,21 @@
                     overflow-wrap: anywhere;
                 }
 
+                /* The pipeline row is the one value in this panel worth
+                   clicking. A build url read out of a monospace span is a url
+                   somebody has to select, copy and paste somewhere else before
+                   it does anything, and it is read at exactly the moment
+                   nobody has patience for that. */
+                .env-item__link {
+                    color: var(--accent-link);
+                    text-decoration: none;
+                }
+
+                .env-item__link:hover,
+                .env-item__link:focus-visible {
+                    text-decoration: underline;
+                }
+
                 @media screen and (max-width: 640px) {
                     .env-grid {
                         grid-template-columns: minmax(0, 1fr);

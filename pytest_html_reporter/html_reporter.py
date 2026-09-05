@@ -258,7 +258,7 @@ class HTMLReporter(object):
         # make inline, so a plain run is unchanged and a merge replaces the
         # answer rather than the pipeline that asks for it.
         self.coverage_source = lambda base: collect_coverage(self.config, base, self._sessionstarttime)
-        self.environment_source = lambda: generate_environment_info(self.config)
+        self.environment_source = lambda: generate_environment_info(self.config, self._records)
         self.logs_notice_source = lambda: generate_logs_notice(self.config)
 
         # And the fourth: what a merged JUnit document knows that a single

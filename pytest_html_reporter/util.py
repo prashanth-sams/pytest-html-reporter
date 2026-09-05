@@ -14,10 +14,21 @@ from urllib.parse import quote
 
 import pytest
 
+from html_page.env_link import EnvLink
 from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
 from html_page.report_link import ReportLink
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.environment import (
+    ci_run,
+    git_revision,
+    installed_packages,
+    interpreter_path,
+    os_summary,
+    packages_row,
+    python_summary,
+    worker_summary,
+)
 from pytest_html_reporter.markers import (
     OWNER_MARKER,
     OWNER_MARKER_KIND,
@@ -461,39 +472,136 @@ def generate_report_links(config):
     )
 
 
-def generate_environment_info(config):
-    uname = platform.uname()
+# ini values that mean yes, for the flags whose command-line half is a
+# store_true and whose ini half is whatever somebody typed.
+_TRUTHY = ("1", "true", "yes", "on")
+
+
+def report_packages_enabled(config):
+    """Whether to list every installed distribution in the Environment panel.
+
+    Off unless asked for. It is the only row that is three hundred entries
+    long, and the only one that publishes a full dependency inventory into a
+    file that gets attached to tickets and passed round - which is a fine thing
+    to do deliberately and a poor thing to do to everybody by default.
+    """
+    if config.getoption("report_packages", None):
+        return True
+
+    return str(_ini(config, "report_packages") or "").strip().lower() in _TRUTHY
+
+
+def env_rows(entries):
+    """The Environment panel's rows, from (label, value[, url]) entries.
+
+    An entry with a url renders as a link rather than as text, and the url goes
+    through safe_link first: most of what this panel shows now comes from
+    environment variables, and a CI system - or anything that can set one -
+    must not be able to put a javascript: href into a report somebody opens.
+    """
+    rows = ""
+
+    for entry in entries:
+        label, value = entry[0], entry[1]
+        url = safe_link(entry[2]) if len(entry) > 2 else ""
+        value = str(value).strip() or "-"
+
+        if url:
+            rows += str(EnvLink(label=escape_report_text(label),
+                                value=escape_report_text(value),
+                                url=escape_report_text(url),
+                                title=escape_report_text(url)))
+        else:
+            rows += str(EnvRow(label=escape_report_text(label),
+                               value=escape_report_text(value),
+                               title=escape_report_text(value)))
+
+    return rows
+
+
+def environment_entries(config, records=None):
+    """Every (label, value[, url]) the panel shows for a run on this machine.
+
+    Split out of generate_environment_info so that a shard can be described
+    with the same answers the panel would have shown, and so the order of the
+    rows is decided in one place: what ran (environment, build info, the CI run
+    and the commit), then what it ran on (host, os, interpreter, workers), then
+    what it was told to do (arguments, root) and finally what was installed.
+    """
     plugins = _plugin_versions(config)
     root = getattr(config, "rootpath", None) or getattr(config, "rootdir", "")
 
+    entries = []
+    environment = environment_name(config)
+    if environment:
+        entries.append(("Environment", environment))
+
+    named = build_info(config)
+    entries += named
+
+    # The build info is somebody's own answer about this run, so it wins: a
+    # team that already publishes "branch=..." through --build-info gets one
+    # Branch row, not that one and a second one from git disagreeing with it.
+    given = {str(label).strip().lower() for label, _ in named}
+
+    run = ci_run()
+    if run and "ci" not in given:
+        entries.append(("CI", run.summary))
+    if run.url and "pipeline" not in given:
+        entries.append(("Pipeline", run.url, run.url))
+
+    branch, commit = git_revision(str(root))
+    if branch and "branch" not in given:
+        entries.append(("Branch", branch))
+    if commit and "commit" not in given:
+        entries.append(("Commit", commit))
+
+    entries += [
+        ("Captured output", capture_summary(config, report_logs_mode(config))),
+        ("Host", platform.uname().node),
+        ("Platform", os_summary()),
+        ("Python", python_summary()),
+        ("Interpreter", interpreter_path()),
+        ("pytest", pytest.__version__),
+        ("Plugins", ", ".join(plugins)),
+    ]
+
+    # Only under xdist. On a serial run there is one process and saying "1
+    # worker" about it is a row that answers a question nobody asked.
+    workers = worker_summary(config, records)
+    if workers:
+        entries.append(("Workers", workers))
+
+    entries += [
+        ("Arguments", _invocation_args(config)),
+        ("Root", str(root)),
+    ]
+
+    if report_packages_enabled(config):
+        packages = packages_row(installed_packages())
+        if packages:
+            entries.append(packages)
+
+    entries.append(("Generated", datetime.now().strftime("%b %d %Y, %H:%M:%S")))
+
+    return entries
+
+
+def generate_environment_info(config, records=None):
+    """Fill the Environment panel for a run that happened in this process.
+
+    `records` is the reporter's own list, passed in only so the worker count is
+    the number of processes that actually reported results rather than the
+    number ``-n`` asked for. A caller that has none - the shim, a test - gets
+    every other row unchanged.
+    """
     ConfigVars._environment = environment_name(config)
     ConfigVars._environment_label, was_cut = environment_label(ConfigVars._environment)
     ConfigVars._environment_class = "is-truncated" if was_cut else ""
 
-    entries = []
-    if ConfigVars._environment:
-        entries.append(("Environment", ConfigVars._environment))
-    entries += build_info(config)
+    ConfigVars._environment_rows = env_rows(environment_entries(config, records))
 
-    entries += [
-        ("Captured output", capture_summary(config, report_logs_mode(config))),
-        ("Host", uname.node),
-        ("Platform", (uname.system + " " + uname.release).strip()),
-        ("Python", platform.python_version()),
-        ("pytest", pytest.__version__),
-        ("Plugins", ", ".join(plugins)),
-        ("Arguments", _invocation_args(config)),
-        ("Root", str(root)),
-        ("Generated", datetime.now().strftime("%b %d %Y, %H:%M:%S")),
-    ]
-
-    rows = ""
-    for label, value in entries:
-        value = str(value).strip() or "-"
-        rows += str(EnvRow(label=escape_report_text(label), value=escape_report_text(value),
-                           title=escape_report_text(value)))
-
-    ConfigVars._environment_rows = rows
+    return ConfigVars._environment_rows
 
 
 LOG_PHASE_ORDER = ("setup", "call", "teardown")

@@ -307,6 +307,17 @@ def pytest_addoption(parser):
              "which is what pytest's own --junitxml does), fail or skip",
     )
 
+    group.addoption(
+        "--report-packages",
+        action="store_true",
+        dest="report_packages",
+        default=False,
+        help="list every installed distribution and its version in the "
+             "Environment panel, the way pip freeze would; off by default "
+             "because it is a few hundred entries nobody reads until the day "
+             "the report is the only record of what was installed",
+    )
+
     parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
@@ -461,6 +472,12 @@ def pytest_addoption(parser):
     parser.addini(
         "report_junit_xpass",
         help="how an xpassed test is written to the JUnit xml: pass, fail or skip",
+        default="",
+    )
+
+    parser.addini(
+        "report_packages",
+        help="list every installed distribution in the Environment panel (true/false)",
         default="",
     )
 

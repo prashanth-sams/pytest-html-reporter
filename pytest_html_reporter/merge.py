@@ -45,7 +45,6 @@ import time
 from collections import OrderedDict
 from datetime import datetime
 
-from html_page.env_row import EnvRow
 from html_page.logs_notice import LogsNotice
 from pytest_html_reporter import shards
 from pytest_html_reporter.const_vars import ConfigVars, reset_config_vars
@@ -67,10 +66,12 @@ from pytest_html_reporter.shards import (
     shards_root,
 )
 from pytest_html_reporter.shim import MergeConfig
+from pytest_html_reporter.environment import CIRun, packages_row
 from pytest_html_reporter.util import (
     archive_count,
     attempt_summary,
     custom_title,
+    env_rows,
     environment_label,
     escape_report_text,
 )
@@ -561,10 +562,13 @@ class ShardMeta(object):
         self.id = bundle.shard.id
         self.label = bundle.shard.label or bundle.shard.id
         self.hostname = bundle.run.hostname
-        self.platform = bundle.run.platform
-        self.python = bundle.run.python
+        # The distribution-and-architecture string when the shard wrote one,
+        # and the kernel string every older bundle carries when it did not.
+        self.platform = bundle.run.os or bundle.run.platform
+        self.python = bundle.run.python_detail or bundle.run.python
         self.pytest = bundle.run.pytest
         self.arguments = bundle.run.arguments
+        self.workers = len([worker for worker in (bundle.run.xdist_workers or []) if worker])
 
     @property
     def summary(self):
@@ -579,6 +583,10 @@ class ShardMeta(object):
             self.platform,
             ("Python " + self.python) if self.python else "",
             ("pytest " + self.pytest) if self.pytest else "",
+            # A leg that split itself four ways and a leg that ran serially are
+            # two different runs, and on a merged report this line is the only
+            # place that difference can still be seen.
+            ("%d workers" % self.workers) if self.workers > 1 else "",
             self.arguments,
         ]
 
@@ -603,6 +611,15 @@ class RunMeta(object):
         self.capture_rows = []
         self.capture_notices = []
         self.notes = []
+
+        # What the shards said about the run itself rather than about their own
+        # machines: which CI build produced the matrix, which commit it was cut
+        # from, and - when somebody asked for it - what was installed.
+        self.ci = ''
+        self.pipeline = ''
+        self.branch = ''
+        self.commit = ''
+        self.package_rows = []
 
 
 def _unique(values):
@@ -667,7 +684,65 @@ def merge_runs(bundles):
     meta.capture_notices = [(b.shard.label or b.shard.id, b.run.capture_notice)
                             for b in bundles if b.run.capture_notice]
 
+    _merge_identity(meta, bundles)
+
     return meta
+
+
+def _ci_summary(ci):
+    """The one line a shard's recorded CI run reads as, or ''.
+
+    Rebuilt through CIRun rather than formatted here, so the row on a merged
+    report and the row on a plain one are assembled by the same code and cannot
+    drift apart. Unknown keys are dropped: a bundle from a newer version may
+    carry more than this one knows how to read, and that is not a reason to
+    refuse the four fields it does know.
+    """
+    if not isinstance(ci, dict):
+        return ''
+
+    fields = {key: str(ci.get(key) or '') for key in ('system', 'label', 'build', 'url')}
+
+    return CIRun(**fields).summary
+
+
+def _merge_identity(meta, bundles):
+    """Which build, which commit and which packages the matrix as a whole was.
+
+    Agreement is the normal case and gets one row. Disagreement is not smoothed
+    over - a matrix whose legs ran different commits is a matrix whose results
+    should not have been merged, and the panel saying both is how anybody finds
+    that out.
+    """
+    summaries = _unique(_ci_summary(b.run.ci) for b in bundles)
+    meta.ci = ", ".join(summaries)
+
+    urls = _unique(str((b.run.ci or {}).get('url') or '') if isinstance(b.run.ci, dict) else ''
+                   for b in bundles)
+    if len(urls) == 1:
+        meta.pipeline = urls[0]
+    elif urls:
+        # No single link is the honest answer here, and a link to the first
+        # shard's pipeline would be read as the whole build's.
+        meta.notes.append("shards name %d different pipelines; the panel links none of them"
+                          % len(urls))
+
+    def _git(bundle, key):
+        return str(bundle.run.git.get(key) or '') if isinstance(bundle.run.git, dict) else ''
+
+    meta.branch = ", ".join(_unique(_git(b, 'branch') for b in bundles))
+    meta.commit = ", ".join(_unique(_git(b, 'commit') for b in bundles))
+
+    listed = [(b.shard.label or b.shard.id, list(b.run.packages or [])) for b in bundles
+              if b.run.packages]
+
+    if listed and len({tuple(packages) for _, packages in listed}) == 1:
+        # One environment, described once. The label is dropped because there
+        # is nothing to tell apart - and because eight identical three-hundred
+        # entry rows is not a panel, it is a wall.
+        meta.package_rows = [('', listed[0][1])]
+    else:
+        meta.package_rows = listed
 
 
 # --------------------------------------------------------------------------
@@ -1016,14 +1091,13 @@ def _pairs(entries):
 
 
 def _env_rows(entries):
-    rows = ""
+    """The panel's rows, rendered exactly the way a plain run renders them.
 
-    for label, value in entries:
-        value = str(value).strip() or "-"
-        rows += str(EnvRow(label=escape_report_text(label), value=escape_report_text(value),
-                           title=escape_report_text(value)))
-
-    return rows
+    Kept as a name of its own because the merge's tests call it, but no longer
+    a second implementation: an entry carrying a url has to become a link here
+    too, and two row builders is how one of them quietly stops doing that.
+    """
+    return env_rows(entries)
 
 
 def merged_environment_rows(meta, opts):
@@ -1055,6 +1129,22 @@ def merged_environment_rows(meta, opts):
     given = {label for label, _ in named}
     entries += [(label, value) for label, value in meta.build_info if label not in given]
 
+    # What the shards recorded about the run they belonged to. Anything a
+    # --build-info flag already answered - on the merge or on a leg - is left
+    # alone, the same way it is on a plain run: a team that publishes its own
+    # Commit row means that one.
+    stated = {str(label).strip().lower() for label, _ in named} | \
+             {str(label).strip().lower() for label, _ in meta.build_info}
+
+    if meta.ci and "ci" not in stated:
+        entries.append(("CI", meta.ci))
+    if meta.pipeline and "pipeline" not in stated:
+        entries.append(("Pipeline", meta.pipeline, meta.pipeline))
+    if meta.branch and "branch" not in stated:
+        entries.append(("Branch", meta.branch))
+    if meta.commit and "commit" not in stated:
+        entries.append(("Commit", meta.commit))
+
     captured = _unique(row for _, row in meta.capture_rows)
     if len(captured) == 1:
         entries.append(("Captured output", captured[0]))
@@ -1070,6 +1160,16 @@ def merged_environment_rows(meta, opts):
 
     # One row per leg, and the only rows on this panel that name a machine.
     entries += [("Shard %s" % shard.label, shard.summary) for shard in meta.shards]
+
+    # Last, because it is the longest thing on the panel by two orders of
+    # magnitude and everything above it is read first.
+    for label, packages in meta.package_rows:
+        row = packages_row(packages)
+        if not row:
+            continue
+
+        name, value = row
+        entries.append(("%s (%s)" % (name, label) if label else name, value))
 
     ConfigVars._environment_rows = _env_rows(entries)
 

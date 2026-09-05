@@ -51,6 +51,14 @@ import time
 import pytest
 
 from pytest_html_reporter import __version__
+from pytest_html_reporter.environment import (
+    ci_run,
+    git_revision,
+    installed_packages,
+    interpreter_path,
+    os_summary,
+    python_summary,
+)
 from pytest_html_reporter.util import (
     _ini,
     _invocation_args,
@@ -60,6 +68,7 @@ from pytest_html_reporter.util import (
     capture_summary,
     environment_name,
     report_logs_mode,
+    report_packages_enabled,
 )
 
 
@@ -518,8 +527,15 @@ def describe_run(reporter, exitstatus):
         # this is the number somebody opening the file goes to first.
         'collected': len(reporter._collected) or _collected_count(reporter),
         'hostname': str(uname.node),
+        # Both, and not one derived from the other: 'platform' is the kernel
+        # string every bundle written before this key existed carries, and a
+        # merge reading an old bundle beside a new one has to be able to put
+        # the two legs' rows side by side without one of them going blank.
         'platform': (str(uname.system) + " " + str(uname.release)).strip(),
+        'os': os_summary(),
         'python': platform.python_version(),
+        'python_detail': python_summary(),
+        'interpreter': interpreter_path(),
         'pytest': pytest.__version__,
         'plugins': _plugin_versions(config),
         'arguments': _invocation_args(config),
@@ -536,6 +552,16 @@ def describe_run(reporter, exitstatus):
         'capture_row': capture_summary(config, report_logs_mode(config)),
         'capture_notice': capture_notice(config, report_logs_mode(config)),
         'xdist_workers': workers,
+        # Collected on the shard, like everything else here, because the merge
+        # very often runs in a job of its own: a merging step that asked its
+        # own environment which CI run this was would answer with the merge
+        # job, and a merging step running on a laptop would answer with
+        # nothing at all.
+        'ci': ci_run().as_dict(),
+        'git': dict(zip(('branch', 'commit'),
+                        git_revision(str(getattr(config, "rootpath", None)
+                                         or getattr(config, "rootdir", "") or "")))),
+        'packages': installed_packages() if report_packages_enabled(config) else [],
     }
 
 
@@ -707,6 +733,11 @@ RUN_DEFAULTS = {
     'hostname': '', 'platform': '', 'python': '', 'pytest': '', 'plugins': [],
     'arguments': '', 'rootdir': '', 'environment': '', 'build_info': [],
     'capture_row': '', 'capture_notice': '', 'xdist_workers': [],
+    # Every one of these reads as "this bundle never said" when it is absent,
+    # which is exactly what an older bundle means by leaving it out - so a
+    # matrix half-upgraded mid-migration merges without a version bump.
+    'os': '', 'python_detail': '', 'interpreter': '', 'ci': {}, 'git': {},
+    'packages': [],
 }
 
 
