@@ -1963,7 +1963,30 @@
                 .delta-highlight.is-better .delta-highlight__figure { color: var(--trend-up); }
                 .delta-highlight.is-better .delta-highlight__figure::before { content: "\25bc"; }
 
-                .delta-highlight.is-level .delta-highlight__figure { color: var(--text-label); }
+                /* No change is the one state whose figure is words, not a
+                   number (see run_delta_figure): nothing about a build that
+                   stood still can be written as a digit without reading as a
+                   count of failures. Set smaller than the signed figures - at
+                   2.1rem the phrase crowds the caption out of the narrow card
+                   - and without the negative tracking, which is a fit for
+                   numerals and not for a word. */
+                .delta-highlight.is-level .delta-highlight__figure {
+                    color: var(--text-label);
+                    font-size: 1.45rem;
+                    letter-spacing: normal;
+                }
+
+                /* Both halves of the tile are floats off the same top edge, so
+                   the smaller no-change type would otherwise sit a line above
+                   the caption it belongs to. Take the caption's own padding -
+                   5% of the same containing block, so the two track each other
+                   at every card width - less the 3px by which a 1.45rem
+                   ascender overshoots a 0.95rem one, and the phrase and
+                   "SINCE LAST BUILD" share a baseline. The signed figures are
+                   left alone: at 2.1rem they already land on that line. */
+                .delta-highlight.is-level .delta-highlight__value {
+                    padding-top: calc(5% - 3px);
+                }
 
                 .delta-highlight__unit {
                     padding-left: 0.4rem;

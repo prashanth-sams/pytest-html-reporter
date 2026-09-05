@@ -910,21 +910,28 @@ def run_delta_class(delta):
 
 
 def run_delta_figure(delta):
-    """The number on the tile: '+3', '-1', or the no-change '\u00b10'.
+    """The figure on the tile: '+3', '-1', or the words 'No change'.
 
-    Written with its sign even at zero. The tile is read as a delta, and a bare
-    "0 failures" beside "SINCE LAST BUILD" says the opposite of what it means -
-    no failures at all, rather than no change in them.
+    A moved count is written with its sign, because the tile is read as a
+    delta rather than a total. A count that did not move is not written as a
+    number at all: any figure here takes the unit beside it, and every way of
+    pairing zero with "failures" - "0 failures", "\u00b10 failures" - says the
+    opposite of what it means, that the build had no failures rather than no
+    more than last time. The words carry no unit and cannot be misread.
     """
     if delta is None:
         return ""
 
-    return "\u00b10" if delta == 0 else "%+d" % delta
+    return "No change" if delta == 0 else "%+d" % delta
 
 
 def run_delta_unit(delta, noun="failure"):
-    """The word under the figure, agreeing with it."""
-    if delta is None:
+    """The word beside the figure, agreeing with it.
+
+    Empty at no change: the figure there is already a whole phrase, and the
+    noun is exactly the half that misleads - see run_delta_figure().
+    """
+    if delta is None or delta == 0:
         return ""
 
     return noun if abs(delta) == 1 else noun + "s"

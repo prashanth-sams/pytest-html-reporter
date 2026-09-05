@@ -138,17 +138,23 @@ def test_figure_carries_its_sign():
     assert run_delta_figure(-1) == "-1"
 
 
-def test_figure_signs_no_change_too():
-    """A bare "0 failures" beside "SINCE LAST BUILD" says the opposite of what
-    it means - no failures at all, rather than no change in them."""
-    assert run_delta_figure(0) == "\u00b10"
+def test_no_change_is_words_not_a_figure():
+    """Any number here takes the unit beside it, and "0 failures" - or
+    "\u00b10 failures" - says the opposite of what it means: no failures at all,
+    rather than no change in them."""
+    assert run_delta_figure(0) == "No change"
 
 
 def test_unit_agrees_with_the_figure():
     assert run_delta_unit(3) == "failures"
     assert run_delta_unit(1) == "failure"
     assert run_delta_unit(-1) == "failure"
-    assert run_delta_unit(0) == "failures"
+
+
+def test_no_change_carries_no_unit():
+    """The figure is already a whole phrase, and the noun is the half that
+    misleads."""
+    assert run_delta_unit(0) == ""
 
 
 def test_no_figure_or_unit_without_a_delta():
