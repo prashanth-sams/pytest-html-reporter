@@ -125,7 +125,7 @@ either one of them if not needed:
 $ pytest tests/
 ```
 
-> Custom path, filename, and title
+### Report path, filename and title
 
 Add `--html-report` tag followed by path location and filename to customize the report location and filename:
 
@@ -151,6 +151,8 @@ full title kept as the heading's tooltip:
 ```
 $ pytest tests/ --html-report=./report --title='PYTEST REPORT'
 ```
+
+### Archive retention
 
 Add `--archive-count` tag followed by an integer to limit showing the number of builds in the `Archives` section:
 
@@ -181,7 +183,7 @@ so an hourly run reaches a multi-megabyte report inside a couple of months.
 A build is dated by the moment its run started, which is kept in the name of its archive file, so an age limit still
 measures the right thing after the reports have been copied into a fresh CI workspace.
 
-> Opening the report
+### Opening the report
 
 When the run finishes, the report is opened in your browser. Nothing is needed to get this - it is what the command you
 already run now does:
@@ -224,7 +226,7 @@ The browser is asked for a tab rather than a window, so a suite run over and ove
 with no browser on it is not an error: the report is written either way, and a run that could not open it still passes
 or fails on its tests alone.
 
-> Environment and build details
+### Environment and build details
 
 Add `--environment` tag followed by the environment under test; it shows as a badge beside the report title. The
 badge is capped at 10 characters and the cut tail fades out, with the full name kept in the `Environment` panel and
@@ -241,7 +243,7 @@ often as you like:
 $ pytest tests/ --environment=prod --build-info branch=main --build-info sha=$GITHUB_SHA
 ```
 
-> Captured logs
+### Captured logs
 
 Everything `pytest` captures while a test runs - `stdout`, `stderr` and `logging` output, from setup, call and
 teardown alike - is kept against that test. The `Test Metrics` table gains a `Logs` column showing how many lines a
@@ -298,7 +300,7 @@ $ pytest tests/ --report-log-limit=50000
 $ pytest tests/ --report-log-limit=0
 ```
 
-### what pytest itself has to be capturing
+#### What pytest itself has to be capturing
 
 The reporter can only keep what `pytest` hands it, and two of `pytest`'s own options decide that. Neither needs
 setting for the defaults to work - but if the `Logs` column is emptier than expected, one of these is why.
@@ -348,7 +350,7 @@ addopts = -v --capture=tee-sys
 (Stay on `-s` if you drop into `pdb`. And note `tee-sys` only tees Python's own `sys.stdout` / `sys.stderr`,
 so if the output you want comes from a subprocess or a C extension, plain `fd` capture is the one that keeps it.)
 
-### the Logs column is empty
+#### The Logs column is empty
 
 Work down this list; the first one that applies is the answer:
 
@@ -367,7 +369,7 @@ Work down this list; the first one that applies is the answer:
 The `Environment` panel states what the run kept and from which log level - e.g.
 `all tests: stdout, stderr and logging, logging from WARNING` - so you can always tell which of these you are in.
 
-> pytest.ini
+### Configuration via pytest.ini
 
 Alternate option is to add this snippet in the `pytest.ini` file:
 
@@ -451,7 +453,9 @@ the command line that turns off an ini file that has already said yes
 
 **Note:** If you fail to provide `--html-report` tag, it consider your project's home directory as the base
 
-### screenshots
+## Capturing evidence
+
+### Screenshots
 
 A test that fails while holding a Selenium driver or a Playwright page is photographed for you. No hook to write, no
 fixture to add, nothing to import - this is an ordinary browser test, and its failure reaches the report with a
@@ -483,7 +487,7 @@ $ pytest --html-report=./report --report-screenshots=all
 Every screenshot lands in two places: the `Screenshots` gallery, and the `Screens` column of the `Test Metrics`
 row it belongs to - a thumbnail on the row itself, next to the error it explains, that opens full size when clicked.
 
-#### taking the picture yourself
+#### Taking the picture yourself
 
 The automatic capture takes the page as it was when the test ended. When the moment matters - a page mid-test, a
 chart, a rendered PDF, an image diff - hand `attach` the PNG bytes yourself. It takes the image rather than the
@@ -523,7 +527,7 @@ def pytest_runtest_makereport(item, call):
     setattr(item, "rep_" + rep.when, rep)
 ```
 
-#### async tests, and unittest
+#### Async tests, and unittest
 
 The automatic capture is synchronous, so an `async` Playwright page has nowhere to await - attach from the test body
 instead. And a `unittest` suite that quits its driver in `tearDown` has already closed the browser by the time the
@@ -547,7 +551,7 @@ photographed automatically and say nothing about screenshots at all, while `test
 from a `unittest` `tearDown`. The same guidance is printed on the `Screenshots` tab itself whenever a run
 captures nothing.
 
-### api logs / attachments
+### API logs and attachments
 
 See it before you wire anything up - the bundled demo needs no browser and no network:
 
@@ -577,7 +581,7 @@ attach_json(requests.get("https://reqres.in/api/users/2").json())
 
 <img src="images/api_logs.png" alt="Screenshot" width="800">
 
-#### api calls
+#### API calls
 
 `attach_api` is the one to reach for when a test talks HTTP. Hand it a response object and it takes the call apart:
 
@@ -656,7 +660,7 @@ attach_api(response, url=upstream_url)         # override just the one field
 **Note:** a body that parses as JSON is pretty-printed, whichever way it arrived. One that does not is kept exactly as
 it came, so half a response - the interesting case when a call is cut off - is still readable.
 
-#### credentials are blanked out
+#### Credentials are blanked out
 
 A report is a build artifact. It gets published by CI, attached to tickets and pasted into chat, so `attach_api` and
 `attach_json` replace anything that looks like a credential with `<redacted>` - in the headers, in the curl
@@ -675,7 +679,7 @@ Pass `redact=False` when the report is not leaving your machine and you need the
 attach_api(response, redact=False)
 ```
 
-#### text, json and files
+#### Text, JSON and files
 
 `attach_text` takes anything at all. `format` only picks how the viewer lays the text out - it is never used to
 reinterpret what you passed - and understands `text` *(default)*, `json`, `xml`, `html`, `yaml`, `sql` and
@@ -705,7 +709,7 @@ A file holding JSON is redacted and pretty-printed like any other body - of ever
 likeliest to be carrying a credential, since a HAR is a recording of the auth headers. A file that is not structured
 is kept verbatim: there is nothing to key a redaction off, and mangling a config file would be worse than not trying.
 
-#### when to call them
+#### When to call them
 
 Like `attach`, these can be called from anywhere in the test's lifecycle: the test body, a `unittest`
 `tearDown`, a pytest fixture's teardown or a `pytest_runtest_makereport` hook. Attaching the last call only when a
@@ -736,7 +740,7 @@ module's own tests - a conftest covers every test under it, which is almost alwa
 A test that is retried by `pytest-rerunfailures` and attaches nothing on the attempt that finally passed keeps what
 the failing attempt attached, rather than losing the evidence by succeeding.
 
-#### keeping the file down
+#### Keeping the file down
 
 Attachments are held outside the metrics table, so they are never swept into its search box or into the CSV, Excel and
 print exports. Two options decide how much of them is kept at all.
@@ -763,7 +767,7 @@ with a note saying how much was dropped:
 $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 ```
 
-### test steps
+## Test steps
 
 See it before you wire anything up - the bundled demo needs no browser and no network:
 
@@ -797,7 +801,7 @@ It is a tab of its own rather than a panel inside `Test Suites`, which is where 
 The cost of folding it in is a high-level page you can no longer skim, and the high-level page is the one most people
 open first.
 
-#### a decorator, for the code the tests share
+### A decorator, for the code the tests share
 
 The methods of a page object or an API client are already the steps of every test that calls them. Decorating them
 once names all of those tests, and the arguments of the call fill in the `{placeholders}` of the title:
@@ -818,7 +822,7 @@ A step that raises is recorded as failed, with the message, and **the exception 
 on the step that actually raised; the steps it was raised inside are marked failed without repeating it, so one
 failure is printed once rather than once per level.
 
-#### async tests
+### Async tests
 
 An `async` suite writes both spellings the same way, with `await` in front of what is being timed. Nothing has to
 be installed and no setting turns it on - `pytest-asyncio`, `anyio` and `trio` all work as they are:
@@ -849,7 +853,7 @@ async with step("Fetch the catalogue"):
 Threads behave the same way and always did: a step opened in a background thread nests within that thread rather than
 under whatever the main one happened to have open.
 
-#### anything attached lands on the step
+### Anything attached lands on the step
 
 `attach_json`, `attach_api`, `attach_text` and `attach_file` need no extra argument to say which step they
 belong to - whatever is open when they are called is what they are filed under, and the step shows a paperclip:
@@ -859,7 +863,7 @@ with step("Submit credentials"):
     attach_api(requests.post(url, json=payload))
 ```
 
-#### cucumber / gherkin
+### Cucumber / Gherkin
 
 There is a demo for this half too - it needs `pytest-bdd` installed, and nothing else:
 
@@ -874,7 +878,7 @@ reads as somebody's plumbing. The feature, the scenario and the feature file are
 
 `pytest-bdd` does not have to be installed - the hooks are declared optional, so a run without it is untouched.
 
-#### every marker, and where it was written
+### Every marker, and where it was written
 
 Markers are shown in full, including the ones a test never mentions: a module-level `pytestmark`, a marker on the
 class, one added by `request.node.add_marker` while the test ran. Each says which scope it came from, which is the
@@ -885,7 +889,7 @@ Two are cut down deliberately. `parametrize` shows its argument **names** rather
 run with - this case's own row is already shown as its parameters. And a `skipif` condition is evaluated at import,
 so `sys.platform == "win32"` reaches any reporter as a bare `False`; the reason is shown instead.
 
-#### Jira, test cases and ownership
+### Jira, test cases and ownership
 
 A marker holding an id is already collected and already searchable. `report_link_pattern` is what turns it into a
 link - one `MARKER=URL` per line, where `{}` is where the marker's argument goes:
@@ -1015,7 +1019,7 @@ url, and - as everywhere else links are built from what a run said - anything ca
 
 A marker with no pattern is untouched, so a suite that configures none of this gets exactly the report it had before.
 
-#### filtering the rail by owner
+### Filtering the rail by owner
 
 Once anything carries an `owner`, the `Test Steps` rail grows a second row of filters for it - one pill per team,
 counted, busiest first, with an `Unowned` pill at the end for the tests nobody claimed. It sits apart from the
@@ -1025,7 +1029,7 @@ gives that team's failures, and the number on the pill is what the rail will sho
 
 The row is not drawn at all for a run with no owners, so nothing changes for a suite that never wrote one.
 
-#### who owns what, across builds
+### Who owns what, across builds
 
 The `Analytics` tab gains a **Who owns what** panel: one row per owner, worst first, with the tests they hold, the
 share of the suite that is, their mean pass rate, how many are failing now, how many are flaky, and where their
@@ -1052,7 +1056,7 @@ unclaimed should say so, and the line above the table does - *3 owners, and 14 o
 Ownership is written into `output.json` from this version on, which is what lets the panel read across builds.
 Builds archived by an earlier version carry no owner and are read as unclaimed rather than as anything invented.
 
-#### how much a failure matters
+### How much a failure matters
 
 `severity` is the second built-in marker, and it answers the question asked *before* "whose is this": forty failures
 at `trivial` and two at `blocker` are the same number on every other tab and are not remotely the same run. Like
@@ -1116,7 +1120,7 @@ would be arguing with the words in it - with an `Unrated` row last. Its headline
 to the tab to find out: *1 critical test failing*. As with ownership, a test's severity is read from the most recent
 build that named one, and builds archived by an earlier version are read as unrated.
 
-#### keeping the file down
+### Keeping the file down
 
 Step trees are held outside the metrics table, so they are never swept into its search box or into the CSV, Excel and
 print exports.
@@ -1142,7 +1146,9 @@ run away with the page. The cap is followed by a line saying the rest were dropp
 $ pytest --html-report=./report --report-steps=failed --report-step-limit=100
 ```
 
-### test coverage
+## Coverage and analytics
+
+### Test coverage
 
 Run with `pytest-cov` and the report grows a `Test Coverage` tab: the overall percentage as a ring, the counts beside
 it, a row per file with its missing lines, and the percentage plotted across the builds you have kept. A chip on the
@@ -1165,7 +1171,7 @@ The number is coverage.py's own, taken through its public API, so **the tab and 
 Files are listed **least covered first**, which is the order worth reading and the only defensible way to shorten the
 list on a large project.
 
-> Coverage that was measured somewhere else
+#### Coverage that was measured somewhere else
 
 The tab does not need `pytest-cov` to have run in this session. Point `--report-coverage-file` at a report that
 already exists - useful in CI, where coverage is often produced by an earlier step:
@@ -1191,7 +1197,7 @@ the reporting job is not the job that ran the tests.
 | `--report-coverage-file` | Read coverage from this file instead of looking for one |
 | `--report-coverage-limit` | Files listed in the table, least covered first: `500` *(default)*, any positive integer, or `0` for all of them |
 
-> Colour, targets and drift
+#### Colour, targets and drift
 
 The ring is green at 90% and above, amber at 75%, red below that - unless the project has stated its own bar with
 `--cov-fail-under`, in which case that is the line the colour is drawn at and the tab says so. A report should not
@@ -1205,7 +1211,7 @@ The percentage is written into `output.json` alongside the test counts, so it tr
 is what gives the tab its `+0.8 since the last build` and its trend line. A build that ran without coverage leaves a
 gap in that line rather than a drop to zero.
 
-> The annotated source
+#### The annotated source
 
 The one thing a summary cannot replace is the source, line by line, with the missed lines marked. Generate it and the
 tab links to it:
@@ -1223,7 +1229,7 @@ an empty frame wherever the folder did not travel with it. The link is offered o
 
 <img src="images/test_coverage_list.png" alt="Test Coverage List" width="800">
 
-### the Test Coverage tab is empty
+#### The Test Coverage tab is empty
 
 Work down this list; the first one that applies is the answer:
 
@@ -1241,7 +1247,7 @@ Work down this list; the first one that applies is the answer:
 Whichever source the numbers do come from, the tab states it - `Measured by pytest-cov during this run`, or
 `Read from coverage.xml, written 2026-08-31 20:23` - so you can always tell which of these you are in.
 
-### delta vs the previous build
+### Delta vs the previous build
 
 Once there is a build to compare against, the `Highlights` card gains a second entry saying which way the suite is
 moving - `▲ +3 failures` over `SINCE LAST BUILD`, red when there are more failures than last time and green with a
@@ -1257,7 +1263,7 @@ read off the same per-build list, so the two can never disagree. No change is wr
 compare against, and the whole entry - caption included - is left out rather than showing `no change` against a build
 that does not exist.
 
-### analytics
+### Analytics
 
 The `Dashboard` answers *how did this run go?*. The `Analytics` tab answers *how does this test behave?*, which no
 single run can - so it reads every build you have kept and lines them up per test. Nothing to install, nothing to
@@ -1311,7 +1317,9 @@ empty axes.
 Per-test durations are recorded into `output.json` from this version on, so the duration panels fill from the run
 that produced them; builds archived by an earlier version are read as *not measured* rather than as instant.
 
-### custom side-nav links
+## Customising the report
+
+### Custom side-nav links
 
 `--report-link` adds an entry to the report's side nav pointing at any page you like - the annotated coverage
 source, a CI job, a Grafana board, an internal wiki page. Repeat it as often as you need:
@@ -1328,7 +1336,9 @@ round, and a nav entry has no business being able to run something in whoever op
 
 <img src="images/side_nav.png" alt="Side Nav" width="300">
 
-### parallel runs
+## Running at scale
+
+### Parallel runs
 
 Runs distributed with `pytest-xdist` are gathered into a single report. Every worker sends its results back to the
 controller, which merges them and writes one report - one build in `Archives`, one set of totals, one row per test -
@@ -1345,7 +1355,7 @@ reads the same as a serial one. Nothing needs to be configured, and running with
 **Note:** results are handed over when a worker finishes, so tests from a worker that crashes outright (rather than
 failing) are not in the report - pytest reports the crash itself
 
-### sharded runs
+### Sharded runs
 
 `-n` splits a suite across the cores of one machine and needs nothing configured. Splitting the same suite across
 four machines is the case where something does: each of those four processes knows a quarter of the run, and not one
@@ -1422,7 +1432,7 @@ directories holding them, and the merge combines them itself when the `coverage`
 neither is given, the `Coverage` tab says which of the shards measured anything and what to run instead. A build
 that measured nothing is recorded as *not measured*, never as zero.
 
-> when the same test ran in two shards
+#### When the same test ran in two shards
 
 A matrix that overlaps, a leg re-run by hand, a `-k` expression that selects a test twice - each of them ends with
 one node id in two bundles, and something has to decide which of the two the report shows. `--on-duplicate` is that
@@ -1448,7 +1458,7 @@ Collection errors are not duplicates and are not counted as any. Every process c
 that will not import is *expected* to be reported by all four legs; those fold to one row without a word, and an
 `ERROR` from one leg beats a `SKIP` from another - a file that failed to import on one machine failed to import.
 
-> a persistent shards/ directory
+#### A persistent shards/ directory
 
 The four-machine flow hands the merge exactly this run's artifacts and has none of the following problem. The
 sequential flow has it, because every leg is pointed at one persistent `--html-report` and `<report>/shards`
@@ -1528,7 +1538,7 @@ against a sibling leg still writing. Two legs running at once into one `--html-r
 bundles - separate directories, each written atomically - but a merge that starts while another leg is still going
 renders whatever had landed by then. If the legs are concurrent, use the four-machine flow and merge once at the end.
 
-> what the merge tells you
+#### What the merge tells you
 
 `merge` prints what it merged, what it decided and where it wrote, and answers with one of three exit codes. `2`
 means nothing was produced at all: a usage error, no bundles found under the paths given (which are named back,
@@ -1553,7 +1563,7 @@ they would produce, with `--json` for a machine to read it - the fastest way to 
 arrive, and are they the four I think" before anything is built. `merge --dry-run` asks the same question of the
 whole merge.
 
-### junit xml
+### JUnit XML
 
 Most CI systems read a JUnit XML and know nothing about an HTML page: it is what puts a failed test on a merge
 request, in a test-results tab, in a flaky-test history. `--report-junit` writes one from the same records the
@@ -1645,7 +1655,7 @@ staged screenshots relative to the XML.
 while the HTML report is written only when there is something to put in it. A pipeline step that publishes both will
 see one arrive without the other in that case, which is the one place the two outputs do not track each other.
 
-### Is there a demo available for this gem?
+## Is there a demo available for this gem?
 
 Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter:
 
