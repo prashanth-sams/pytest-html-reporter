@@ -1729,12 +1729,7 @@ $ pytest tests/functional/
 
 ## Sponsor
 
-<a href="https://pickoh.com/">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/pickoh-light.png">
-    <img alt="PICKOH" src="images/pickoh.png" width="200">
-  </picture>
-</a>
+<a href="https://pickoh.com/"><img alt="PICKOH" src="images/pickoh-badge.png" width="220"></a>
 
 `pytest-html-reporter` is sponsored by **[PICKOH](https://pickoh.com/)** - map the countries you have
 visited, plan trips, and join destination communities for weather, tips and attractions.
