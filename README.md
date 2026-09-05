@@ -12,6 +12,15 @@
 
 ## Features
 
+<p align="left">
+  <a href="https://prashanth-sams.github.io/pytest-html-reporter.github.io/report/pytest_html_report.html#dashboard">
+    <img
+      src="https://img.shields.io/badge/Live%20Report-View%20Demo-brightgreen?style=for-the-badge&logo=pytest&logoColor=white"
+      alt="View Live Report"
+    />
+  </a>
+</p>
+
 | Feature | Description |
 |---|---|
 | Generic information | Overview, environment, trends, highlights—including the most failed suite and failure delta—and detailed test-suite information. |
