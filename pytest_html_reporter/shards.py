@@ -158,11 +158,15 @@ RECORD_DEFAULTS = {
     'duration': 0.0, 'rerun': 0, 'index': 0, 'worker': '',
     'screenshots': [], 'logs': [], 'attachments': [], 'steps': [],
     'phases': {}, 'meta': {}, 'bdd': None, 'xfail_reason': '',
+    # The outcome of every attempt this record stands for. Absent from every
+    # bundle written before the trail existed, which read back as a rerun count
+    # with nothing behind it - which is what an empty list renders as.
+    'attempts': [],
 }
 
 _STRING_FIELDS = ('suite_name', 'test_name', 'nodeid', 'status', 'message', 'worker', 'xfail_reason')
 _INT_FIELDS = ('index', 'rerun')
-_LIST_FIELDS = ('screenshots', 'logs', 'attachments', 'steps')
+_LIST_FIELDS = ('screenshots', 'logs', 'attachments', 'steps', 'attempts')
 _DICT_FIELDS = ('phases', 'meta')
 
 

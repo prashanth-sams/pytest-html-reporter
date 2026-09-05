@@ -1,4 +1,4 @@
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 from .attachments import attach_api, attach_file, attach_json, attach_text
 from .steps import step

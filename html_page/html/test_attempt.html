@@ -1,0 +1,13 @@
+<div class="attempt attempt--%(key)% %(final)%">
+    <div class="attempt__head">
+        <span class="attempt__n">%(label)%</span>
+        <span class="attempt__status">%(status)%</span>
+        <span class="attempt__dur">%(dur)%</span>
+        <span class="attempt__worker">%(worker)%</span>
+        <span class="attempt__tag">%(tag)%</span>
+    </div>
+    <!-- Empty on an attempt that passed, and hidden by :empty rather than by a
+         second template: a passing attempt has nothing to say, and an empty box
+         under it reads as output that failed to load. -->
+    <pre class="attempt__msg">%(msg)%</pre>
+</div>

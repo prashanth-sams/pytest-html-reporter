@@ -771,6 +771,59 @@ def test_a_duplicate_nodeid_folds_as_a_rerun_by_default(tmp_path):
     assert [fold["nodeid"] for fold in result.folds] == ["tests/test_a.py::test_flaky"]
 
 
+def test_a_duplicate_nodeid_keeps_what_each_shard_saw(tmp_path):
+    """The fold counts the attempts, and the trail says what they did.
+
+    A test that failed on one shard and passed on another leaves a row saying
+    PASS with no message of its own, so the failure is only anywhere in the
+    report if the dropped attempt was kept.
+    """
+    _bundle(tmp_path / "shards", "s1",
+            [_record("tests/test_a.py", "test_flaky", "FAIL", 0, message="connection refused")])
+    _bundle(tmp_path / "shards", "s2", [_record("tests/test_a.py", "test_flaky", "PASS", 0)])
+
+    kept, = _merged([tmp_path / "shards"]).tests
+
+    assert kept["status"] == "PASS"
+    assert [(a["status"], a["message"]) for a in kept["attempts"]] == [("FAIL", "connection refused")]
+    assert kept["rerun"] == len(kept["attempts"]) == 1
+
+
+def test_a_shard_that_already_folded_a_retry_keeps_both_its_attempts(tmp_path):
+    """Two folds stack: the retry inside a shard, then the shards themselves.
+
+    The count has always summed both. The trail has to as well, or a report can
+    say four attempts and show two.
+    """
+    retried = _record("tests/test_a.py", "test_flaky", "FAIL", 0, message="third", rerun=2)
+    retried["attempts"] = [
+        {"status": "FAIL", "message": "first", "duration": 0.0, "worker": ""},
+        {"status": "FAIL", "message": "second", "duration": 0.0, "worker": ""},
+    ]
+
+    _bundle(tmp_path / "shards", "s1", [retried])
+    _bundle(tmp_path / "shards", "s2", [_record("tests/test_a.py", "test_flaky", "PASS", 0)])
+
+    kept, = _merged([tmp_path / "shards"]).tests
+
+    assert [a["message"] for a in kept["attempts"]] == ["first", "second", "third"]
+    assert kept["rerun"] == len(kept["attempts"]) == 3
+
+
+def test_the_policies_that_keep_one_attempt_leave_the_trail_alone(tmp_path):
+    """first, last and worst are 'this shard's answer', not a fold.
+
+    Manufacturing a trail under them would report attempts the chosen record
+    never made.
+    """
+    _bundle(tmp_path / "shards", "s1", [_record("tests/test_a.py", "test_flaky", "FAIL", 0)])
+    _bundle(tmp_path / "shards", "s2", [_record("tests/test_a.py", "test_flaky", "PASS", 0)])
+
+    for policy in ("first", "last", "worst"):
+        kept, = _merged([tmp_path / "shards"], on_duplicate=policy).tests
+        assert kept["attempts"] == [], policy
+
+
 def test_a_duplicate_nodeid_does_not_depend_on_rerunfailures(tmp_path, monkeypatch):
     """The answer is the same whatever happens to be installed on this machine.
 

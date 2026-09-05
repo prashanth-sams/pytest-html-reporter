@@ -853,6 +853,72 @@ def count_log_lines(sections):
 
 
 # --------------------------------------------------------------------------
+# the rerun trail
+# --------------------------------------------------------------------------
+
+
+def attempt_seconds(value):
+    """One attempt's duration as a number, from whatever the record carries.
+
+    Tolerant rather than strict, for the reason normalise_record is: the
+    attempts inside a bundle are checked as a list and not each one as a
+    record, so a duration that cannot be read is a decoration on a panel and no
+    reason to lose the report the tests have already paid for.
+    """
+    try:
+        return round(float(value or 0), 2)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def attempt_summary(record):
+    """One superseded attempt, reduced to what the trail shows.
+
+    A fold keeps the attempt that stuck and nothing else, so the outcome of
+    every attempt before it - which is the whole question a flaky test raises -
+    has to be copied out before the survivor replaces it.
+
+    Four fields rather than the record: a record carries its logs, screenshots,
+    steps and attachments, and a shard bundle is the record list exactly as it
+    stands in memory, so keeping whole attempts would multiply the size of
+    every bundle a matrix uploads by the number of times its flakiest tests
+    were retried. The panel renders these four and nothing else.
+    """
+    return {
+        "status": str(record.get("status") or ""),
+        "message": str(record.get("message") or ""),
+        "duration": attempt_seconds(record.get("duration")),
+        "worker": str(record.get("worker") or ""),
+    }
+
+
+def status_tone(status):
+    """The class suffix a status is drawn with.
+
+    The rule the table's own status pills are built with in the page's
+    javascript - lowercased, letters only - repeated here so an attempt in the
+    trail is the same colour as the row it belongs to. A status this version
+    has never heard of reduces to something no rule matches, which is the
+    neutral pill rather than an unstyled one.
+    """
+    return re.sub(r"[^a-z]", "", str(status or "").lower())
+
+
+def attempt_trail(superseded, record):
+    """The attempts behind one fold, oldest first.
+
+    Either side may already stand for several - an xdist worker sends back a
+    record folded on the worker, and a shard artifact carries one folded in the
+    run that produced it - so both lists are kept and the record being replaced
+    goes between them: it ran after its own attempts and before the one that is
+    replacing it now.
+    """
+    return (list(superseded.get("attempts") or [])
+            + [attempt_summary(superseded)]
+            + list(record.get("attempts") or []))
+
+
+# --------------------------------------------------------------------------
 # delta vs the previous build
 # --------------------------------------------------------------------------
 

@@ -1,8 +1,8 @@
 # pytest-html-reporter
 
 [![Downloads](https://pepy.tech/badge/pytest-html-reporter)](https://pepy.tech/project/pytest-html-reporter)
-[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.1)](https://badge.fury.io/py/pytest-html-reporter)
-[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.1)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.1)
+[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.2)](https://badge.fury.io/py/pytest-html-reporter)
+[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.2)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.2)
 [![Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter](https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg)](https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Documentation](https://img.shields.io/badge/docs-pytest--html--reporter-blue)](https://prashanth-sams.github.io/pytest-html-reporter.github.io/)
 
@@ -36,7 +36,7 @@
 | Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. |
 | Light and Dark Themes | Provides a side-navigation theme switch that remembers the user's choice and follows the operating-system theme until changed. |
 | Custom Side-Navigation Links | Adds links to custom pages directly within the report's side navigation. |
-| Test Reruns | Supports rerun results and preserves retry information in the generated report. |
+| Test Reruns | Reports a retried test as one row carrying the outcome that stuck, and keeps every attempt behind it - open the rerun count to see what each one failed with. |
 | Parallel Execution | Supports parallel test execution using `pytest-xdist`. |
 | Sharded and Cross-Machine Runs | Combines test shards from parallel machines or sequential stages using `pytest-html-reporter merge`, producing one set of totals, one archived build, and one JUnit XML file. |
 | JUnit XML | Generates JUnit XML results from regular, parallel, and sharded test runs for integration with CI test-result systems. |
@@ -137,6 +137,7 @@ which suits your project; it is kept up to date in the
 |  | Coverage measured in an earlier job | ❌ | ❌ | ✅ |
 | xdist | One report from a pytest-xdist run | ✅ | ✅ | ✅ |
 |  | Reruns and retries | ✅ | ✅ | ✅ |
+|  | What each attempt failed with | ❌ | ❌ | ✅ |
 | Multi-machine sharding | Shards merged into a single build | ❌ | ✅ | ✅ |
 |  | The merge runs after the shards finish | ❌ | ✅ | ✅ |
 | JUnit XML | Written by the same run | ❌ | ❌ | ✅ |
@@ -821,6 +822,43 @@ with a note saying how much was dropped:
 ```
 $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 ```
+
+### Reruns, and what each attempt did
+
+A test retried by `pytest-rerunfailures` is reported as **one row carrying the outcome that stuck**, with the attempts
+it took in the `Rerun` column. That is the honest shape - a test that passes on its third go passed - but on its own it
+throws away the only interesting thing about a flaky test: the row shows the message of the attempt that stuck, and an
+attempt that stuck by passing has no message at all.
+
+So the count is also a button. Click it and the panel lists every attempt in order - what each one did, how long it
+took, and the full error it failed with - ending on the attempt the row itself is showing, marked `kept`:
+
+```
+Attempt 1   FAIL   0.31s
+    AssertionError: connection refused: could not connect to postgres on localhost:5432
+      the container was still starting when the fixture handed back
+
+Attempt 2   FAIL   0.28s
+    ValueError: stale cache handed back order #7 after the write to #8
+
+Attempt 3   PASS   0.30s                                                    KEPT
+```
+
+Two failures for two different reasons is a different bug report from the same failure twice, and neither is visible
+from a row that says `PASS  2`. The panel's **Copy** button hands the whole trail over in the shape above, for pasting
+into an issue.
+
+The count and the trail are two spellings of one fact and always agree. This holds across both folds - a retry inside
+one process, and a node id that ran in [two shards](#when-the-same-test-ran-in-two-shards) - so a test retried twice on
+a shard that then ran again on another machine reports four attempts and shows four. Under `-n`, each attempt also says
+which xdist worker ran it.
+
+A test that ran once has no trail, and its `Rerun` cell stays the plain `0` it has always been. So does a build
+[archived](#archive-retention) before this version: the count was stored, the attempts behind it were not, and offering
+an empty panel would be worse than offering none.
+
+Nothing needs enabling. `--reruns`, the `reruns` ini key, `@pytest.mark.flaky(reruns=n)` and `--only-rerun` are all read
+the same way - by counting the attempts that actually happened, which is the only signal that survives them disagreeing.
 
 ## Test steps
 

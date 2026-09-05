@@ -69,6 +69,7 @@ from pytest_html_reporter.shards import (
 from pytest_html_reporter.shim import MergeConfig
 from pytest_html_reporter.util import (
     archive_count,
+    attempt_summary,
     custom_title,
     environment_label,
     escape_report_text,
@@ -452,6 +453,18 @@ def merge_records(streams, on_duplicate='merge', notes=None, folds=None):
             # stand for several - that is what a rerun-folded record is. The
             # ones being dropped are attempts too, hence the + (len - 1).
             keep['rerun'] = sum(int(member['rerun']) for member in members) + (len(members) - 1)
+
+            # And what those attempts did, so a test that failed on one shard
+            # and passed on another can still say what it failed with. Shard
+            # order, not clock order: the shards ran at the same time on
+            # different machines, so there is no true order to put them in, and
+            # the survivor's own retries come last because they came before the
+            # outcome the row now shows.
+            trail = []
+            for member in members[:-1]:
+                trail.extend(member.get('attempts') or [])
+                trail.append(attempt_summary(member))
+            keep['attempts'] = trail + list(kept.get('attempts') or [])
 
             # Back-fill only what the survivor is missing, from the latest
             # loser that has it, exactly as store_test_record does for a retry:

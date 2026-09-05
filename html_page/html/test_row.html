@@ -7,7 +7,19 @@
         style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(name)%</td>
     <td>%(stat)%</td>
     <td>%(dur)%</td>
-    <td class="metric-num metric-rerun"><span class="metric-pill">%(rerun)%</span></td>
+    <!-- The count opens the trail behind it when there is one, and reads as a
+         plain figure when the test ran once - which is nearly every row. One
+         element either way, not a button beside a span: the cell's text is
+         what the search index and every CSV, Excel and print export take, and
+         two spellings of the count would put the number in each of them twice.
+         data-attempts is what the two appearances key off, and it is the
+         attempt count rather than the rerun count so that an archive written
+         before the trail existed - a count with nothing stored behind it -
+         stays a plain figure instead of offering an empty panel. -->
+    <td class="metric-num metric-rerun rerun-cell" data-attempts="%(attempt_count)%">
+        <button type="button" class="metric-pill rerun-btn" onclick="showAttemptsFor('%(runt)%')"
+                title="See what happened on every attempt">%(rerun)%</button>
+    </td>
     <!-- The last few characters of a cut message fade out instead of ending in
          an ellipsis. The ellipsis is still here, hidden: a CSV and a print-out
          carry the cell's text and cannot carry a gradient, and a message that
