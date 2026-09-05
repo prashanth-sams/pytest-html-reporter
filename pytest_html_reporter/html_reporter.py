@@ -52,7 +52,11 @@ from pytest_html_reporter.util import (
     archive_since,
     archive_cutoff,
     expired_archives,
+    generate_link_patterns,
     generate_report_links,
+    record_owners,
+    record_severity,
+    trace_markers,
     generate_run_delta,
 )
 from pytest_html_reporter.step_report import generate_steps_view
@@ -166,10 +170,27 @@ class HTMLReporter(object):
         self.steps_mode = report_steps_mode(config)
         ConfigVars._step_limit = report_step_limit(config)
 
+        # Which markers are links, and where they point. Resolved now for the
+        # same reason the step limit is: the Test Steps tab draws these badges
+        # from build_report(), which runs several frames below the last place
+        # that still has a config in its hands.
+        generate_link_patterns(config)
+
+        # The same names again, for the JUnit xml. That document is what the
+        # test-management tools actually read, and it is written before the
+        # page is built - so the set is settled here rather than dug back out
+        # of the rendered badges.
+        self.trace_markers = trace_markers(ConfigVars._link_patterns)
+
         # How long each of setup, call and teardown took, per test. This is
         # what fills the Test Steps tab for a suite that never named a step of
         # its own: every test has these three, whether or not it has any more.
         self._phase_ms = {}
+
+        # When the test currently running started, on this object rather than
+        # on ConfigVars: the fallback for a duration has to be a clock nothing
+        # else in the process is allowed to reach.
+        self._test_start = None
 
         # Age-based retention, alongside --archive-count. A run on a schedule
         # wants "the last 30 days": a build count has to be retuned every time
@@ -350,8 +371,7 @@ class HTMLReporter(object):
         ConfigVars._test_name = item.name
         set_phase('teardown')
 
-        _test_end_time = time.time()
-        ConfigVars._duration = _test_end_time - ConfigVars._start_execution_time
+        ConfigVars._duration = self._test_duration()
 
         # Before the yield, because the fixture finalizers run inside it and the
         # one that quits the browser is usually the first of them. This is the
@@ -370,8 +390,30 @@ class HTMLReporter(object):
 
         self.append_test_record(item)
 
+    def _test_duration(self):
+        """How long the test that just ran took, in seconds.
+
+        Summed from the timings pytest itself reported for setup, call and
+        teardown, not measured against a clock here. This used to be
+        ``time.time() - ConfigVars._start_execution_time``, and that start is
+        process-global state a merge writes to as well - so a test that merged
+        a shard bundle while it ran was billed every second since the epoch,
+        which is how a two-millisecond unit test reached the slowest-tests
+        chart at 1788535128s and took the whole tab's totals with it.
+
+        The clock is still the fallback, for a record whose phases never
+        arrived - and it is this object's own, which no other module touches.
+        """
+        if self._phase_ms:
+            return sum(self._phase_ms.values()) / 1000.0
+
+        if not self._test_start: return 0.0
+
+        return max(0.0, time.time() - self._test_start)
+
     def pytest_runtest_setup(self, item):
-        ConfigVars._start_execution_time = time.time()
+        self._test_start = time.time()
+        ConfigVars._start_execution_time = self._test_start
         self._log_sections = {}
 
         # A retry runs the whole protocol again, so these are emptied per
@@ -568,6 +610,7 @@ class HTMLReporter(object):
                 timestamp=self._sessionstarttime,
                 time=execution_time,
                 report_base=self.report_path[0],
+                trace_markers=self.trace_markers,
             )
         except Exception as error:
             sys.stderr.write("pytest-html-reporter: --report-junit could not write %s: %s\n"
@@ -784,6 +827,11 @@ class HTMLReporter(object):
         # that phase, which is after the record was built - so the tab would
         # otherwise show every test tearing down in no time at all.
         record['phases'] = dict(self._phase_ms)
+
+        # And the duration with it, for the same reason: measured over the
+        # three phases, a test's time is only complete once the third of them
+        # has been reported.
+        record['duration'] = round(self._test_duration(), 2)
 
     def append_test_record(self, item):
         """Store one finished test as a plain dict.
@@ -1331,6 +1379,16 @@ class HTMLReporter(object):
                 # show. Archives written before this simply have no key, and
                 # are read as "not measured" rather than as zero.
                 'duration': record['duration'],
+                # And for the same reason again: the owner roll-up is a
+                # cross-build table, so ownership has to be in the file before
+                # it can ever be read across files. Builds archived before this
+                # version carry no key and are read as unowned, which is what
+                # they were as far as any report could tell.
+                'owner': record_owners(record),
+                # One string, or '' for a test nobody rated - including every
+                # test in every build archived before severity existed, which
+                # is the same thing as far as any reader can tell.
+                'severity': record_severity(record),
             }
 
         self.json_data['content']['suites'][suite_index] = {
@@ -1451,7 +1509,6 @@ class HTMLReporter(object):
             vendor_assets=vendor_assets(),
             icon_styles=icon_styles(),
             favicon=image('favicon.png'),
-            loader_image=image('loader.gif'),
             custom_logo=logo_url,
             execution_time=str(ConfigVars._execution_time),
             title=escape_report_text(ConfigVars._title),
@@ -1480,7 +1537,6 @@ class HTMLReporter(object):
             test_suites_error=str(ConfigVars._test_error_list),
             archive_status=str(ConfigVars._archive_tab_content),
             archive_body_content=str(ConfigVars._archive_body_content),
-            archive_count=str(ConfigVars._archive_count),
             archives=str(ConfigVars.archives),
             max_failure_suite_name_final=escape_report_text(ConfigVars.max_failure_suite_name_final),
             max_failure_suite_count=str(ConfigVars.max_failure_suite_count),
@@ -1516,6 +1572,12 @@ class HTMLReporter(object):
             analytics_faults=str(ConfigVars._analytics_faults),
             analytics_fault_note=escape_report_text(ConfigVars._analytics_fault_note),
             analytics_fault_state=str(ConfigVars._analytics_fault_state),
+            analytics_owners=str(ConfigVars._analytics_owners),
+            analytics_owner_note=escape_report_text(ConfigVars._analytics_owner_note),
+            analytics_owner_state=str(ConfigVars._analytics_owner_state),
+            analytics_severities=str(ConfigVars._analytics_severities),
+            analytics_severity_note=escape_report_text(ConfigVars._analytics_severity_note),
+            analytics_severity_state=str(ConfigVars._analytics_severity_state),
             environment_rows=str(ConfigVars._environment_rows),
             environment=escape_report_text(ConfigVars._environment_label),
             environment_title=escape_report_text(ConfigVars._environment),
@@ -1553,7 +1615,14 @@ class HTMLReporter(object):
 
     def generate_json_data(self, base):
         self.json_data['date'] = self._date()
-        self.json_data['start_time'] = ConfigVars._start_execution_time
+        # Not ConfigVars._start_execution_time: every pytest_runtest_setup
+        # overwrites that, so the build was stamped with the moment its last
+        # test started setting up. Analytics orders builds on this number and
+        # labels every point on its charts with it, so the trend read as a run
+        # that happened minutes after it did. _build_time is what a merge sets
+        # to the matrix's own start; a plain run has the session's.
+        self.json_data['start_time'] = (
+            self._build_time or self._sessionstarttime or ConfigVars._start_execution_time)
         self.json_data['total_suite'] = len(ConfigVars._test_suite_name)
 
         suite = self.json_data['content']['suites']
@@ -1615,6 +1684,20 @@ class HTMLReporter(object):
             json.dump(self.json_data, outfile)
 
     def update_archives_template(self, base):
+        # Emptied first, for the reason update_trends() is: these live on the
+        # class, and the archive section is rebuilt from what is on disk, so
+        # anything a render earlier in this process left behind does not belong
+        # in it. That leftover build was drawn as a second "build #1" above the
+        # real one - numbered from a stale _archive_count - and its body
+        # carried a canvas with an id the real newest build also had. Two
+        # canvases, one id: the chart drawn into the phantom read the real
+        # build's figures, so a build showing 7 tests was charted as 1526.
+        # Rebound rather than cleared in place, so a caller holding the old
+        # container - the suite's own isolation fixtures do - keeps it.
+        ConfigVars._archive_tab_content = ""
+        ConfigVars._archive_body_content = ""
+        ConfigVars.archives = {}
+
         f = glob.glob(base + '/archive/*.json')
         cf = glob.glob(base + '/output.json')
         if len(f) > 0:
@@ -1706,6 +1789,25 @@ class HTMLReporter(object):
                 ConfigVars._archive_body_content += str(_archive_body_text)
 
     def update_trends(self, base):
+        """Build the per-build lists the Trends chart and the delta read from.
+
+        This build first, then the archived builds newest first.
+        """
+        # Emptied first, because the appends below add to lists that live on
+        # the class. Anything that rendered earlier in this process - an
+        # in-process merge, an embedding that renders twice - left its own
+        # point behind, and it sat at index 0, which is the slot this build's
+        # point belongs in. The chart then drew a build that was not this one
+        # as the newest, and generate_run_delta() read "+1 failure since last
+        # build" off it while the ring above said nothing had failed: the ring
+        # counts this run's records, the delta counted a stranger's. Rebound
+        # rather than cleared in place, so a caller holding the old list - the
+        # suite's own isolation fixtures do - keeps what it was holding.
+        ConfigVars.trends_label = []
+        ConfigVars.tpass = []
+        ConfigVars.tfail = []
+        ConfigVars.tskip = []
+        ConfigVars.tcoverage = []
 
         f2 = glob.glob(base + '/output.json')
         with open(f2[0]) as json_file:

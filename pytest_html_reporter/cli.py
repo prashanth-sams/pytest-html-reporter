@@ -54,7 +54,13 @@ from pytest_html_reporter.merge import (
     provenance_lines,
 )
 from pytest_html_reporter.shim import MergeConfig
-from pytest_html_reporter.util import archive_count, archive_days, archive_since
+from pytest_html_reporter.util import (
+    archive_count,
+    archive_days,
+    archive_since,
+    parse_link_patterns,
+    trace_markers,
+)
 
 
 PROG = "pytest-html-reporter"
@@ -318,6 +324,7 @@ def _junit_options(result, opts, report_base, quiet):
         logging=opts.junit_logging,
         attachments=opts.junit_attachments,
         report_base=report_base,
+        trace_markers=trace_markers(parse_link_patterns(opts.report_link_pattern)),
         stream=_Silence() if quiet else sys.stderr,
     )
 
@@ -818,6 +825,12 @@ def build_parser():
     merge.add_argument(
         "--report-link", action="append", default=[], metavar="LABEL=URL",
         help="a link in the report's nav; repeatable")
+
+    merge.add_argument(
+        "--report-link-pattern", action="append", default=[], metavar="MARKER=URL",
+        help="turn a marker into a link on the test it is written on, where {} is "
+             "the marker's argument, e.g. 'jira=https://acme.atlassian.net/browse/{}'; "
+             "repeatable")
 
     merge.add_argument(
         "--archive-count", default="", metavar="N",

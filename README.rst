@@ -6,12 +6,12 @@ pytest-html-reporter
    :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
    :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.0
+.. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.1
     :target: https://badge.fury.io/py/pytest-html-reporter
     :alt: PyPI version
 
-.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.0
-    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.0
+.. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.1
+    :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.1
 
 .. image:: https://pepy.tech/badge/pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter
@@ -36,7 +36,7 @@ Features
   - Highlights - the most failed suite, and the failure delta since the last build
   - Test suite details
 * Analytics - flaky tests, standing failures, failures grouped by exception, pass-rate drift and where the run's time goes, read across every archived build
-* Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did
+* Test Steps - the named, timed pieces a test is made of, nested, drilling down from the suite to the test to what it did; ``async`` suites included, where work run concurrently comes back as the siblings it was
 * Cucumber / Gherkin - ``pytest-bdd`` scenarios need no changes at all: their Given / When / Then arrive as steps on their own, each timed and carrying what its parser pulled out of the line, with the feature, the scenario and its tags named alongside
 * Markers in full - including a module-level ``pytestmark``, one on the class, and one added while the test ran, each saying which scope it came from
 * Archives / History
@@ -342,6 +342,9 @@ Alternate option is to add this snippet in the ``pytest.ini`` file::
     report_link =
         Coverage=htmlcov/index.html
         CI job=https://ci.example.com/job/42
+    report_link_pattern =
+        jira = https://acme.atlassian.net/browse/{}
+        testcase = https://acme.testrail.io/index.php?/cases/view/{}
     report_shard =
     report_shard_merge = false
     report_shard_run =
@@ -359,6 +362,10 @@ turn the browser off once for everybody rather than in every command.
 
 ``report_link`` takes one ``Label=URL`` per line and, like ``build_info``, adds to whatever ``--report-link`` passes
 rather than being replaced by it.
+
+``report_link_pattern`` takes one ``MARKER=URL`` per line, where ``{}`` is where the marker's argument goes, and turns
+that marker into a link on every test carrying it - see `Jira, test cases and ownership`_. It adds to whatever
+``--report-link-pattern`` passes, the same way.
 
 ``html_report`` takes the same value as ``--html-report``, placeholders included, and is the way to set the report
 location without going through ``addopts``.
@@ -380,7 +387,8 @@ keys take ``1``, ``true``, ``yes`` or ``on``.
 
 **Note:** ``--html-report`` overrides the ``html_report`` ini value; ``--environment`` overrides the ``environment``
 ini value; ``--build-info`` entries are added to the ones set in the ini file rather than replacing them;
-``--report-link`` entries are added to the ones set in the ini file the same way; ``--archive-count``,
+``--report-link`` and ``--report-link-pattern`` entries are added to the ones set in the ini file the same way;
+``--archive-count``,
 ``--archive-days``, ``--archive-since``, ``--report-logs``, ``--report-log-limit``, ``--report-attachments``,
 ``--report-attachment-limit``, ``--report-screenshots``, ``--report-coverage``, ``--report-coverage-file``,
 ``--report-coverage-limit``, ``--report-shard``, ``--report-shard-run``, ``--report-junit`` and
@@ -755,6 +763,34 @@ A step that raises is recorded as failed, with the message, and **the exception 
 on the step that actually raised; the steps it was raised inside are marked failed without repeating it, so one
 failure is printed once rather than once per level.
 
+async tests
+"""""""""""""""""""""""""""
+
+An ``async`` suite writes both spellings the same way, with ``await`` in front of what is being timed. Nothing has to
+be installed and no setting turns it on - ``pytest-asyncio``, ``anyio`` and ``trio`` all work as they are::
+
+    @step("Send the notification")
+    async def notify(user):
+        await mailer.send(user)
+
+    async def test_checkout():
+        async with step("Check out"):
+            await cart.pay()
+
+The step is held open across everything awaited inside it, so ``@step`` on an ``async def`` times **the call**, not
+the building of its coroutine - which also means an async step that raises is recorded as failed, with its message,
+rather than passing at nought milliseconds before the work has run.
+
+Work run **concurrently comes back as the siblings it was**. Coroutines gathered, or started in a task group, each get
+a branch of their own under the step that fanned them out - with their own steps underneath them - rather than a chain
+nested in whatever order they happened to interleave. Anything attached inside one lands on that one::
+
+    async with step("Fetch the catalogue"):
+        await asyncio.gather(fetch("books"), fetch("music"), fetch("film"))
+
+Threads behave the same way and always did: a step opened in a background thread nests within that thread rather than
+under whatever the main one happened to have open.
+
 anything attached lands on the step
 """""""""""""""""""""""""""""""""""
 
@@ -789,6 +825,219 @@ changes how a test runs and ``@smoke`` only names it.
 Two are cut down deliberately. ``parametrize`` shows its argument **names** rather than every row the test will ever
 run with - this case's own row is already shown as its parameters. And a ``skipif`` condition is evaluated at import,
 so ``sys.platform == "win32"`` reaches any reporter as a bare ``False``; the reason is shown instead.
+
+Jira, test cases and ownership
+""""""""""""""""""""""""""""""
+
+A marker holding an id is already collected and already searchable. ``report_link_pattern`` is what turns it into a
+link - one ``MARKER=URL`` per line, where ``{}`` is where the marker's argument goes::
+
+    [pytest]
+    report_link_pattern =
+        jira = https://acme.atlassian.net/browse/{}
+        testcase = https://acme.testrail.io/index.php?/cases/view/{}
+
+Then write the markers on the tests::
+
+    @pytest.mark.owner("search-team")
+    @pytest.mark.jira("SRCH-12")
+    @pytest.mark.testcase("C4471")
+    def test_searching_for_a_product():
+        ...
+
+The ids arrive as clickable badges, grouped under the marker they were written as - a ``Jira`` row, a ``Testcase``
+row - so a bare ``SRCH-12`` never has to say which system it belongs to. A test that closes two tickets gets two
+badges in one row. ``--report-link-pattern`` does the same from the command line and adds to whatever the ini file
+set.
+
+**writing an owner**
+
+``jira`` and ``testcase`` are names *you* invent, which is why ``report_link_pattern`` has to tell the plugin they
+exist. ``owner`` is different: it is **built in and needs no configuration at all**. Write it and the badge, the
+rail's owner filter and the Analytics roll-up all appear::
+
+    import pytest
+
+    # every test in the file
+    pytestmark = pytest.mark.owner("platform-team")
+
+    # one test
+    @pytest.mark.owner("search-team")
+    def test_searching_for_a_product():
+        ...
+
+    # a whole class
+    @pytest.mark.owner("checkout-team")
+    class TestBasket:
+        def test_the_basket_totals_correctly(self):
+            ...
+
+**more than one owner**
+
+They **stack rather than override**, which is what "owners" plural means. Write the marker twice and the test carries
+both, on top of anything its module or class already said::
+
+    pytestmark = pytest.mark.owner("platform-team")      # the whole file
+
+    @pytest.mark.owner("payments-team")
+    @pytest.mark.owner("fraud-team")
+    def test_a_suspicious_refund():
+        ...
+
+    @pytest.mark.owner("search-team")
+    def test_searching_for_a_product():
+        ...
+
+The first of those has three owners, and the report says so - a ``3 owners`` row, one badge each, nearest first::
+
+    3 OWNERS   [fraud-team]  [payments-team]  [platform-team]
+
+Nearest first means the decorator closest to the ``def`` leads, then the rest of that test's own, then the class's,
+then the module's. Each badge's tooltip says which of those it came from - *from the function*, *from the module* -
+which is the answer when nobody remembers applying it.
+
+Everywhere a count is taken, **a test with three owners counts once for each of them**. It shows up under all three
+pills in the rail's owner filter, and it adds one to all three rows of the Analytics roll-up - so those two tests
+between them produce four rows totalling five::
+
+    OWNER            TESTS
+    platform-team      2        <- the module's, so both tests
+    fraud-team         1
+    payments-team      1
+    search-team        1
+
+That is deliberate, not double-counting. Picking one owner would quietly take the other team off the hook for a test
+they had put their name on, and the point of the table is that nobody's failures go unclaimed.
+
+Giving ``owner`` a pattern is optional and only makes the badge clickable - a team page, a rota, a Slack channel::
+
+    report_link_pattern =
+        owner = https://github.com/orgs/acme/teams/{}
+
+Every one of these markers is registered for you, so ``--strict-markers`` is happy and no run prints
+``PytestUnknownMarkWarning`` for the markers this plugin asked you to write.
+
+The ids also reach the **JUnit xml**, as properties on the testcase itself::
+
+    <testcase classname="tests.test_search" name="test_searching_for_a_product" time="0.412">
+      <properties>
+        <property name="owner" value="search-team"/>
+        <property name="severity" value="critical"/>
+        <property name="jira" value="SRCH-12"/>
+        <property name="testcase" value="C4471"/>
+      </properties>
+    </testcase>
+
+which is the half that matters to Xray, Zephyr and TestRail - they ingest a test's key from a property and never open
+an html report. The property name is the marker name, so a suite that has to emit ``test_key`` writes
+``@pytest.mark.test_key`` and gets exactly that. Only ``owner``, ``severity`` and the markers named in ``report_link_pattern`` are
+written, so nothing starts appearing in a file your CI parses without being asked for.
+
+This is deliberately **not** a Jira client. Nothing is fetched, no token is needed and no network is touched: the
+report is a static file that gets mailed, published and opened off a disk months later, and a badge that needs
+credentials to render is a badge that is blank in exactly those cases. Ids are percent-encoded on the way into the
+url, and - as everywhere else links are built from what a run said - anything carrying a scheme other than ``http``,
+``https`` or ``mailto`` is dropped rather than rendered.
+
+A marker with no pattern is untouched, so a suite that configures none of this gets exactly the report it had before.
+
+filtering the rail by owner
+"""""""""""""""""""""""""""
+
+Once anything carries an ``owner``, the ``Test Steps`` rail grows a second row of filters for it - one pill per team,
+counted, busiest first, with an ``Unowned`` pill at the end for the tests nobody claimed. It sits apart from the
+``All`` / ``Failed`` / ``Scenarios`` row on purpose: the two are different questions, and *this team's failures* needs
+both answered at once. The owner counts are counted **inside** the current kind, so picking ``Failed`` and then a team
+gives that team's failures, and the number on the pill is what the rail will show.
+
+The row is not drawn at all for a run with no owners, so nothing changes for a suite that never wrote one.
+
+who owns what, across builds
+""""""""""""""""""""""""""""
+
+The ``Analytics`` tab gains a **Who owns what** panel: one row per owner, worst first, with the tests they hold, the
+share of the suite that is, their mean pass rate, how many are failing now, how many are flaky, and where their
+minutes go.
+
+It answers a question none of the other panels do. A run with forty failures spread evenly over six teams and a run
+with forty in one team read identically on every other tab; this is the one that tells them apart. The stability
+table says *which test is worst* - this says *whose morning it is*.
+
+Four rules worth knowing, because they are what make the numbers actionable rather than merely true:
+
+* **A test with two owners counts for both.** Picking one would quietly take a team off the hook for a test they had
+  put their name on.
+* **Only tests this run actually ran are counted.** A test deleted three builds ago is nobody's morning, and leaving
+  it in makes a team's numbers impossible to fix.
+* **Ownership is read from the most recent build that named one.** A test that moved teams last month pages the team
+  that has it today, not both.
+* **The pass rate is the mean of the tests' own rates**, not passes over runs - so a team holding one test that has run
+  two hundred times and forty that ran once does not have the two hundred decide their number.
+
+Unclaimed tests are a row rather than a gap, sorted last: unowned is not a team, but a suite that is a third
+unclaimed should say so, and the line above the table does - *3 owners, and 14 of 92 tests unclaimed*.
+
+Ownership is written into ``output.json`` from this version on, which is what lets the panel read across builds.
+Builds archived by an earlier version carry no owner and are read as unclaimed rather than as anything invented.
+
+how much a failure matters
+""""""""""""""""""""""""""
+
+``severity`` is the second built-in marker, and it answers the question asked *before* "whose is this": forty failures
+at ``trivial`` and two at ``blocker`` are the same number on every other tab and are not remotely the same run. Like
+``owner`` it needs **no configuration at all**::
+
+    @pytest.mark.severity("blocker")
+    def test_a_customer_can_pay():
+        ...
+
+The five levels are Allure's, worst first - ``blocker``, ``critical``, ``normal``, ``minor``, ``trivial`` - because
+whoever writes this marker has almost certainly written it there, and a vocabulary *nearly* the same as a familiar one
+is worse than either. Capitalisation does not matter: ``severity("Critical")`` and ``severity("critical")`` are one
+level, not two.
+
+**One test, one level.** Owners stack; severities are a ladder, and a test cannot be two heights at once - so where
+two markers claim one test, the report picks between them:
+
+* **The nearest wins.** A class marked ``critical`` inside a module marked ``normal`` means somebody looked at that
+  class and said it was worse than the rest of the file, and the outer word is the one being corrected::
+
+      pytestmark = pytest.mark.severity("normal")          # the whole file
+
+      @pytest.mark.severity("critical")                    # ... except this class
+      class TestCheckout:
+          def test_the_basket_totals_correctly(self):      # critical
+              ...
+
+* **Two at the same scope are read as the worse of them.** Nothing is nearer than anything else, and reading a
+  ``blocker`` down to ``minor`` because of the order two decorators happen to sit in is the one mistake here that
+  hides work.
+
+Nothing is hidden by that. The overridden marker is still shown on the ``Test Steps`` tab, struck through and beside
+the one that won, with a tooltip saying where each was written - *normal, from the module - overridden by critical* -
+which is the answer when a level nobody typed on this test is the one deciding its colour::
+
+    SEVERITY   [critical]  [normal]   <- the second one struck through
+
+**A test nobody rated is unrated, not normal.** Allure defaults an unmarked test to ``normal``; this does not, because
+a suite where four tests are marked and six hundred are not is a suite with six hundred *unrated* tests, and drawing
+them as rated would bury the four. A bare ``@pytest.mark.severity`` with no argument is the same: it names no level
+and stays the ordinary marker badge it is.
+
+A word outside the five is kept rather than dropped - a filter that silently omits a test is worse than one that shows
+a typo - but it sorts *after* ``trivial`` everywhere, because an unrecognised severity is a typo far more often than
+it is a sixth level somebody meant, and a typo must not outrank ``blocker``.
+
+The resolved level reaches the **JUnit xml** as a ``severity`` property, written once and already picked between, and
+the rail as a third row of filter pills - drawn in ladder order rather than by how many tests are at each level, and
+counted inside both the kind and the owner above it, so *this team's blockers* is three clicks and the number on the
+pill is what the rail will show. The row is not drawn at all for a run that rated nothing.
+
+The ``Analytics`` tab gains a **How much it matters** panel beside *Who owns what*: one row per level, in ladder order
+rather than worst-numbers-first - a table that put ``trivial`` above ``blocker`` because trivial had more failures
+would be arguing with the words in it - with an ``Unrated`` row last. Its headline leads with the thing somebody came
+to the tab to find out: *1 critical test failing*. As with ownership, a test's severity is read from the most recent
+build that named one, and builds archived by an earlier version are read as unrated.
 
 keeping the file down
 """""""""""""""""""""""""""

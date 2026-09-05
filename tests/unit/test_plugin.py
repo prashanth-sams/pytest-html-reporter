@@ -38,6 +38,16 @@ class _FakeConfig:
         # an AttributeError long before it reaches what these tests are about.
         self.option = type("Options", (), {})()
 
+        # pytest_configure registers the markers this plugin reads - `owner`
+        # and whatever report_link_pattern named - so that a suite using them
+        # is not warned about, or refused under --strict-markers, for markers
+        # the plugin asked it to write. Every line it registers is kept, so a
+        # test can assert on them.
+        self.ini_lines = []
+
+    def addinivalue_line(self, name, line):
+        self.ini_lines.append((name, line))
+
     def getoption(self, name, default=None):
         return self._options.get(name, default)
 

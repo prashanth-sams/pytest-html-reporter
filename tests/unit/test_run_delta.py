@@ -6,7 +6,13 @@ the same per-build list the Trends chart is drawn from - this run first, then
 the archived builds newest first - so the two can never disagree.
 """
 
+import json
+import os
+
+import pytest
+
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.html_reporter import HTMLReporter
 from pytest_html_reporter.util import (
     format_run_delta,
     generate_run_delta,
@@ -16,6 +22,53 @@ from pytest_html_reporter.util import (
     run_delta_title,
     run_delta_unit,
 )
+
+
+class _FakePluginManager:
+    def hasplugin(self, name):
+        return False
+
+
+class _FakeConfig:
+    """Just enough of pytest's Config to build a reporter."""
+
+    def __init__(self):
+        self.pluginmanager = _FakePluginManager()
+
+    def getoption(self, name, default=None):
+        return default
+
+    def getini(self, name):
+        raise ValueError(name)
+
+
+_TRENDS = ("trends_label", "tpass", "tfail", "tskip", "tcoverage")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_trend_lists():
+    """The trend lists are class-level state, and these tests fill them in."""
+    saved = {name: getattr(ConfigVars, name) for name in _TRENDS}
+    yield
+    for name, value in saved.items():
+        setattr(ConfigVars, name, value)
+
+
+def _build(directory, start, passed, failed):
+    """One build's output.json, in the shape update_trends reads it."""
+    os.makedirs(str(directory), exist_ok=True)
+    with open(os.path.join(str(directory), "output.json"), "w") as handle:
+        json.dump({
+            "date": "September 04, 2026",
+            "start_time": start,
+            "total_tests": passed + failed,
+            "status_list": {
+                "pass": str(passed), "fail": str(failed), "skip": "0",
+                "error": "0", "xpass": "0", "xfail": "0", "rerun": "0",
+            },
+        }, handle)
+
+    return str(directory)
 
 
 # --------------------------------------------------------------------------
@@ -85,17 +138,23 @@ def test_figure_carries_its_sign():
     assert run_delta_figure(-1) == "-1"
 
 
-def test_figure_signs_no_change_too():
-    """A bare "0 failures" beside "SINCE LAST BUILD" says the opposite of what
-    it means - no failures at all, rather than no change in them."""
-    assert run_delta_figure(0) == "\u00b10"
+def test_no_change_is_words_not_a_figure():
+    """Any number here takes the unit beside it, and "0 failures" - or
+    "\u00b10 failures" - says the opposite of what it means: no failures at all,
+    rather than no change in them."""
+    assert run_delta_figure(0) == "No change"
 
 
 def test_unit_agrees_with_the_figure():
     assert run_delta_unit(3) == "failures"
     assert run_delta_unit(1) == "failure"
     assert run_delta_unit(-1) == "failure"
-    assert run_delta_unit(0) == "failures"
+
+
+def test_no_change_carries_no_unit():
+    """The figure is already a whole phrase, and the noun is the half that
+    misleads."""
+    assert run_delta_unit(0) == ""
 
 
 def test_no_figure_or_unit_without_a_delta():
@@ -138,3 +197,49 @@ def test_generate_leaves_a_first_build_blank(monkeypatch):
     assert ConfigVars._failure_delta_unit == ""
     assert ConfigVars._failure_delta == ""
     assert ConfigVars._failure_delta_title == ""
+
+
+# --------------------------------------------------------------------------
+# one render, one trend
+# --------------------------------------------------------------------------
+
+def test_a_second_render_in_one_process_starts_the_trend_over(tmp_path):
+    """The build at index 0 is this build, whatever rendered before it.
+
+    The lists live on ConfigVars and update_trends appends to them, so a merge
+    driven in-process - or anything else that renders twice - used to leave its
+    own build sitting where this one's belongs. It was drawn as the newest
+    point on the Trends chart, and the delta beside it was measured against it.
+    """
+    first = _build(tmp_path / "first", 1788411600.0, passed=4, failed=1)
+    second = _build(tmp_path / "second", 1788520444.0, passed=17, failed=0)
+
+    reporter = HTMLReporter(first, "", _FakeConfig())
+    reporter.update_trends(first)
+    reporter.update_trends(second)
+
+    assert ConfigVars.tpass == ["17"]
+    assert ConfigVars.tfail == [0]
+    assert ConfigVars.tskip == ["0"]
+    assert ConfigVars.tcoverage == [None]
+    assert len(ConfigVars.trends_label) == 1
+
+
+def test_a_first_build_is_still_a_first_build_after_an_earlier_render(tmp_path):
+    """The bug as it was seen: "+1 failure since last build" over a green run.
+
+    The 1 was the earlier render's failure, and the build it was subtracted
+    from was this one. A build with no archive behind it has nothing to compare
+    against and the tile stays hidden.
+    """
+    first = _build(tmp_path / "first", 1788411600.0, passed=4, failed=1)
+    second = _build(tmp_path / "second", 1788520444.0, passed=17, failed=0)
+
+    reporter = HTMLReporter(first, "", _FakeConfig())
+    reporter.update_trends(first)
+    reporter.update_trends(second)
+    generate_run_delta()
+
+    assert ConfigVars._failure_delta_class == "is-empty"
+    assert ConfigVars._failure_delta_figure == ""
+    assert ConfigVars._failure_delta == ""

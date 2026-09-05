@@ -23,13 +23,20 @@ from html_page.step_badge import StepBadge
 from html_page.step_body import StepBody
 from html_page.step_fact import StepFact
 from html_page.step_line import StepLine
+from html_page.step_link import StepLink
 from html_page.step_phase import StepPhase
 from html_page.step_scenario import StepScenario
 from html_page.step_suite import StepSuite
 from html_page.step_test import StepTest
 from html_page.test_shot import TestShot
 from pytest_html_reporter.const_vars import ConfigVars
-from pytest_html_reporter.util import escape_report_text
+from pytest_html_reporter.markers import SEVERITY_MARKER_KIND, severity_value
+from pytest_html_reporter.util import (
+    escape_report_text,
+    marker_url,
+    record_owners,
+    record_severity,
+)
 
 
 # The phases every test has, in the order they run, as the tab names them.
@@ -44,6 +51,17 @@ PHASES = OrderedDict((
 # The Gherkin words, which are shown as a badge in front of a step so a
 # specification never reads as a piece of somebody's plumbing.
 GHERKIN = ('given', 'when', 'then', 'and', 'but')
+
+# How a test's owners are packed into one attribute for the rail to filter on.
+# A pipe rather than a comma: a team is called "Payments, EU" often enough to
+# matter and is called "Payments|EU" essentially never.
+OWNER_SEPARATOR = '|'
+
+# The badge kind an overridden severity is drawn as. It is still shown - the
+# tab promises every marker, and "the module said normal" is the sentence that
+# explains why a test nobody touched changed colour - but it is drawn as spent
+# rather than as a second severity the test somehow also has.
+SEVERITY_PAST_KIND = 'severity-past'
 
 # A suite path repeats down the whole rail; only its tail tells one from the next.
 SUITE_TAIL_MAX = 34
@@ -224,6 +242,57 @@ def _line(step, width, attachments, shots, record):
     ))
 
 
+def _tree_order(owned):
+    """One phase's steps in the order the tree reads, rather than the order
+    they started.
+
+    The two are the same thing until something runs concurrently. Steps are
+    buffered as they open, so three gathered coroutines - or three threads -
+    put all three siblings in before any of their children, and a list read
+    straight down indents every one of those children under the *last* sibling.
+    Same depths, same durations, wrong parents.
+
+    A step whose parent is not in this phase is a root here: one held open by a
+    fixture across a whole test belongs to Set up, and the test body it spans
+    is not a step of it.
+
+    Walked with an explicit stack. Recursion would be the obvious way to write
+    it and a suite whose steps nest a thousand deep would take the run down
+    with it - the depth a step is *drawn* at is capped, the depth it is allowed
+    to reach is not.
+    """
+    present = set(step.get('id') for _index, step in owned if step.get('id') is not None)
+    roots, children = [], {}
+
+    for entry in owned:
+        step = entry[1]
+        parent = step.get('parent')
+
+        if parent is not None and parent in present and parent != step.get('id'):
+            children.setdefault(parent, []).append(entry)
+        else:
+            roots.append(entry)
+
+    ordered, seen = [], set()
+    pending = list(reversed(roots))
+
+    while pending:
+        index, step = pending.pop()
+        if index in seen: continue
+
+        seen.add(index)
+        ordered.append((index, step))
+        pending.extend(reversed(children.get(step.get('id'), ())))
+
+    # Nothing is dropped. A record is read back off a bundle written by another
+    # process and another version, and a step missing from the tab altogether
+    # is a worse answer than one drawn at the wrong indent.
+    if len(ordered) != len(owned):
+        ordered += [entry for entry in owned if entry[0] not in seen]
+
+    return ordered
+
+
 def _phases(record):
     """The three phase blocks of one test, with its steps filed under them.
 
@@ -243,8 +312,8 @@ def _phases(record):
 
     blocks = ''
     for phase, label in PHASES.items():
-        owned = [(index, step) for index, step in enumerate(steps)
-                 if (step.get('phase') or 'call') == phase]
+        owned = _tree_order([(index, step) for index, step in enumerate(steps)
+                             if (step.get('phase') or 'call') == phase])
 
         lines = ''.join(_line(step, widths.get(index, 0), attachments,
                               shots.get(index) or [], record)
@@ -263,6 +332,97 @@ def _phases(record):
     return blocks
 
 
+def _label(name):
+    """A marker name as the label of the row its ids sit in: `jira` -> `Jira`."""
+    text = str(name or '').replace('_', ' ').replace('-', ' ').strip()
+
+    return text[:1].upper() + text[1:]
+
+
+def _badge(marker, bare=False):
+    """One marker, linked when a pattern says where it points.
+
+    `bare` drops the marker's name from the badge and shows its argument alone.
+    It is set for the badges that sit under a label already naming the marker -
+    the Jira row, the Owner row - where `jira(PROJ-123)` would say `jira` twice
+    and `PROJ-123` says it once.
+    """
+    kind = marker.get('kind') or 'user'
+    scope = marker.get('scope') or 'test'
+    args = marker.get('args') or []
+
+    text = str(args[0]) if (bare and args) else (marker.get('text') or marker.get('name') or '')
+    url = marker_url(ConfigVars._link_patterns, marker)
+
+    if not url:
+        return str(StepBadge(kind=escape_report_text(kind),
+                             text=escape_report_text(text),
+                             # Where it was written, which is the answer when
+                             # nobody remembers applying it.
+                             title='%s marker, from the %s'
+                                   % (escape_report_text(kind), escape_report_text(scope))))
+
+    # The url is the title rather than the scope: this one opens something, and
+    # what it is about to open is the thing worth seeing before clicking it.
+    return str(StepLink(kind=escape_report_text(kind),
+                        text=escape_report_text(text),
+                        url=escape_report_text(url),
+                        title=escape_report_text(url)))
+
+
+def _traced(markers):
+    """(linked markers grouped by their marker name, everything else).
+
+    Grouped rather than left in the markers row because a bare `PROJ-123` says
+    nothing about which system it is an id in, and the group's own label is the
+    cheapest place on the page to say it. A test that closes two tickets has
+    two entries under one label, in the order they were written.
+    """
+    groups = OrderedDict()
+    rest = []
+
+    for marker in markers:
+        if marker_url(ConfigVars._link_patterns, marker):
+            groups.setdefault(str(marker.get('name') or ''), []).append(marker)
+        else:
+            rest.append(marker)
+
+    return groups, rest
+
+
+def _severity_badges(markers, effective):
+    """The severity row: the level that applies, then the ones it overrode.
+
+    Nothing is hidden and nothing is drawn twice as loud as it is. A test
+    inside a module marked `normal` and a class marked `critical` carries both
+    markers and always did; what the row has to say is which of them the run
+    was actually rated at, and each badge's tooltip says where its word was
+    written - the answer when a level nobody typed on this test is the one
+    deciding its colour.
+    """
+    badges = ''
+    won = False
+
+    for marker in markers:
+        level = severity_value(marker)
+        scope = str(marker.get('scope') or 'test')
+
+        # The first marker at the effective level is the one that carried it;
+        # a second copy of the same word further out was still overridden.
+        current = level == effective and not won
+        won = won or current
+
+        badges += str(StepBadge(
+            kind=escape_report_text('severity-%s' % level if current else SEVERITY_PAST_KIND),
+            text=escape_report_text(level),
+            title=escape_report_text(
+                '%s, from the %s' % (level, scope) if current
+                else '%s, from the %s - overridden by %s' % (level, scope, effective)),
+        ))
+
+    return badges
+
+
 def _facts(record):
     """What the test says about itself, as a row of labelled facts."""
     meta = record.get('meta') or {}
@@ -276,17 +436,33 @@ def _facts(record):
         facts += str(StepFact(label='Description', value=escape_report_text(doc)))
 
     markers = meta.get('markers') or []
-    if markers:
-        badges = ''.join(
-            str(StepBadge(kind=escape_report_text(marker.get('kind') or 'user'),
-                          text=escape_report_text(marker.get('text') or marker.get('name') or ''),
-                          # Where it was written, which is the answer when
-                          # nobody remembers applying it.
-                          title='%s marker, from the %s'
-                                % (escape_report_text(marker.get('kind') or 'user'),
-                                   escape_report_text(marker.get('scope') or 'test'))))
-            for marker in markers)
-        facts += str(StepFact(label=_pluralise(len(markers), 'marker'), value=badges))
+
+    # Who to tell, first and on its own. It is the one fact here that is about
+    # a person rather than about the test, and it is what somebody reading a
+    # red run is looking for - so it does not go in a row of eight badges where
+    # `smoke` and `slow` are the ones catching the eye.
+    owners = [marker for marker in markers if marker.get('kind') == 'owner']
+    if owners:
+        facts += str(StepFact(label=_pluralise(len(owners), 'owner'),
+                              value=''.join(_badge(marker, bare=True) for marker in owners)))
+
+    # How bad, next: it is the other question a red run is read with, and the
+    # only marker on the page whose *value* is ranked rather than merely named.
+    severities = [marker for marker in markers if marker.get('kind') == SEVERITY_MARKER_KIND]
+    if severities:
+        facts += str(StepFact(label='Severity',
+                              value=_severity_badges(severities, record_severity(record))))
+
+    linked, plain = _traced([marker for marker in markers
+                             if marker.get('kind') not in ('owner', SEVERITY_MARKER_KIND)])
+
+    for name, group in linked.items():
+        facts += str(StepFact(label=escape_report_text(_label(name)),
+                              value=''.join(_badge(marker, bare=True) for marker in group)))
+
+    if plain:
+        facts += str(StepFact(label=_pluralise(len(plain), 'marker'),
+                              value=''.join(_badge(marker) for marker in plain)))
 
     params = meta.get('params') or []
     if params:
@@ -385,6 +561,8 @@ def generate_steps_view(suites):
                 sid=sid,
                 stat=escape_report_text(record.get('status') or ''),
                 kind='bdd' if record.get('bdd') else 'plain',
+                owner=escape_report_text(OWNER_SEPARATOR.join(record_owners(record))),
+                sev=escape_report_text(record_severity(record)),
                 name=escape_report_text(record.get('test_name') or ''),
                 note=escape_report_text(_note(record)),
                 dur=escape_report_text(duration(_test_ms(record))),

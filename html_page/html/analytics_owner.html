@@ -1,0 +1,15 @@
+<tr class="owner-row owner-row--%(tone)%">
+    <td class="owner-row__name">
+        <span class="owner-chip owner-chip--%(kind)%">%(owner)%</span>
+    </td>
+    <!-- data-order so the column sorts on the number rather than on the bar,
+         whose text is the same empty string on every row. -->
+    <td class="owner-row__tests" data-order="%(tests)%">
+        <span class="owner-row__count">%(tests)%</span>
+        <span class="owner-row__bar"><i style="width: %(share)%%"></i></span>
+    </td>
+    <td class="owner-row__rate">%(rate)%</td>
+    <td class="owner-row__num owner-row__num--fail">%(failing)%</td>
+    <td class="owner-row__num owner-row__num--flaky">%(flaky)%</td>
+    <td class="owner-row__num">%(duration)%</td>
+</tr>

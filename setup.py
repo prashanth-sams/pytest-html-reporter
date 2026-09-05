@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name="pytest-html-reporter",
-    version="0.4.0",
+    version="0.4.1",
     author="Prashanth Sams",
     author_email="sams.prashanth@gmail.com",
     maintainer="Prashanth Sams",
@@ -43,7 +43,7 @@ setup(
         ],
     },
     long_description_content_type="text/x-rst",
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     install_requires=["pytest", "Pillow"],
     classifiers=[
         "Framework :: Pytest",

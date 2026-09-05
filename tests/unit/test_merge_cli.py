@@ -54,6 +54,10 @@ _TOUCHED = (
     "_test_xfail_list", "_test_error_list", "_attach_screenshot_details",
     "_pass", "_fail", "_skip", "_error", "_xpass", "_xfail", "_total",
     "_executed",
+    # The trend lists too: a merge here renders a real report, so it leaves a
+    # build of its own on them, and the report this very run writes at the end
+    # would otherwise open on a Trends chart whose newest point is a fixture.
+    "trends_label", "tpass", "tfail", "tskip", "tcoverage",
 )
 
 

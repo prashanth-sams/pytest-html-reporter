@@ -363,7 +363,7 @@ def test_describe_answers_every_question_at_once():
                 callspec=CallSpec({"count": 2}))
 
     assert describe(item) == {
-        "markers": [{"name": "slow", "text": "slow",
+        "markers": [{"name": "slow", "text": "slow", "args": [],
                      "scope": "function", "kind": "user"}],
         "params": [["count", "2"]],
         "fixtures": ["page"],

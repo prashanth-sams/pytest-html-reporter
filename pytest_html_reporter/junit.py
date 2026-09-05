@@ -41,7 +41,8 @@ from tempfile import NamedTemporaryFile
 import pytest
 
 from pytest_html_reporter import __version__
-from pytest_html_reporter.util import _ini, expand_time
+from pytest_html_reporter.markers import SEVERITY_MARKER
+from pytest_html_reporter.util import _ini, expand_time, record_severity
 
 
 # How an unexpectedly passing test is written down. 'pass' is pytest's own
@@ -138,6 +139,7 @@ class JunitOptions(object):
     def __init__(self, suite_name=DEFAULT_SUITE_NAME, hostname=None, xpass="pass",
                  logging="no", attachments=True, timestamp=None, time=None,
                  shards=None, reruns=None, duplicates=None, properties=(),
+                 trace_markers=(),
                  report_base="", xml_dir="", stream=None):
         self.suite_name = str(suite_name or DEFAULT_SUITE_NAME)
 
@@ -168,6 +170,12 @@ class JunitOptions(object):
         self.reruns = reruns
         self.duplicates = duplicates
         self.properties = list(properties or [])
+
+        # Which markers name what a test traces to rather than what it is, and
+        # so get written as properties on the testcase itself. Empty by
+        # default: a document that started listing every user marker would
+        # change what a collector reports for suites that asked for nothing.
+        self.trace_markers = frozenset(str(name) for name in (trace_markers or ()))
 
         # The directory ``pytest_screenshots`` sits in, and the directory the
         # XML itself is written to. Both are needed to turn a record's bare
@@ -476,6 +484,51 @@ def _element(tag, text=None, **attrib):
     return node
 
 
+def _case_properties(record, opts):
+    """The <properties> of one testcase: who owns it, and what it traces to.
+
+    The machine-readable half of traceability. Xray, Zephyr and TestRail all
+    ingest a test's issue key from a testcase property, and none of them opens
+    an html report - so an id that only ever reaches a badge is invisible to
+    exactly the tools that were supposed to consume it.
+
+    The property name is the marker name, which puts the vocabulary in the
+    user's hands rather than this file's: a suite that has to emit `test_key`
+    for Xray writes ``@pytest.mark.test_key`` and gets ``test_key``.
+    """
+    if not opts.trace_markers: return None
+
+    pairs = []
+    for marker in ((record.get("meta") or {}).get("markers") or []):
+        name = str(marker.get("name") or "")
+        if name not in opts.trace_markers: continue
+
+        # Every other marker here is a set - two `jira` markers are two issues
+        # and both belong in the xml - but severity is a ladder, and a testcase
+        # carrying both `normal` and `critical` is one no consumer can rank.
+        # It is written once, below, already resolved.
+        if name == SEVERITY_MARKER: continue
+
+        args = marker.get("args") or []
+        value = str(args[0]).strip() if args else ""
+
+        # A marker with empty brackets names no issue and owns nothing. An
+        # empty property is a row every consumer displays and none can use.
+        if value: pairs.append((name, value))
+
+    if SEVERITY_MARKER in opts.trace_markers:
+        severity = record_severity(record)
+        if severity: pairs.append((SEVERITY_MARKER, severity))
+
+    if not pairs: return None
+
+    element = ET.Element("properties")
+    for name, value in pairs:
+        element.append(_element("property", name=name, value=value))
+
+    return element
+
+
 def _case_pass(record, opts):
     return None, "passed"
 
@@ -688,6 +741,12 @@ def junit_document(records, **kw):
         total_time += seconds
 
         case = _element("testcase", classname=classname, name=name, time="%.3f" % seconds)
+
+        # Ahead of the outcome, which is where pytest's own writer puts a
+        # record_property block and therefore where every consumer that reads
+        # one already looks.
+        properties = _case_properties(record, opts)
+        if properties is not None: case.append(properties)
 
         outcome, counted = _outcome(record, opts)
         if outcome is not None: case.append(outcome)

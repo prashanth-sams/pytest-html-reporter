@@ -1057,6 +1057,26 @@
                     vertical-align: middle;
                 }
 
+                /* The loading overlay.
+
+                   The spinner was an animated GIF, and the overlay left on a
+                   jQuery fade. Both of those are stepped by the main thread:
+                   Firefox drives image animation off its refresh driver, and
+                   WebKit off a timer, while jQuery's fade is a rAF callback.
+                   Bringing a report up is one long block of main-thread work -
+                   parsing the page, then building its tables and charts - and
+                   on those two engines the spinner sat frozen through all of
+                   it and the overlay then jumped away rather than faded. Only
+                   Chrome looked right, and only because it gets through the
+                   same work in a third of the time.
+
+                   A rotate-only CSS animation and an opacity transition are
+                   both run on the compositor instead, so the spinner keeps
+                   turning and the overlay still fades however long the page
+                   behind it takes. Nothing here animates a property that
+                   would pull the animation back onto the main thread - no
+                   width, no colour, no box-shadow - and that is the point of
+                   it, not a stylistic choice. */
                 .loader {
                     position: fixed;
                     left: 0px;
@@ -1064,7 +1084,69 @@
                     width: 100%;
                     height: 100%;
                     z-index: 9999;
-                    background: url('%(loader_image)%') 50% 50% no-repeat var(--bg-wrapper);
+                    background: var(--bg-wrapper);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 1;
+                    transition: opacity 300ms ease;
+                }
+
+                .loader.is-done {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
+                .loader__spinner {
+                    position: relative;
+                    width: 84px;
+                    height: 84px;
+                    border-radius: 50%;
+                    /* The status palette, in the order the dashboard doughnut
+                       reads it, so the report opens on the colours it is about
+                       to draw with. A browser too old for conic-gradient keeps
+                       the turning ring and loses only the wheel of colour in
+                       it. */
+                    background: var(--status-pass);
+                    background: conic-gradient(
+                        var(--status-pass)     0deg  60deg,
+                        var(--status-skip)    60deg 120deg,
+                        var(--status-xfail)  120deg 180deg,
+                        var(--status-fail)   180deg 240deg,
+                        var(--status-error)  240deg 300deg,
+                        var(--status-xpass)  300deg 360deg);
+                    animation: loader-spin 1.05s linear infinite;
+                    /* Asks for the layer up front, so the first turn is
+                       composited rather than starting on the main thread and
+                       being handed over a few frames later - which is exactly
+                       the window this is meant to cover. */
+                    will-change: transform;
+                }
+
+                /* The hole. Inside the turning element, so it turns too, which
+                   costs nothing and keeps the whole spinner to a single layer. */
+                .loader__spinner::after {
+                    content: '';
+                    position: absolute;
+                    top: 20%;
+                    right: 20%;
+                    bottom: 20%;
+                    left: 20%;
+                    border-radius: 50%;
+                    background: var(--bg-wrapper);
+                }
+
+                @keyframes loader-spin {
+                    from { transform: rotate(0deg); }
+                    to   { transform: rotate(360deg); }
+                }
+
+                /* A reader who has asked for less motion gets a still ring
+                   rather than nothing to look at. */
+                @media (prefers-reduced-motion: reduce) {
+                    .loader__spinner {
+                        animation: none;
+                    }
                 }
 
                 .card-wrapper {
@@ -1881,7 +1963,30 @@
                 .delta-highlight.is-better .delta-highlight__figure { color: var(--trend-up); }
                 .delta-highlight.is-better .delta-highlight__figure::before { content: "\25bc"; }
 
-                .delta-highlight.is-level .delta-highlight__figure { color: var(--text-label); }
+                /* No change is the one state whose figure is words, not a
+                   number (see run_delta_figure): nothing about a build that
+                   stood still can be written as a digit without reading as a
+                   count of failures. Set smaller than the signed figures - at
+                   2.1rem the phrase crowds the caption out of the narrow card
+                   - and without the negative tracking, which is a fit for
+                   numerals and not for a word. */
+                .delta-highlight.is-level .delta-highlight__figure {
+                    color: var(--text-label);
+                    font-size: 1.45rem;
+                    letter-spacing: normal;
+                }
+
+                /* Both halves of the tile are floats off the same top edge, so
+                   the smaller no-change type would otherwise sit a line above
+                   the caption it belongs to. Take the caption's own padding -
+                   5% of the same containing block, so the two track each other
+                   at every card width - less the 3px by which a 1.45rem
+                   ascender overshoots a 0.95rem one, and the phrase and
+                   "SINCE LAST BUILD" share a baseline. The signed figures are
+                   left alone: at 2.1rem they already land on that line. */
+                .delta-highlight.is-level .delta-highlight__value {
+                    padding-top: calc(5% - 3px);
+                }
 
                 .delta-highlight__unit {
                     padding-left: 0.4rem;
@@ -4792,6 +4897,23 @@
                     gap: 6px;
                 }
 
+                .step-owners {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    border-top: 1px solid var(--border-hairline);
+                }
+
+                .step-owners__label {
+                    font-family: sans-serif;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: var(--text-muted);
+                    flex: 0 0 auto;
+                }
+
                 .step-tree-actions {
                     display: flex;
                     gap: 6px;
@@ -5156,6 +5278,62 @@
                 .step-badge--user    { background-color: var(--status-info-tint); color: var(--status-info-fg); }
                 .step-badge--param   { background-color: var(--status-purple-tint); color: var(--status-purple-fg); }
                 .step-badge--fixture { background-color: var(--status-teal-tint); color: var(--accent-teal); }
+
+                /* Who to tell, which is neither a tag nor an id. Given the one
+                   remaining tint so that an owner is never mistaken for either
+                   at a glance. */
+                .step-badge--owner   { background-color: var(--status-skip-tint); color: var(--status-skip-fg-heavy); }
+
+                /* How bad, as a ladder rather than as five more tags. The
+                   colours are the ramp itself - a `blocker` has to be findable
+                   in a rail of forty badges without reading any of them - and
+                   the bottom two share slate on purpose: `minor` and `trivial`
+                   are both "not today", and inventing a distinct colour for
+                   each would give the eye something to chase that is not
+                   worth chasing. */
+                /* A level outside the five gets no colour of its own. It
+                   matches nothing below, so it lands here - drawn as the plain
+                   word it is, which is the honest look for a typo and keeps it
+                   quieter than every level it does not outrank. Written at one
+                   class of specificity so the five below can override it. */
+                [class*="--severity-"] { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+
+                .step-badge--severity-blocker  { background-color: var(--status-error-tint); color: var(--status-error-fg); }
+                .step-badge--severity-critical { background-color: var(--status-fail-tint); color: var(--status-fail-fg-heavy); }
+                .step-badge--severity-normal   { background-color: var(--status-info-tint); color: var(--status-info-fg); }
+                .step-badge--severity-minor    { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+                .step-badge--severity-trivial  { background-color: var(--status-slate-tint); color: var(--status-slate-fg); opacity: 0.8; }
+
+                /* A severity an outer scope wrote and a nearer one overrode.
+                   Shown, because the tab promises every marker and because it
+                   is the answer when a level nobody typed on this test is the
+                   one deciding its colour - but struck through, so it is never
+                   read as a second severity the test also has. */
+                .step-badge--severity-past {
+                    background-color: transparent;
+                    color: var(--text-muted);
+                    border: 1px dashed var(--border-hairline);
+                    text-decoration: line-through;
+                }
+
+                /* A badge that opens something. It keeps the colour of the kind
+                   it is - a linked owner is still an owner - and earns the arrow
+                   and the underline, which are what say it can be clicked in a
+                   row where everything else is the same shape and cannot. */
+                a.step-badge--link {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    text-decoration: none;
+                }
+
+                a.step-badge--link:hover,
+                a.step-badge--link:focus-visible { text-decoration: underline; }
+
+                a.step-badge--link .fa {
+                    font-size: 9px;
+                    opacity: 0.65;
+                }
                 .step-badge--gherkin {
                     background-color: var(--status-info-tint);
                     color: var(--status-info-fg);
@@ -6023,6 +6201,142 @@
                    than standing there empty. */
                 .an-faults.is-empty { display: none; }
 
+                /* ---- Whose tests these are ----
+                   The same shape as the failure panel above it and hidden the
+                   same way, because a suite that never named an owner has
+                   nothing here and a card saying so is worse than no card. */
+                .an-owners.is-empty { display: none; }
+
+                /* And the same again for the panel beside it: a suite that
+                   never rated a test has nothing to say here. */
+                .an-severity.is-empty { display: none; }
+
+                /* The table is six columns of small numbers and one name that
+                   can be any length at all, so it scrolls inside its own box
+                   rather than widening the page. */
+                /* Every owner is drawn rather than a top few - a team cut
+                   off the bottom is a team that does not know it has work -
+                   so the panel scrolls once the list outgrows a screenful. */
+                .owner-scroll {
+                    overflow: auto;
+                    max-height: 420px;
+                    padding: 6px 16px 16px 16px;
+                }
+
+                .owner-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                }
+
+                .owner-table th {
+                    text-align: right;
+                    padding: 6px 10px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.07em;
+                    text-transform: uppercase;
+                    color: var(--text-muted);
+                    border-bottom: 1px solid var(--border-hairline);
+                    white-space: nowrap;
+                    /* The panel scrolls, so the header has to stay put or the
+                       six numeric columns lose their names on the way down. */
+                    position: sticky;
+                    top: 0;
+                    background: var(--surface-card);
+                    z-index: 1;
+                }
+
+                .owner-table th:first-child,
+                .owner-table th:nth-child(2) { text-align: left; }
+
+                .owner-row td {
+                    padding: 9px 10px;
+                    border-bottom: 1px solid var(--border-hairline);
+                    color: var(--text-body);
+                    text-align: right;
+                    white-space: nowrap;
+                }
+
+                .owner-row:last-child td { border-bottom: none; }
+                .owner-row__name { text-align: left; }
+
+                .owner-chip {
+                    display: inline-block;
+                    border-radius: 5px;
+                    padding: 3px 10px;
+                    font-size: 11.5px;
+                    font-weight: 600;
+                    background-color: var(--status-skip-tint);
+                    color: var(--status-skip-fg-heavy);
+                }
+
+                /* Not a team. Drawn as the absence it is rather than as
+                   another name in the same colour as the real ones. */
+                .owner-chip--unowned {
+                    background-color: var(--status-slate-tint);
+                    color: var(--status-slate-fg);
+                    font-style: italic;
+                }
+
+                /* The same ramp the rail's badges use. The table is sorted by
+                   the ladder rather than by its numbers, and the colour is
+                   what makes that order legible as an order. */
+                /* And the same fallback the badges have: a level outside
+                   the five matches none of the rules below and must not
+                   inherit the chip's own colour, which is louder than every
+                   level it does not outrank. */
+                [class*="owner-chip--severity-"] { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+
+                .owner-chip--severity-blocker  { background-color: var(--status-error-tint); color: var(--status-error-fg); }
+                .owner-chip--severity-critical { background-color: var(--status-fail-tint); color: var(--status-fail-fg-heavy); }
+                .owner-chip--severity-normal   { background-color: var(--status-info-tint); color: var(--status-info-fg); }
+                .owner-chip--severity-minor    { background-color: var(--status-slate-tint); color: var(--status-slate-fg); }
+                .owner-chip--severity-trivial  { background-color: var(--status-slate-tint); color: var(--status-slate-fg); opacity: 0.8; }
+
+                .owner-row__tests {
+                    text-align: left;
+                    min-width: 130px;
+                }
+
+                .owner-row__count {
+                    display: inline-block;
+                    min-width: 26px;
+                    font-variant-numeric: tabular-nums;
+                }
+
+                .owner-row__bar {
+                    display: inline-block;
+                    width: 84px;
+                    height: 6px;
+                    border-radius: 3px;
+                    background: var(--surface-hover);
+                    overflow: hidden;
+                    vertical-align: middle;
+                }
+
+                .owner-row__bar i {
+                    display: block;
+                    height: 100%;
+                    background: var(--text-caret);
+                }
+
+                .owner-row--warn .owner-row__bar i { background: var(--status-skip); }
+                .owner-row--bad .owner-row__bar i { background: var(--status-fail); }
+
+                .owner-row__rate,
+                .owner-row__num { font-variant-numeric: tabular-nums; }
+
+                /* A zero is the good answer in both of these columns, and
+                   colouring every zero red would make the table unreadable
+                   for the runs that are fine. */
+                .owner-row__num--fail:not(:empty) { color: var(--text-body); }
+                .owner-row--bad .owner-row__num--fail,
+                .owner-row--warn .owner-row__num--fail { color: var(--status-fail-fg-heavy); }
+                .owner-row--warn .owner-row__num--flaky { color: var(--status-skip-fg-heavy); }
+
+
                 .fault-list {
                     list-style: none;
                     margin: 0;
@@ -6774,7 +7088,7 @@
                 control.setAttribute('title', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
             });
         </script>
-        <div class="loader"></div>
+        <div class="loader"><div class="loader__spinner"></div></div>
 
         <div class="shot-box" id="shotBox" role="dialog" aria-modal="true" aria-label="Screenshot">
             <div class="shot-box__stage"><img class="shot-box__image" id="shotBoxImage" src="" alt="" /></div>
@@ -6811,6 +7125,8 @@
             <a class="tablink" href="#api-logs" onclick="openPage('attachments', this, 'var(--rail-active-text)', 'var(--rail-active-bg)', 'groove'); refreshAttachments();">
                 <i class="fa fa-exchange" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> API Logs
             </a>
+            <!-- Ascending: the files worth opening the tab for are the ones
+                 at the bottom of the percentage. -->
             <a class="tablink" href="#coverage" onclick="openPage('coverage', this, 'var(--rail-active-text)', 'var(--rail-active-bg)', 'groove'); executeDataTable('#cov',4,'asc')">
                 <i class="fa fa-shield" id="tablinkicon" style="color:currentcolor; margin:5% 5% 5% 10%"></i> Test Coverage
             </a>
@@ -7397,14 +7713,19 @@
                         settle(execCopy(text));
                     }
 
+                    // The metrics tables are built by whatever shows them,
+                    // not here. DataTables walks every row to build its model
+                    // and then detaches all but the first page, so on a large
+                    // run this was most of a second spent behind the loading
+                    // overlay, on three tabs nobody had opened yet. Every route
+                    // into them -- the rail, a #hash the report was opened
+                    // with, a deep link to one test's row -- asks for its own
+                    // table, and executeDataTable is `retrieve: true`, so
+                    // asking twice costs nothing. Analytics has always been
+                    // built this way; these three now are too.
                     window.onload = function() {
                         failureScreenshots();
                         bindShotBox();
-                        executeDataTable('#sm', 2);
-                        executeDataTable('#tm', 3);
-                        // Ascending: the files worth opening the tab for are
-                        // the ones at the bottom of the percentage.
-                        executeDataTable('#cov', 4, 'asc');
                     };
                 </script>
             </div>
@@ -7426,6 +7747,59 @@
                                 <span class="an-chart__note">%(analytics_fault_note)%</span>
                             </div>
                             <ul class="fault-list">%(analytics_faults)%</ul>
+                        </div>
+
+                        <!-- Under "why this run failed", which is the same
+                             question one level up: that panel says what broke,
+                             this says whose morning it is. Hidden outright for
+                             a suite that never wrote an owner marker. -->
+                        <div class="metrics-card an-owners %(analytics_owner_state)%">
+                            <div class="an-chart__head">
+                                <i class="fa fa-clipboard" aria-hidden="true"></i>Who owns what
+                                <span class="an-chart__note">%(analytics_owner_note)%</span>
+                            </div>
+                            <div class="owner-scroll">
+                                <table class="owner-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Owner</th>
+                                            <th>Tests</th>
+                                            <th>Pass rate</th>
+                                            <th>Failing</th>
+                                            <th>Flaky</th>
+                                            <th>Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>%(analytics_owners)%</tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Under "who owns what", and the question asked
+                             before it: that panel says whose morning this is,
+                             this one says whether anybody's morning is ruined.
+                             Hidden outright for a suite that never rated a
+                             test. -->
+                        <div class="metrics-card an-severity %(analytics_severity_state)%">
+                            <div class="an-chart__head">
+                                <i class="fa fa-shield" aria-hidden="true"></i>How much it matters
+                                <span class="an-chart__note">%(analytics_severity_note)%</span>
+                            </div>
+                            <div class="owner-scroll">
+                                <table class="owner-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Severity</th>
+                                            <th>Tests</th>
+                                            <th>Pass rate</th>
+                                            <th>Failing</th>
+                                            <th>Flaky</th>
+                                            <th>Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>%(analytics_severities)%</tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <div class="an-solo-note">
@@ -7600,6 +7974,23 @@
                                    placeholder="Search by test, step, marker or feature" oninput="filterSteps()" />
                         </div>
                     </div>
+                    <!-- A row of its own rather than more pills beside the
+                         others: owner is a second dimension, not a fifth value
+                         of the first, and a run can be filtered to one team's
+                         failures only if the two can be set at the same time.
+                         Hidden outright when nobody wrote an owner. -->
+                    <div class="metrics-toolbar step-toolbar step-owners" id="stepOwnerBar" hidden>
+                        <span class="step-owners__label">Owner</span>
+                        <div class="step-filters" id="stepOwnerFilters"></div>
+                    </div>
+                    <!-- A third dimension for the same reason owner is a
+                         second: "this team's blockers" is one question, and it
+                         needs all three answered at once. Hidden outright when
+                         nobody rated a test. -->
+                    <div class="metrics-toolbar step-toolbar step-owners" id="stepSeverityBar" hidden>
+                        <span class="step-owners__label">Severity</span>
+                        <div class="step-filters" id="stepSeverityFilters"></div>
+                    </div>
                     <div class="step-body">
                         <div class="step-rail" id="stepRail">
                             %(step_tree)%
@@ -7703,7 +8094,7 @@
                 %(archive_status)%
             </div>
 
-            <div data-spy="scroll" data-target="#list-example" data-offset="0" class="scrollspy-example">
+            <div class="archive-builds">
                 %(archive_body_content)%
             </div>
         </div>
@@ -8786,10 +9177,10 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     // two tab names that begin the same way - #test-metrics and
                     // #test-steps - are still the tabs they name.
                     //
-                    // Deferred to window.load when the page is still coming up:
-                    // the table this pages through is built there, and until
-                    // the loader has gone the flash saying which row it is would
-                    // burn out behind it.
+                    // Deferred to window.load when the page is still coming
+                    // up: scrollToTestRow builds the table it pages through,
+                    // and until the loader has gone the flash saying which row
+                    // it is would burn out behind it.
                     if (hash.indexOf('test-') === 0) {
                         if (document.readyState === 'complete') {
                             scrollToTestRow(hash);
@@ -8853,12 +9244,32 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     return;
                 }
 
-                $('.loader').fadeOut(300, function(){
+                var overlay = document.querySelector('.loader');
+                if (!overlay) {
+                    resizeAllCharts();
+                    return;
+                }
+
+                // The overlay leaves on the CSS opacity transition declared
+                // against .loader, not on a jQuery fade, so the last of the
+                // load landing on top of it cannot stutter the way out; see
+                // the note on .loader in the stylesheet.
+                //
+                // Timed rather than driven off transitionend: the event does
+                // not come at all if the transition never starts - a reader
+                // who has asked for less motion, a browser that skips it for
+                // a hidden tab - and the overlay would then be left sitting
+                // over a finished report.
+                overlay.classList.add('is-done');
+
+                setTimeout(function() {
+                    overlay.style.display = 'none';
+
                     // Run across a few frames to catch the fully-settled layout.
                     requestAnimationFrame(resizeAllCharts);
                     setTimeout(resizeAllCharts, 150);
                     setTimeout(resizeAllCharts, 400);
-                });
+                }, 300);
             });
         </script>
         <script>
@@ -8984,80 +9395,176 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
         </script>
 
         <script>
-            for(var i=0; i<%(archive_count)%; i++) {
-                var archiveCanvas = document.getElementById("archive-chart-"+i);
-                if (!archiveCanvas) { continue; }
-                var MeSeContext = archiveCanvas.getContext("2d");
+            // One chart per archived build, drawn when its canvas nears the
+            // viewport rather than here, while the parser waits.
+            //
+            // Every Chart.js instance measures its canvas -- a forced layout
+            // against the whole page -- installs a resize monitor of its own
+            // and animates its first draw. Doing that for every build up front
+            // is what made a long-lived report slow to open: at a few hundred
+            // builds it is seconds of blocked parsing, and hundreds of resize
+            // monitors and scroll listeners left behind, for charts nobody has
+            // scrolled to. Drawn on approach, the cost of opening the report is
+            // flat in the size of the archive instead of linear in it.
+            (function () {
+                var ID_PREFIX = 'archive-chart-';
                 var archives = %(archives)%;
-                var pass = archives[i].pass;
-                var fail = archives[i].fail;
-                var skip = archives[i].skip;
-                var xpass = archives[i].xpass;
-                var xfail = archives[i].xfail;
-                var error = archives[i].error;
-                var total = archives[i].total;
 
-                var MeSeData = {
-                    labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
-                    datasets: [{
-                        label: "Test",
-                        data: [pass, fail, skip, xpass, xfail, error],
-                        _theme: {
-                            backgroundColor: ['--status-pass', '--status-fail', '--status-skip',
-                                              '--status-xpass', '--status-xfail', '--status-error'],
-                            hoverBackgroundColor: ['--chart-hover-pass', '--chart-hover-fail', '--chart-hover-skip',
-                                                   '--chart-hover-xpass', '--chart-hover-xfail', '--chart-hover-error'],
-                            hoverBorderColor: ['--chart-border-pass', '--chart-border-fail', '--chart-border-skip',
-                                               '--chart-border-xpass', '--chart-border-xfail', '--status-error'],
-                            // Chart.js separates the slices with its own default
-                            // #fff border: invisible on a white card, a white cage
-                            // on a dark one. Pinned to the card it sits on.
-                            borderColor: '--surface-card'
+                // Found rather than counted. The count the archive rows are
+                // numbered from is empty when the archive is switched off, and
+                // an empty loop bound is a syntax error, not an empty loop.
+                var canvases = document.querySelectorAll('canvas[id^="' + ID_PREFIX + '"]');
+
+                function drawArchiveChart(canvas) {
+                    var archive = archives[canvas.id.slice(ID_PREFIX.length)];
+                    if (!archive) { return; }
+
+                    var MeSeData = {
+                        labels: ["PASS", "FAIL", "SKIP", "XPASS", "XFAIL", "ERROR"],
+                        datasets: [{
+                            label: "Test",
+                            data: [archive.pass, archive.fail, archive.skip,
+                                   archive.xpass, archive.xfail, archive.error],
+                            _theme: {
+                                backgroundColor: ['--status-pass', '--status-fail', '--status-skip',
+                                                  '--status-xpass', '--status-xfail', '--status-error'],
+                                hoverBackgroundColor: ['--chart-hover-pass', '--chart-hover-fail', '--chart-hover-skip',
+                                                       '--chart-hover-xpass', '--chart-hover-xfail', '--chart-hover-error'],
+                                hoverBorderColor: ['--chart-border-pass', '--chart-border-fail', '--chart-border-skip',
+                                                   '--chart-border-xpass', '--chart-border-xfail', '--status-error'],
+                                // Chart.js separates the slices with its own default
+                                // #fff border: invisible on a white card, a white cage
+                                // on a dark one. Pinned to the card it sits on.
+                                borderColor: '--surface-card'
+                            }
+                        }]
+                    };
+
+                    // Built through themedChart, which resolves the tokens
+                    // against the theme in force now -- so a chart drawn after
+                    // the reader has toggled the theme comes up in it, without
+                    // restyleCharts() having anything to say about a chart that
+                    // did not exist when the toggle happened.
+                    themedChart(canvas.getContext("2d"), {
+                        type: 'horizontalBar',
+                        data: MeSeData,
+                        options: {
+                            legend: {
+                                display: false
+                            },
+                            responsive: true,
+                            scales: {
+                                yAxes: [{
+                                    stacked: true
+                                }]
+                            },
+                            tooltips: {
+                              // Chart.js keeps the colours it was handed, so the tokens are
+                              // named here too and re-read by restyleCharts() on a theme change.
+                              _theme: {
+                                  backgroundColor: '--chart-tooltip-bg',
+                                  titleFontColor: '--chart-tooltip-title',
+                                  bodyFontColor: '--chart-tooltip-body',
+                                  borderColor: '--chart-tooltip-border',
+                                  multiKeyBackground: '--chart-tooltip-border'
+                              },
+                              backgroundColor: themeValue('--chart-tooltip-bg'),
+                              titleFontSize: 10,
+                              titleFontColor: themeValue('--chart-tooltip-title'),
+                              bodyFontColor: themeValue('--chart-tooltip-body'),
+                              bodyFontSize: 12,
+                              displayColors: false,
+                              borderColor: themeValue('--chart-tooltip-border'),
+                              borderWidth: 2,
+                              multiKeyBackground: themeValue('--chart-tooltip-border'),
+                              cornerRadius: 2,
+                              caretSize: 5,
+                              caretPadding: 5,
+                              xPadding: 5,
+                              yPadding: 5
+                          }
                         }
-                    }]
-                };
+                    });
+                }
 
-                var MeSeChart = themedChart(MeSeContext, {
-                    type: 'horizontalBar',
-                    data: MeSeData,
-                    options: {
-                        legend: {
-                            display: false
-                        },
-                        responsive: true,
-                        scales: {
-                            yAxes: [{
-                                stacked: true
-                            }]
-                        },
-                        tooltips: {
-                          // Chart.js keeps the colours it was handed, so the tokens are
-                          // named here too and re-read by restyleCharts() on a theme change.
-                          _theme: {
-                              backgroundColor: '--chart-tooltip-bg',
-                              titleFontColor: '--chart-tooltip-title',
-                              bodyFontColor: '--chart-tooltip-body',
-                              borderColor: '--chart-tooltip-border',
-                              multiKeyBackground: '--chart-tooltip-border'
-                          },
-                          backgroundColor: themeValue('--chart-tooltip-bg'),
-                          titleFontSize: 10,
-                          titleFontColor: themeValue('--chart-tooltip-title'),
-                          bodyFontColor: themeValue('--chart-tooltip-body'),
-                          bodyFontSize: 12,
-                          displayColors: false,
-                          borderColor: themeValue('--chart-tooltip-border'),
-                          borderWidth: 2,
-                          multiKeyBackground: themeValue('--chart-tooltip-border'),
-                          cornerRadius: 2,
-                          caretSize: 5,
-                          caretPadding: 5,
-                          xPadding: 5,
-                          yPadding: 5
-                      }
+                function onApproach(entries, observer) {
+                    for (var i = 0; i < entries.length; i++) {
+                        if (!entries[i].isIntersecting) { continue; }
+
+                        // Dropped before it is drawn, not after: a canvas is
+                        // only good for one chart, and Chart.js throws on one
+                        // that is already in use.
+                        observer.unobserve(entries[i].target);
+                        drawArchiveChart(entries[i].target);
                     }
+                }
+
+                // Safari below 12.1 has no IntersectionObserver. There the
+                // charts are drawn up front, exactly as they always were.
+                var observer = window.IntersectionObserver ? new IntersectionObserver(onApproach, {
+                    // A screen early, so a build's bars are already drawn by
+                    // the time its row is scrolled to. The canvas is sized by
+                    // the stylesheet either way, so nothing moves when one is
+                    // filled in -- it is only the drawing that arrives late.
+                    rootMargin: '400px 0px'
+                }) : null;
+
+                for (var i = 0; i < canvases.length; i++) {
+                    if (observer) { observer.observe(canvases[i]); }
+                    else { drawArchiveChart(canvases[i]); }
+                }
+            })();
+        </script>
+
+        <script>
+            // Which build the rail marks as the one being read.
+            //
+            // This was Bootstrap's ScrollSpy, pointed at the wrapper round the
+            // builds - an element that does not scroll. Its scrollHeight and
+            // its offsetHeight are therefore the same number, which makes
+            // ScrollSpy's maxScroll exactly 0, and the first thing _process()
+            // asks is whether scrollTop >= maxScroll. At rest that reads 0 >= 0,
+            // so it took the reader for someone who had reached the end of the
+            // list and lit the last build in it - and never changed its mind,
+            // because the page is what scrolls and that div never does. The
+            // oldest build came up selected on a rail nobody had touched.
+            //
+            // The builds are watched instead of the box round them: the one
+            // furthest up the list that is still under the top of the screen is
+            // the one being read. Cheaper too - ScrollSpy re-measured every
+            // build in the rail on scroll, and there can be hundreds.
+            (function () {
+                var rows = document.querySelectorAll('.archive-body');
+                if (!rows.length || !window.IntersectionObserver) { return; }
+
+                var ids = Array.prototype.map.call(rows, function (row) { return row.id; });
+                var onScreen = {};
+
+                var observer = new IntersectionObserver(function (entries) {
+                    for (var i = 0; i < entries.length; i++) {
+                        onScreen[entries[i].target.id] = entries[i].isIntersecting;
+                    }
+
+                    // The last one down the list that is still in the band,
+                    // which is the one most recently scrolled into - the same
+                    // reading ScrollSpy took. Taking the first would hand the
+                    // rail to the build being left behind, on nothing more than
+                    // the sliver of it still showing above the one being read.
+                    var active = null;
+                    for (var k = 0; k < ids.length; k++) {
+                        if (onScreen[ids[k]]) { active = ids[k]; }
+                    }
+                    if (active) { highlightArchiveRow(active); }
+                }, {
+                    // Only the top slice of the screen counts, which is where
+                    // ScrollSpy took its reading too. Without this the build
+                    // being left behind holds the rail until its last pixel is
+                    // gone, long after the next one fills the view.
+                    rootMargin: '0px 0px -80% 0px'
                 });
-            }
+
+                for (var i = 0; i < rows.length; i++) { observer.observe(rows[i]); }
+            })();
         </script>
 
         <script>
@@ -10415,6 +10922,42 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
             var STEP_KINDS = [['all', 'All'], ['failed', 'Failed'], ['bdd', 'Scenarios'], ['plain', 'Tests']];
 
+            // How step_report packs a test's owners into one attribute.
+            var OWNER_SEPARATOR = '|';
+
+            // The owner the rail is filtered to, or 'all'. Kept apart from
+            // stepKind on purpose: the two are different questions, and
+            // "this team's failures" needs both answered at once.
+            var stepOwner = 'all';
+
+            // The choice standing for "nobody wrote an owner". A sentinel no
+            // team can be called, rather than '' - which is what an owner
+            // attribute reads as when it is absent, and would make the pill
+            // indistinguishable from a team named by the empty string.
+            var UNOWNED = '\u0000unowned';
+
+            // The severity the rail is filtered to, or 'all'. A third question
+            // alongside kind and owner - "this team's blockers" needs all
+            // three at once - and the same sentinel trick for the tests
+            // nobody rated.
+            var stepSeverity = 'all';
+            var UNRATED = '\u0000unrated';
+
+            // The ladder, worst first. The pills are drawn in this order and
+            // not by how many tests are at each level: severity is the one
+            // filter here whose choices outrank each other, and sorting it by
+            // popularity would hide that.
+            var SEVERITY_ORDER = ['blocker', 'critical', 'normal', 'minor', 'trivial'];
+
+            function stepOwnersOf(item) {
+                var packed = item.getAttribute('data-owner') || '';
+                return packed ? packed.split(OWNER_SEPARATOR) : [];
+            }
+
+            function stepSeverityOf(item) {
+                return item.getAttribute('data-severity') || '';
+            }
+
             function stepItems() {
                 return Array.prototype.slice.call(document.querySelectorAll('#stepRail .step-test'));
             }
@@ -10448,6 +10991,30 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     return status === 'FAIL' || status === 'ERROR';
                 }
                 return item.getAttribute('data-kind') === stepKind;
+            }
+
+            function stepMatchesOwner(item) {
+                if (stepOwner === 'all') { return true; }
+
+                // A test nobody claimed is a finding rather than a gap - it is
+                // the one row a triage list must not hide - so it gets a filter
+                // of its own instead of only ever being in "all".
+                var owners = stepOwnersOf(item);
+                if (stepOwner === UNOWNED) { return owners.length === 0; }
+
+                return owners.indexOf(stepOwner) !== -1;
+            }
+
+            function stepMatchesSeverity(item) {
+                if (stepSeverity === 'all') { return true; }
+
+                var level = stepSeverityOf(item);
+
+                // A test nobody rated is a gap worth being able to see on its
+                // own, the same way an unowned test is.
+                if (stepSeverity === UNRATED) { return !level; }
+
+                return level === stepSeverity;
             }
 
             function toggleStepSuite(head) {
@@ -10491,6 +11058,140 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     button.onclick = function() {
                         stepKind = kind[0];
                         renderStepFilters();
+                        // The owner counts are counted inside the kind, so they
+                        // are stale the moment the kind changes - and the
+                        // severity counts are counted inside both.
+                        renderStepOwners();
+                        renderStepSeverities();
+                        filterSteps();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            function renderStepOwners() {
+                var bar = document.getElementById('stepOwnerBar');
+                var target = document.getElementById('stepOwnerFilters');
+                if (!bar || !target) { return; }
+
+                // Counted against the kind filter rather than against the whole
+                // run, so "Failed" then an owner reads as that team's failures
+                // and the count on the pill is the number the rail will show.
+                var counts = {};
+                var owned = 0;
+                var unowned = 0;
+
+                stepItems().forEach(function(item) {
+                    if (!stepMatchesKind(item)) { return; }
+
+                    var owners = stepOwnersOf(item);
+                    if (!owners.length) { unowned += 1; return; }
+
+                    owned += 1;
+                    owners.forEach(function(owner) {
+                        counts[owner] = (counts[owner] || 0) + 1;
+                    });
+                });
+
+                // Nobody wrote an owner, so there is no dimension to offer.
+                bar.hidden = owned === 0;
+                if (bar.hidden) { stepOwner = 'all'; return; }
+
+                if (stepOwner !== 'all' && stepOwner !== UNOWNED && !counts[stepOwner]) { stepOwner = 'all'; }
+                if (stepOwner === UNOWNED && !unowned) { stepOwner = 'all'; }
+
+                var names = Object.keys(counts).sort(function(a, b) {
+                    // Most tests first, then alphabetically, so the teams
+                    // carrying the suite are the ones in reach.
+                    return counts[b] - counts[a] || a.localeCompare(b);
+                });
+
+                var choices = [['all', 'All', owned + unowned]];
+                names.forEach(function(name) { choices.push([name, name, counts[name]]); });
+                if (unowned) { choices.push([UNOWNED, 'Unowned', unowned]); }
+
+                target.innerHTML = '';
+                choices.forEach(function(choice) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (stepOwner === choice[0] ? ' is-active' : '');
+                    button.textContent = choice[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = choice[2];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        stepOwner = choice[0];
+                        renderStepOwners();
+                        renderStepSeverities();
+                        filterSteps();
+                    };
+
+                    target.appendChild(button);
+                });
+            }
+
+            function renderStepSeverities() {
+                var bar = document.getElementById('stepSeverityBar');
+                var target = document.getElementById('stepSeverityFilters');
+                if (!bar || !target) { return; }
+
+                // Counted inside the two filters above it rather than against
+                // the whole run, so the number on a pill is the number of rows
+                // the rail will actually show when it is pressed.
+                var counts = {};
+                var rated = 0;
+                var unrated = 0;
+
+                stepItems().forEach(function(item) {
+                    if (!stepMatchesKind(item) || !stepMatchesOwner(item)) { return; }
+
+                    var level = stepSeverityOf(item);
+                    if (!level) { unrated += 1; return; }
+
+                    rated += 1;
+                    counts[level] = (counts[level] || 0) + 1;
+                });
+
+                // Nobody rated a test, so there is no dimension to offer.
+                bar.hidden = rated === 0;
+                if (bar.hidden) { stepSeverity = 'all'; return; }
+
+                if (stepSeverity !== 'all' && stepSeverity !== UNRATED && !counts[stepSeverity]) { stepSeverity = 'all'; }
+                if (stepSeverity === UNRATED && !unrated) { stepSeverity = 'all'; }
+
+                // The ladder first, in its own order, then anything else in
+                // this run's data - a word nobody recognises is a typo far
+                // more often than a sixth level, and it sorts after the five
+                // rather than being dropped, because a filter that silently
+                // omits a test is worse than one that shows a typo.
+                var levels = SEVERITY_ORDER.filter(function(level) { return counts[level]; });
+                Object.keys(counts).sort().forEach(function(level) {
+                    if (SEVERITY_ORDER.indexOf(level) === -1) { levels.push(level); }
+                });
+
+                var choices = [['all', 'All', rated + unrated]];
+                levels.forEach(function(level) { choices.push([level, level, counts[level]]); });
+                if (unrated) { choices.push([UNRATED, 'Unrated', unrated]); }
+
+                target.innerHTML = '';
+                choices.forEach(function(choice) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'attach-pill' + (stepSeverity === choice[0] ? ' is-active' : '');
+                    button.textContent = choice[1];
+
+                    var count = document.createElement('span');
+                    count.className = 'attach-pill__count';
+                    count.textContent = choice[2];
+                    button.appendChild(count);
+
+                    button.onclick = function() {
+                        stepSeverity = choice[0];
+                        renderStepSeverities();
                         filterSteps();
                     };
 
@@ -10535,7 +11236,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 var stillVisible = false;
 
                 stepItems().forEach(function(item) {
-                    var matches = stepMatchesKind(item) &&
+                    var matches = stepMatchesKind(item) && stepMatchesOwner(item) &&
+                        stepMatchesSeverity(item) &&
                         (!needle || (item.getAttribute('data-search') || '').indexOf(needle) !== -1);
 
                     item.hidden = !matches;
@@ -10556,7 +11258,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 // search opens the groups that hold one. Clearing the box
                 // leaves them as they are rather than shutting a group the
                 // reader opened by hand.
-                if (needle || stepKind !== 'all') {
+                if (needle || stepKind !== 'all' || stepOwner !== 'all' || stepSeverity !== 'all') {
                     stepSuites().forEach(function(suite) {
                         if (suite.querySelector('.step-test:not([hidden])')) { suite.classList.remove('is-shut'); }
                     });
@@ -10765,6 +11467,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 }
 
                 renderStepFilters();
+                renderStepOwners();
+                renderStepSeverities();
                 filterSteps();
             }
 

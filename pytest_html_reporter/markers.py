@@ -34,6 +34,61 @@ BUILTIN_MARKERS = frozenset((
 # is the *argument*: the marker itself is an ordinary `parametrize`.
 INTERNAL_MARKERS = frozenset(('_pytest_bdd_example',))
 
+# The marker that names who to tell when a test goes red. It is collected like
+# any other user marker, but it answers a different question from the rest -
+# "whose is this", not "what is this about" - and a row that shows it beside
+# `slow` and `smoke` answers neither. It gets a kind of its own here, and the
+# tab reads that kind to pull it out into a fact of its own.
+OWNER_MARKER = 'owner'
+
+# The kind an owner marker is recorded under. Named rather than spelled out at
+# every reader: the rail filters on it, output.json is written from it and the
+# Analytics roll-up reads it back a build later.
+OWNER_MARKER_KIND = 'owner'
+
+# The marker that says how much a failure here matters. Like ``owner`` it
+# answers a different question from the rest of the row - "how bad", not "what
+# about" - and unlike every other marker it is *ranked*: `blocker` and
+# `trivial` are not two values of one word but two ends of a ladder, and a
+# report that sorted them alphabetically would put the worst one in the middle.
+SEVERITY_MARKER = 'severity'
+SEVERITY_MARKER_KIND = 'severity'
+
+# The ladder, worst first. Allure's five words rather than five of our own:
+# whoever writes this marker has almost certainly written it there, and a
+# vocabulary nearly the same as a familiar one is worse than either.
+SEVERITY_LEVELS = ('blocker', 'critical', 'normal', 'minor', 'trivial')
+
+# Where a word nobody recognises sorts. After every known level rather than
+# before: an unrecognised severity is a typo far more often than it is a sixth
+# level somebody meant, and a typo must not outrank `blocker`.
+UNKNOWN_SEVERITY_RANK = len(SEVERITY_LEVELS)
+
+
+def severity_rank(level):
+    """Where one severity sits on the ladder. Lower is worse."""
+    try:
+        return SEVERITY_LEVELS.index(str(level).strip().lower())
+    except ValueError:
+        return UNKNOWN_SEVERITY_RANK
+
+
+def severity_value(mark):
+    """The level one severity marker names, lowercased, or '' if it names none.
+
+    Lowercased because ``severity("Critical")`` and ``severity("critical")``
+    are the same thing said twice, and a report drawing them as two levels
+    would split a suite's counts in half over a shift key.
+
+    A bare ``@pytest.mark.severity`` with no argument says nothing - it is not
+    a sixth level and it is not `normal`, it is a marker somebody left
+    unfinished - so it names no level and stays the plain marker it is.
+    """
+    args = getattr(mark, 'args', None)
+    if args is None: args = (mark or {}).get('args') or []
+
+    return str(args[0]).strip().lower() if args else ''
+
 
 def _is_internal(mark):
     """True for a marker some other plugin applied as plumbing.
@@ -122,6 +177,19 @@ def _scope(node):
     return SCOPES.get(type(node).__name__, type(node).__name__.lower())
 
 
+def _kind(mark):
+    """Which of the three things a marker is, as the badge colours say them."""
+    if mark.name in BUILTIN_MARKERS: return 'builtin'
+    if mark.name == OWNER_MARKER: return 'owner'
+
+    # Only when it actually names a level. A `severity` marker with empty
+    # brackets is not a severity, and giving it the kind anyway would put an
+    # empty badge in the row that exists to say how bad this is.
+    if mark.name == SEVERITY_MARKER and severity_value(mark): return SEVERITY_MARKER_KIND
+
+    return 'user'
+
+
 def markers(item):
     """Every marker on a test, nearest first, each said once.
 
@@ -141,10 +209,16 @@ def markers(item):
         seen[signature] = {
             'name': str(mark.name),
             'text': signature,
+            # The arguments on their own, unjoined. ``text`` is what a badge
+            # says and cannot be taken back apart - ``jira(PROJ-123)`` is one
+            # string - while a link needs the id by itself to put in a url, and
+            # guessing it back out of the signature would break on the first
+            # marker whose argument contains a bracket.
+            'args': _arguments(mark),
             # Where it was written. A failure explained by a marker nobody
             # remembers applying is usually one inherited from a conftest.
             'scope': _scope(node),
-            'kind': 'builtin' if mark.name in BUILTIN_MARKERS else 'user',
+            'kind': _kind(mark),
         }
 
     return list(seen.values())

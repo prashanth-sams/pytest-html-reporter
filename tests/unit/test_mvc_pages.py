@@ -590,7 +590,6 @@ def test_template():
     test_suites_error = str(get_random_number())
     archive_status = str(get_random_number())
     archive_body_content = get_random_string()
-    archive_count = str(get_random_number())
     archives = str(get_random_number())
     max_failure_suite_name_final = get_random_string()
     max_failure_suite_count = str(get_random_number())
@@ -634,7 +633,6 @@ def test_template():
         test_suites_error=test_suites_error,
         archive_status=archive_status,
         archive_body_content=archive_body_content,
-        archive_count=archive_count,
         archives=archives,
         max_failure_suite_name_final=max_failure_suite_name_final,
         max_failure_suite_count=max_failure_suite_count,
@@ -724,7 +722,7 @@ def test_template():
     scripts = soup.findAll("script")
     assert [script for script in scripts if f"data: [{_pass}, {fail}, {skip}, {xpass}, {xfail}, {error}]," in script.text]
     assert [script for script in scripts if f"var passPercent = Math.round(({_pass} / {total}) * 100)" in script.text]
-    assert [script for script in scripts if f"for(var i=0; i<{archive_count}; i++)" in script.text and f"var archives = {archives};" in script.text]
+    assert [script for script in scripts if f"var archives = {archives};" in script.text]
     assert [
         script for script in scripts
         if f"labels: {test_suites}," in script.text

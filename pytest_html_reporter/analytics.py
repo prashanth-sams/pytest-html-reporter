@@ -22,9 +22,11 @@ from collections import OrderedDict
 
 from html_page.analytics_fault import AnalyticsFault
 from html_page.analytics_move import AnalyticsMove
+from html_page.analytics_owner import AnalyticsOwner
 from html_page.analytics_row import AnalyticsRow
 from html_page.analytics_tile import AnalyticsTile
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.markers import severity_rank
 from pytest_html_reporter.util import escape_report_text, js_literal
 
 # Bucket edges for the duration histogram, in seconds. Anything past the last
@@ -154,6 +156,34 @@ def _to_float(value):
         return None
 
 
+# A per-test duration past this is not a measurement of anything. Reports
+# written before the duration was taken from pytest's own phase timings billed
+# a test that merged a bundle mid-run with the time since whatever start the
+# merge had installed - the epoch, or a shard's own stamp - and those archives
+# are still on disk. Read back literally, one of them draws a 56-year bar in
+# the slowest-tests chart and carries every total on the tab with it.
+#
+# A day, because that is the line past which the number is more likely to be a
+# subtraction gone wrong than a test: nothing this tab is for - which bands are
+# filling up, which ten tests to look at next - survives a single row being
+# larger than every other row put together, and the run's own Test Metrics
+# table still prints whatever was recorded either way.
+MAX_DURATION = 24 * 60 * 60
+
+
+def _plausible(duration):
+    """A duration, or None where the archive holds something that cannot be one.
+
+    None rather than zero, which is the same answer this gives for a build
+    archived before durations were recorded at all: unknown, so it is left out
+    of the totals instead of being drawn as a test that took no time.
+    """
+    if duration is None: return None
+    if duration < 0 or duration > MAX_DURATION: return None
+
+    return duration
+
+
 def _read_json(path):
     try:
         with open(path, encoding='utf-8') as handle:
@@ -192,7 +222,7 @@ def _normalise(data, stamp):
         for test in (suite.get('tests') or {}).values():
             name = str(test.get('test_name', ''))
             state = outcome(test.get('status'))
-            duration = _to_float(test.get('duration'))
+            duration = _plausible(_to_float(test.get('duration')))
 
             counts[state] += 1
             if duration is not None:
@@ -210,6 +240,15 @@ def _normalise(data, stamp):
                 'message': str(test.get('message', '')),
                 'rerun': _to_int(test.get('rerun')),
                 'duration': duration,
+                # A list, and empty for every build archived before ownership
+                # was written into the file at all - which reads as unowned,
+                # because that is what those tests were as far as any report
+                # could tell at the time.
+                'owner': [str(name) for name in (test.get('owner') or [])],
+                # One word or none. Empty for every build archived before
+                # severity was written into the file, which reads as unrated -
+                # what those tests were, as far as any report could tell.
+                'severity': str(test.get('severity') or ''),
             }
 
     return {
@@ -350,8 +389,20 @@ def histories(builds):
                     'key': key,
                     'suite': test['suite'],
                     'name': test['name'],
+                    'owner': [],
+                    'severity': '',
                     'points': [],
                 }
+
+            # Overwritten each build rather than merged: ownership is a fact
+            # about now, not a history. A test that moved teams last month
+            # should page the team that has it today, and a union of every
+            # owner it ever had would page both.
+            if test['owner']: history['owner'] = list(test['owner'])
+
+            # And for the same reason: a test raised to `blocker` this month is
+            # a blocker, not the average of what it has been rated before.
+            if test['severity']: history['severity'] = test['severity']
 
             history['points'].append({
                 'build': position,
@@ -544,7 +595,12 @@ def _duration_text(seconds):
     if seconds < 60: return '%ss' % round(seconds, 1)
 
     minutes, rest = divmod(int(round(seconds)), 60)
-    return '%dm %02ds' % (minutes, rest)
+    if minutes < 60: return '%dm %02ds' % (minutes, rest)
+
+    # Past an hour the seconds are noise, and the reader of "608889402m 03s"
+    # is left doing the division themselves.
+    hours, minutes = divmod(minutes, 60)
+    return '%dh %02dm' % (hours, minutes)
 
 
 def _tile(value, label, note='', grade=''):
@@ -725,6 +781,262 @@ def _fault_rows(entries, tracked):
     return content
 
 
+UNOWNED = 'Unowned'
+
+
+def owner_totals(tracked):
+    """One row per owner: how much of the suite they hold, and how it behaves.
+
+    The question this answers is not "which test is worst" - the stability
+    table above already answers that, test by test - but "whose morning is
+    this". A run with forty failures spread evenly over six teams and a run
+    with forty in one team read identically everywhere else on the page.
+
+    A test with two owners counts once for each. That is the honest reading of
+    two owner markers, and the alternative - picking one - would quietly take a
+    team off the hook for a test they had put their name on.
+    """
+    totals = OrderedDict()
+
+    for history in tracked.values():
+        # Only what this run actually ran. A test deleted three builds ago is
+        # nobody's morning, and leaving it in makes a team's numbers unfixable.
+        if not history['current']: continue
+
+        for owner in (history['owner'] or [UNOWNED]):
+            row = totals.get(owner)
+            if row is None:
+                row = totals[owner] = {'owner': owner, 'tests': 0, 'failing': 0,
+                                       'flaky': 0, 'broken': 0, 'rates': [],
+                                       'duration': 0.0}
+
+            row['tests'] += 1
+            if history['outcome'] == 'fail': row['failing'] += 1
+            if history['flaky']: row['flaky'] += 1
+            if history['broken']: row['broken'] += 1
+            if history['pass_rate'] is not None: row['rates'].append(history['pass_rate'])
+            if history['duration']: row['duration'] += history['duration']
+
+    for row in totals.values():
+        # The mean of the tests' own rates rather than passes over runs. A team
+        # holding one test that has run two hundred times and forty that ran
+        # once should not have the two hundred decide their number.
+        row['pass_rate'] = round(sum(row['rates']) / len(row['rates']), 1) if row['rates'] else None
+        row['duration'] = round(row['duration'], 2)
+        row['share'] = 0
+
+    rows = sorted(totals.values(), key=_owner_rank)
+
+    # The share bar is drawn against the busiest owner rather than against the
+    # whole suite: with twelve teams every bar would be a stub, and the column
+    # is there to compare teams with each other.
+    widest = max((row['tests'] for row in rows), default=0)
+    for row in rows:
+        row['share'] = int(round(100.0 * row['tests'] / widest)) if widest else 0
+
+    return rows
+
+
+def _owner_rank(row):
+    """Worst first, so the table opens on the team with the most to do.
+
+    Unowned sorts last whatever its numbers, because it is not a team and
+    reading it in among them invites somebody to go and find out who Unowned
+    is. It is still drawn - unclaimed tests are a finding - just at the end.
+    """
+    return (row['owner'] == UNOWNED,
+            -row['broken'], -row['failing'], -row['flaky'],
+            row['pass_rate'] if row['pass_rate'] is not None else 101,
+            row['owner'])
+
+
+def _owner_headline(named, rows):
+    """The sentence over the owner table, or '' when there is no table.
+
+    Says the one thing the rows cannot: how much of the suite has no owner at
+    all. A roll-up read as "these are the teams" is misleading while a third of
+    the tests are not in it.
+    """
+    if not named: return ''
+
+    unowned = sum(row['tests'] for row in rows if row['owner'] == UNOWNED)
+    total = sum(row['tests'] for row in rows)
+
+    text = '%d %s' % (len(named), 'owner' if len(named) == 1 else 'owners')
+
+    if not unowned: return text + ', every test claimed'
+
+    # The noun belongs to the total, not to the count in front of it:
+    # "1 of 4 tests unclaimed", never "1 of 4 test".
+    return '%s, and %d of %d %s unclaimed' % (text, unowned, total,
+                                              'test' if total == 1 else 'tests')
+
+
+def _owner_rows(rows):
+    """The owner roll-up as table rows.
+
+    Every owner, not a top few. Owners are teams and there are rarely more
+    than a couple of dozen, and a team cut off the bottom of the list is a team
+    that does not know it has work - which is the one thing this table exists
+    to stop. The panel scrolls instead.
+    """
+    content = ''
+
+    for row in rows:
+        # A team with nothing wrong is not drawn in alarm colours, and a team
+        # whose tests only ever fail is not drawn in the same tone as one with
+        # a single flake.
+        if row['broken']: tone = 'bad'
+        elif row['failing'] or row['flaky']: tone = 'warn'
+        else: tone = 'good'
+
+        content += str(AnalyticsOwner(
+            owner=escape_report_text(row['owner']),
+            kind='unowned' if row['owner'] == UNOWNED else 'owner',
+            tests=str(row['tests']),
+            share=str(row['share']),
+            rate='--' if row['pass_rate'] is None else '%s%%' % row['pass_rate'],
+            failing=str(row['failing']),
+            flaky=str(row['flaky']),
+            broken=str(row['broken']),
+            duration=escape_report_text(_duration_text(row['duration'])),
+            tone=tone,
+        ))
+
+    return content
+
+
+UNRATED = 'Unrated'
+
+
+def severity_totals(tracked):
+    """One row per severity level: how much of the suite sits at it, and how it behaves.
+
+    The owner table answers "whose morning is this". This one answers the
+    question asked before it: *does any of this matter today*. Forty failures
+    at `trivial` and two at `blocker` are the same number everywhere else on
+    the page and are not remotely the same run.
+
+    A test counts once, unlike the owner roll-up: it has one severity by
+    construction, because ``record_severity`` has already picked between the
+    markers that claimed it.
+    """
+    totals = OrderedDict()
+
+    for history in tracked.values():
+        # This run's tests only, for the same reason the owner table takes
+        # them: a test deleted three builds ago cannot be triaged.
+        if not history['current']: continue
+
+        level = history['severity'] or UNRATED
+        row = totals.get(level)
+        if row is None:
+            row = totals[level] = {'severity': level, 'tests': 0, 'failing': 0,
+                                   'flaky': 0, 'broken': 0, 'rates': [],
+                                   'duration': 0.0}
+
+        row['tests'] += 1
+        if history['outcome'] == 'fail': row['failing'] += 1
+        if history['flaky']: row['flaky'] += 1
+        if history['broken']: row['broken'] += 1
+        if history['pass_rate'] is not None: row['rates'].append(history['pass_rate'])
+        if history['duration']: row['duration'] += history['duration']
+
+    for row in totals.values():
+        row['pass_rate'] = round(sum(row['rates']) / len(row['rates']), 1) if row['rates'] else None
+        row['duration'] = round(row['duration'], 2)
+        row['share'] = 0
+
+    rows = sorted(totals.values(), key=_severity_row_rank)
+
+    widest = max((row['tests'] for row in rows), default=0)
+    for row in rows:
+        row['share'] = int(round(100.0 * row['tests'] / widest)) if widest else 0
+
+    return rows
+
+
+def _severity_row_rank(row):
+    """The ladder, worst first - and not the worst *numbers* first.
+
+    The owner table sorts on behaviour because no team outranks another. These
+    rows do outrank each other, and that order is the whole content of the
+    column: a table that put `trivial` above `blocker` because trivial had more
+    failures would be arguing with the words in it.
+
+    Unrated sorts last however many tests are in it. It is not a level.
+    """
+    return (row['severity'] == UNRATED,
+            severity_rank(row['severity']),
+            row['severity'])
+
+
+def _severity_headline(rows):
+    """The sentence over the severity table, or '' when there is no table.
+
+    It leads with the thing somebody came to the tab to find out - whether
+    anything important is red - and falls back to how much of the suite has
+    never been rated, which is what makes the rest of the table readable or
+    not.
+    """
+    rated = [row for row in rows if row['severity'] != UNRATED]
+    if not rated: return ''
+
+    total = sum(row['tests'] for row in rows)
+    unrated = sum(row['tests'] for row in rows if row['severity'] == UNRATED)
+
+    # The worst level that has anything wrong in it, which is the one line
+    # worth spending the headline on when there is one.
+    hurt = next((row for row in rated if row['failing'] or row['broken']), None)
+    if hurt:
+        count = hurt['failing'] or hurt['broken']
+        return '%d %s %s failing' % (count, hurt['severity'],
+                                     'test' if count == 1 else 'tests')
+
+    text = '%d %s in use' % (len(rated), 'level' if len(rated) == 1 else 'levels')
+
+    if not unrated: return text + ', every test rated'
+
+    return '%s, and %d of %d %s unrated' % (text, unrated, total,
+                                            'test' if total == 1 else 'tests')
+
+
+def _severity_rows(rows):
+    """The severity roll-up as table rows.
+
+    Drawn with the owner table's row, deliberately: the two answer neighbouring
+    questions about the same run with the same six numbers, and giving them two
+    layouts would make readers work out twice that the third column is a pass
+    rate.
+    """
+    content = ''
+
+    for row in rows:
+        if row['broken']: tone = 'bad'
+        elif row['failing'] or row['flaky']: tone = 'warn'
+        else: tone = 'good'
+
+        content += str(AnalyticsOwner(
+            owner=escape_report_text(row['severity']),
+            # The level is in the class so the chip can carry the ladder in its
+            # colour. An unrecognised word gets no colour of its own and reads
+            # as the plain chip it is, which is the honest look for a typo.
+            kind=escape_report_text(
+                'unowned' if row['severity'] == UNRATED
+                else 'severity-%s' % row['severity']),
+            tests=str(row['tests']),
+            share=str(row['share']),
+            rate='--' if row['pass_rate'] is None else '%s%%' % row['pass_rate'],
+            failing=str(row['failing']),
+            flaky=str(row['flaky']),
+            broken=str(row['broken']),
+            duration=escape_report_text(_duration_text(row['duration'])),
+            tone=tone,
+        ))
+
+    return content
+
+
 def _rank(history):
     """Sort key for the stability table: worst behaviour at the top.
 
@@ -882,6 +1194,27 @@ def generate_analytics(base):
     ConfigVars._analytics_faults = _fault_rows(faults, tracked)
     ConfigVars._analytics_fault_note = failure_headline(faults)
     ConfigVars._analytics_fault_state = '' if faults else 'is-empty'
+
+    # --- who owns what --------------------------------------------------
+    # Empty for every suite that never wrote an owner marker, and the panel
+    # goes with it: a table of one row called Unowned is a table saying
+    # nothing at all.
+    owners = owner_totals(tracked)
+    named = [row for row in owners if row['owner'] != UNOWNED]
+
+    ConfigVars._analytics_owners = _owner_rows(owners) if named else ''
+    ConfigVars._analytics_owner_state = '' if named else 'is-empty'
+    ConfigVars._analytics_owner_note = _owner_headline(named, owners)
+
+    # --- how much any of it matters --------------------------------------
+    # Empty, panel and all, for a suite that never rated a test: a table whose
+    # only row is Unrated is a table saying nothing at all.
+    severities = severity_totals(tracked)
+    rated = [row for row in severities if row['severity'] != UNRATED]
+
+    ConfigVars._analytics_severities = _severity_rows(severities) if rated else ''
+    ConfigVars._analytics_severity_state = '' if rated else 'is-empty'
+    ConfigVars._analytics_severity_note = _severity_headline(severities)
 
     ConfigVars._analytics_tiles = tiles
     ConfigVars._analytics_movement = movement
