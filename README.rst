@@ -53,6 +53,10 @@ Features
 * Sharded and cross-machine runs - a matrix that splits the suite over four machines, or three legs run one after another, are merged into one build by ``pytest-html-reporter merge``: one set of totals, one archived build, one JUnit XML
 * Dedicated GitHub Action
 
+.. image:: images/pytest-html-reporter.gif
+   :alt: pytest-html-reporter report tour
+   :align: center
+
 Installation
 ------------
 
@@ -490,15 +494,6 @@ capture would run, so it attaches from there, before the quit::
 photographed automatically and say nothing about screenshots at all, while ``test_screenshot.py`` attaches its own
 from a ``unittest`` ``tearDown``. The same guidance is printed on the ``Screenshots`` tab itself whenever a run
 captures nothing.
-
-.. image:: https://img.shields.io/badge/Attach_screenshot_snippet-000?style=for-the-badge&logo=ko-fi&logoColor=white
-   :target: https://gist.github.com/prashanth-sams/f0cc2102fc3619b11748e0cbda22598b
-
-
-.. image:: images/pytest-html-reporter.gif
-   :alt: pytest-html-reporter report tour
-   :width: 800px
-
 
 api logs / attachments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
