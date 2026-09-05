@@ -27,7 +27,7 @@ setup(
         "Roadmap": "https://github.com/prashanth-sams/pytest-html-reporter/blob/master/ROADMAP.md",
     },
     description="A pytest plugin for generating lightweight HTML test reports with screenshots, logs, coverage, archives, and xdist support",
-    long_description=read("README.rst"),
+    long_description=read("README.md"),
     keywords=["pytest", "py.test", "html", "reporter", "report", "pytest-plugin", "html-report", "test-report", "pytest-html", "pytest-html-reporter", "api-testing", "xdist", "playwright", "selenium", "test-coverage", "pytest-cov", "pytest-html-cov", "pytest-html-coverage", "pytest-coverage"],
     packages=find_packages(),
     include_package_data=True,
@@ -42,7 +42,7 @@ setup(
             "vendor/README.md",
         ],
     },
-    long_description_content_type="text/x-rst",
+    long_description_content_type="text/markdown",
     python_requires=">=3.7",
     install_requires=["pytest", "Pillow"],
     classifiers=[
