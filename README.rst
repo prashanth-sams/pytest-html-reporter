@@ -17,6 +17,10 @@ pytest-html-reporter
     :target: https://pepy.tech/project/pytest-html-reporter
     :alt: Downloads
 
+.. image:: https://img.shields.io/badge/docs-pytest--html--reporter-blue
+    :target: https://prashanth-sams.github.io/pytest-html-reporter.github.io/
+    :alt: Documentation
+
 
 ..
 
@@ -122,6 +126,386 @@ Features
 .. image:: images/pytest-html-reporter.gif
    :alt: pytest-html-reporter report tour
    :align: center
+
+----
+
+Comparison
+----------
+
+How ``pytest-html-reporter`` compares with ``pytest-html`` and ``allure-pytest``. The same table, kept
+up to date, is at https://prashanth-sams.github.io/pytest-html-reporter.github.io/
+
+.. list-table::
+   :header-rows: 1
+   :widths: 12 26 20 20 22
+
+   * - Section
+     - Capability
+     - ``pytest-html``
+     - ``allure-pytest``
+     - ``pytest-html-reporter``
+
+   * - Ease of setup
+     - The pytest run writes the finished report
+     - ✅
+     - ❌
+     - ✅
+
+   * -
+     - A report with no flags at all
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - Nothing to install beyond Python
+     - ✅
+     - ❌
+     - ✅
+
+   * -
+     - It opens itself when the run ends
+     - ❌
+     - ✅
+     - ✅
+
+   * - Report portability
+     - One self-contained HTML file
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - No second tool to render it
+     - ✅
+     - ❌
+     - ✅
+
+   * -
+     - Mail it, or attach it to a ticket
+     - ✅
+     - ✅
+     - ✅
+
+   * - Deep links & shareability
+     - A deep link to one test
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Copy that link from the row itself
+     - ❌
+     - ❌
+     - ✅
+
+   * - Dashboard UX
+     - Status counts and run duration
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - Search, sort and filter the results
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - One click for "only the failures"
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - Export the table to CSV, Excel or print
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - A breakdown per suite
+     - ❌
+     - ✅
+     - ✅
+
+   * - Theme
+     - Light and dark themes
+     - ❌
+     - ✅
+     - ✅
+
+   * - Failure triage
+     - Failures grouped by the exception behind them
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - Copy the error, or the rerun command
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - A cut message that says it was cut
+     - ❌
+     - ❌
+     - ✅
+
+   * - Screenshots
+     - Taken with no hook or fixture of your own
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - A gallery of every picture the run took
+     - ❌
+     - ❌
+     - ✅
+
+   * - Logs
+     - Captured stdout, stderr and logging
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - How many lines each test produced
+     - ❌
+     - ❌
+     - ✅
+
+   * - API debugging
+     - Attach request and response payloads
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - The curl that repeats the call, credentials blanked
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - A structured request and response viewer
+     - ❌
+     - ❌
+     - ✅
+
+   * - Security
+     - Sensitive API values redacted for you
+     - ❌
+     - ❌
+     - ✅
+
+   * - Step diagnostics
+     - Named, timed, nested steps
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - A tree even when you name nothing
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - The failing step carries the message and the picture
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Attachments land on the step that was open
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Async and concurrent steps keep their timing and nesting
+     - ❌
+     - ❌
+     - ✅
+
+   * - BDD & markers
+     - Gherkin scenarios with no changes to the test
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Markers shown with the scope they came from
+     - ❌
+     - ❌
+     - ✅
+
+   * - Analytics
+     - A stability score for the suite
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - Flaky tests, kept apart from always-failing
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Where the time goes
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - What changed since the last build
+     - ❌
+     - ✅
+     - ✅
+
+   * - Ownership & priority
+     - Owner-based analytics
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Severity-based failure analysis
+     - ❌
+     - ✅
+     - ✅
+
+   * - Historical analysis
+     - History across builds
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Pass-rate and coverage trends
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - The failure delta since the last build
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - Retention by count, by age or by date
+     - ❌
+     - ❌
+     - ✅
+
+   * - Test coverage
+     - A Coverage tab when pytest-cov ran
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - Coverage measured in an earlier job
+     - ❌
+     - ❌
+     - ✅
+
+   * - xdist
+     - One report from a pytest-xdist run
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - Reruns and retries
+     - ✅
+     - ✅
+     - ✅
+
+   * - Multi-machine sharding
+     - Shards merged into a single build
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - The merge runs after the shards finish
+     - ❌
+     - ✅
+     - ✅
+
+   * - JUnit XML
+     - Written by the same run
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - Traceability metadata written into each testcase
+     - ❌
+     - ❌
+     - ✅
+
+   * - Machine-readable output
+     - Machine-readable results beside the report
+     - ❌
+     - ✅
+     - ✅
+
+   * - Traceability / TMS
+     - Issue ids turned into links
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Links of your own in the side nav
+     - ❌
+     - ❌
+     - ✅
+
+   * - Enterprise metadata
+     - Environment and build details
+     - ✅
+     - ✅
+     - ✅
+
+   * -
+     - Owner / team labels
+     - ❌
+     - ✅
+     - ✅
+
+   * -
+     - Severity labels
+     - ❌
+     - ✅
+     - ✅
+
+   * - Extensibility / hooks
+     - A Python API for attachments and steps
+     - ❌
+     - ✅
+     - ✅
+
+   * - CI integration
+     - A first-party GitHub Action
+     - ❌
+     - ❌
+     - ✅
+
+   * -
+     - A first-party VS Code extension
+     - ❌
+     - ❌
+     - ✅
+
+----
 
 Installation
 ------------
