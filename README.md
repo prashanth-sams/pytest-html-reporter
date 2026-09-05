@@ -1,8 +1,8 @@
 # pytest-html-reporter
 
 [![Downloads](https://pepy.tech/badge/pytest-html-reporter)](https://pepy.tech/project/pytest-html-reporter)
-[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.1)](https://badge.fury.io/py/pytest-html-reporter)
-[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.1)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.1)
+[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.2)](https://badge.fury.io/py/pytest-html-reporter)
+[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.2)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.2)
 [![Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter](https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg)](https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Documentation](https://img.shields.io/badge/docs-pytest--html--reporter-blue)](https://prashanth-sams.github.io/pytest-html-reporter.github.io/)
 
@@ -12,9 +12,19 @@
 
 ## Features
 
+<p align="left">
+  <a href="https://prashanth-sams.github.io/pytest-html-reporter.github.io/report/pytest_html_report.html#dashboard">
+    <img
+      src="https://img.shields.io/badge/Live%20Report-View%20Demo-brightgreen?style=for-the-badge&logo=pytest&logoColor=white"
+      alt="View Live Report"
+    />
+  </a>
+</p>
+
 | Feature | Description |
 |---|---|
 | Generic information | Overview, environment, trends, highlights—including the most failed suite and failure delta—and detailed test-suite information. |
+| Environment Snapshot | Records the host, operating system, interpreter path, Python, `pytest` and plugin versions and the `xdist` worker count without being asked, detects the CI system the run happened on - GitHub Actions, GitLab, Jenkins, CircleCI, Buildkite, Azure Pipelines and others - and links the pipeline it came from beside the branch and commit it was cut from. |
 | Analytics | Flaky tests, standing failures, failures grouped by exception, pass-rate drift, and execution-time distribution across every archived build. |
 | Test Steps | Named and timed test steps with nested drill-down from the suite to the test and its individual actions. Supports `async` suites and concurrent sibling operations. |
 | Cucumber / Gherkin | `pytest-bdd` scenarios work without changes. Given, When, and Then statements appear as individually timed steps with parsed arguments, feature names, scenario names, and tags. |
@@ -27,7 +37,7 @@
 | Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. |
 | Light and Dark Themes | Provides a side-navigation theme switch that remembers the user's choice and follows the operating-system theme until changed. |
 | Custom Side-Navigation Links | Adds links to custom pages directly within the report's side navigation. |
-| Test Reruns | Supports rerun results and preserves retry information in the generated report. |
+| Test Reruns | Reports a retried test as one row carrying the outcome that stuck, and keeps every attempt behind it - open the rerun count to see what each one failed with. |
 | Parallel Execution | Supports parallel test execution using `pytest-xdist`. |
 | Sharded and Cross-Machine Runs | Combines test shards from parallel machines or sequential stages using `pytest-html-reporter merge`, producing one set of totals, one archived build, and one JUnit XML file. |
 | JUnit XML | Generates JUnit XML results from regular, parallel, and sharded test runs for integration with CI test-result systems. |
@@ -128,6 +138,7 @@ which suits your project; it is kept up to date in the
 |  | Coverage measured in an earlier job | ❌ | ❌ | ✅ |
 | xdist | One report from a pytest-xdist run | ✅ | ✅ | ✅ |
 |  | Reruns and retries | ✅ | ✅ | ✅ |
+|  | What each attempt failed with | ❌ | ❌ | ✅ |
 | Multi-machine sharding | Shards merged into a single build | ❌ | ✅ | ✅ |
 |  | The merge runs after the shards finish | ❌ | ✅ | ✅ |
 | JUnit XML | Written by the same run | ❌ | ❌ | ✅ |
@@ -277,6 +288,54 @@ often as you like:
 $ pytest tests/ --environment=prod --build-info branch=main --build-info sha=$GITHUB_SHA
 ```
 
+#### What the panel fills in on its own
+
+Most of the panel needs no flag at all. A report is a build artifact - it is read a week later, by somebody who
+cannot re-run it and cannot ask the machine anything - so everything that can be answered without being asked is:
+
+| Row | What it says |
+|---|---|
+| `Host` | The machine that ran the tests |
+| `Platform` | The operating system as its own users name it - `Ubuntu 22.04.4 LTS · Linux 5.15.0 (x86_64)`, `macOS 15.6 (arm64)` - rather than the kernel string |
+| `Python` | Version, implementation and word size, e.g. `3.11.7 (CPython, 64-bit)` |
+| `Interpreter` | The `python` that ran, which is the row that ends an argument about which virtualenv was active |
+| `pytest`, `Plugins` | The framework and every plugin version active for the run |
+| `Workers` | How many `xdist` workers reported results - only on a parallel run, and it says so when fewer ran than `-n` asked for |
+| `CI`, `Pipeline` | The CI system and a link straight back to the build that produced the report |
+| `Branch`, `Commit` | The revision under test |
+| `Arguments`, `Root` | The command line the run was started with, and where it ran |
+
+`CI` and `Pipeline` are detected from the CI system's own variables: GitHub Actions, GitLab CI, Jenkins, CircleCI,
+Buildkite, Azure Pipelines, Travis CI, AppVeyor, Drone, Bitbucket Pipelines, Semaphore, AWS CodeBuild and TeamCity are
+named individually, and anything else setting `CI` is still recorded as a CI run rather than passed off as somebody's
+laptop. Where a system publishes its own build url - GitLab, Jenkins, CircleCI, Buildkite, Travis, Drone - that url is
+used as given, so a self-hosted install or a reverse proxy is linked correctly; the rest are assembled from the
+documented variables. A re-run GitHub Actions workflow links its *own* attempt rather than the latest one.
+
+`Branch` and `Commit` come from the CI system where it publishes them - a CI checkout is a detached `HEAD`, where git
+itself only answers `HEAD` - and from `git` otherwise. A folder that is not a checkout simply has no such rows.
+
+Nothing here overrides you: if `--build-info` (or the `build_info` ini key) already names `branch`, `commit`, `ci` or
+`pipeline`, that answer is the one shown, and the detected one is dropped rather than argued with.
+
+#### The installed packages
+
+`--report-packages` adds a `Packages` row listing every installed distribution and its version, the way `pip freeze`
+reads:
+
+```
+$ pytest tests/ --html-report=./report --report-packages
+```
+
+It is off by default deliberately. It is a few hundred entries nobody reads until the day the report is the only
+surviving record of what was installed - and it publishes a full dependency inventory into a file that gets attached
+to tickets and passed around. The `Plugins` row answers a much smaller question, and the library whose new minor
+version broke the suite last night is almost never a pytest plugin.
+
+On a sharded run each leg collects this for itself, on the machine that actually imported those versions. The merged
+report shows one list when every leg agrees and one row per leg when they do not, which is the case the row exists
+for.
+
 ### Captured logs
 
 Everything `pytest` captures while a test runs - `stdout`, `stderr` and `logging` output, from setup, call and
@@ -424,6 +483,7 @@ report_log_limit = 10000
 report_attachments = all
 report_attachment_limit = 20000
 report_screenshots = failed
+report_packages = false
 report_coverage = auto
 report_coverage_limit = 500
 report_open = auto
@@ -448,6 +508,10 @@ the same as `--report-log-limit` (a character count, or `0` for no limit). `repo
 
 `report_open` takes the same values as `--report-open` (`auto` / `always` / `none`), and is the place to
 turn the browser off once for everybody rather than in every command.
+
+`report_packages` mirrors `--report-packages` and takes `1`, `true`, `yes` or `on`. Listing what was installed is a
+property of the job rather than of one run - either every build of this suite should carry the inventory or none of
+them should - so the ini file is usually where it belongs.
 
 `report_link` takes one `Label=URL` per line and, like `build_info`, adds to whatever `--report-link` passes
 rather than being replaced by it.
@@ -483,7 +547,7 @@ ini value; `--build-info` entries are added to the ones set in the ini file rath
 `--report-coverage-limit`, `--report-shard`, `--report-shard-run`, `--report-junit` and
 `--report-junit-xpass` override their ini values. `--report-shard-merge` and `--report-shard-reset` are
 switches rather than values: the flag turns the behaviour on, and so does a truthy ini key, so there is nothing on
-the command line that turns off an ini file that has already said yes
+the command line that turns off an ini file that has already said yes - and `--report-packages` behaves the same way
 
 **Note:** If you fail to provide `--html-report` tag, it consider your project's home directory as the base
 
@@ -812,6 +876,43 @@ with a note saying how much was dropped:
 ```
 $ pytest --html-report=./report --report-attachments=failed --report-attachment-limit=5000
 ```
+
+### Reruns, and what each attempt did
+
+A test retried by `pytest-rerunfailures` is reported as **one row carrying the outcome that stuck**, with the attempts
+it took in the `Rerun` column. That is the honest shape - a test that passes on its third go passed - but on its own it
+throws away the only interesting thing about a flaky test: the row shows the message of the attempt that stuck, and an
+attempt that stuck by passing has no message at all.
+
+So the count is also a button. Click it and the panel lists every attempt in order - what each one did, how long it
+took, and the full error it failed with - ending on the attempt the row itself is showing, marked `kept`:
+
+```
+Attempt 1   FAIL   0.31s
+    AssertionError: connection refused: could not connect to postgres on localhost:5432
+      the container was still starting when the fixture handed back
+
+Attempt 2   FAIL   0.28s
+    ValueError: stale cache handed back order #7 after the write to #8
+
+Attempt 3   PASS   0.30s                                                    KEPT
+```
+
+Two failures for two different reasons is a different bug report from the same failure twice, and neither is visible
+from a row that says `PASS  2`. The panel's **Copy** button hands the whole trail over in the shape above, for pasting
+into an issue.
+
+The count and the trail are two spellings of one fact and always agree. This holds across both folds - a retry inside
+one process, and a node id that ran in [two shards](#when-the-same-test-ran-in-two-shards) - so a test retried twice on
+a shard that then ran again on another machine reports four attempts and shows four. Under `-n`, each attempt also says
+which xdist worker ran it.
+
+A test that ran once has no trail, and its `Rerun` cell stays the plain `0` it has always been. So does a build
+[archived](#archive-retention) before this version: the count was stored, the attempts behind it were not, and offering
+an empty panel would be worse than offering none.
+
+Nothing needs enabling. `--reruns`, the `reruns` ini key, `@pytest.mark.flaky(reruns=n)` and `--only-rerun` are all read
+the same way - by counting the attempts that actually happened, which is the only signal that survives them disagreeing.
 
 ## Test steps
 

@@ -18,7 +18,9 @@ import pytest
 from pytest_html_reporter.merge import (
     MergeError,
     MergeOptions,
+    ShardMeta,
     _start_stamp,
+    merge_runs,
     merged_environment_rows,
     normalise_nodeid,
     order_bundles,
@@ -44,12 +46,23 @@ class _Shard:
 
 class _Meta:
     def __init__(self, environment="", build_info=(), capture_rows=(),
-                 shards=(), session_start=1725200000.0):
+                 shards=(), session_start=1725200000.0, ci="", pipeline="",
+                 branch="", commit="", package_rows=()):
         self.environment = environment
         self.build_info = list(build_info)
         self.capture_rows = list(capture_rows)
         self.shards = list(shards)
         self.session_start = session_start
+
+        # What the shards said about the run itself: which CI build, which
+        # commit, what was installed. Empty here is a merge of bundles written
+        # before any of it was collected, which is the case the panel has to
+        # keep rendering.
+        self.ci = ci
+        self.pipeline = pipeline
+        self.branch = branch
+        self.commit = commit
+        self.package_rows = list(package_rows)
 
 
 _TOUCHED = ("_environment", "_environment_label", "_environment_class",
@@ -271,3 +284,130 @@ def test_build_info_the_flag_did_not_mention_still_comes_from_the_shards():
 
     assert "abc123" in rows
     assert "main" in rows
+
+
+# --------------------------------------------------- the run's own identity ---
+
+def _leg(shard_id="leg-1", **run):
+    """A bundle carrying whatever this test cares about in its run block.
+
+    Everything else falls through to RUN_DEFAULTS, which is exactly what a
+    bundle written by an older version of the plugin does.
+    """
+    return Bundle("/builds/%s/records.json" % shard_id,
+                  {"shard": {"id": shard_id, "label": shard_id},
+                   "run": run, "records": []})
+
+
+_GITHUB = {"system": "github", "label": "GitHub Actions", "build": "42",
+           "url": "https://github.com/acme/app/actions/runs/1717"}
+
+
+def test_a_matrix_that_agrees_about_its_build_says_it_once():
+    meta = merge_runs([_leg("leg-1", ci=_GITHUB), _leg("leg-2", ci=_GITHUB)])
+
+    assert meta.ci == "GitHub Actions · 42"
+    assert meta.pipeline == _GITHUB["url"]
+
+
+def test_a_matrix_that_names_two_pipelines_links_neither():
+    """Two legs from two different builds is a matrix that should not have been
+    merged, and a link to the first one would be read as the whole build's."""
+    other = dict(_GITHUB, url="https://github.com/acme/app/actions/runs/9999")
+
+    meta = merge_runs([_leg("leg-1", ci=_GITHUB), _leg("leg-2", ci=other)])
+
+    assert meta.pipeline == ""
+    assert any("different pipelines" in note for note in meta.notes)
+
+
+def test_legs_that_ran_different_commits_both_get_named():
+    """Smoothing this over would hide the one thing that explains why half the
+    matrix failed."""
+    meta = merge_runs([_leg("leg-1", git={"branch": "main", "commit": "aaaaaa"}),
+                       _leg("leg-2", git={"branch": "main", "commit": "bbbbbb"})])
+
+    assert meta.branch == "main"
+    assert meta.commit == "aaaaaa, bbbbbb"
+
+
+def test_bundles_written_before_any_of_this_existed_still_merge():
+    """An older leg carries none of these keys, and reads back as a leg that
+    had nothing to say - which is what it is."""
+    meta = merge_runs([_leg("leg-1"), _leg("leg-2")])
+
+    assert (meta.ci, meta.pipeline, meta.branch, meta.commit) == ("", "", "", "")
+    assert meta.package_rows == []
+
+
+def test_one_environment_is_described_once_rather_than_per_shard():
+    """Eight identical three-hundred entry rows is not a panel, it is a wall."""
+    packages = ["attrs==23.2.0", "pytest==8.2.0"]
+
+    meta = merge_runs([_leg("leg-1", packages=packages), _leg("leg-2", packages=packages)])
+
+    assert meta.package_rows == [("", packages)]
+
+
+def test_legs_with_different_packages_are_listed_separately():
+    """This is the case the row is for: the leg that failed had another version
+    of something installed."""
+    meta = merge_runs([_leg("leg-1", packages=["pytest==8.2.0"]),
+                       _leg("leg-2", packages=["pytest==8.3.0"])])
+
+    assert meta.package_rows == [("leg-1", ["pytest==8.2.0"]),
+                                 ("leg-2", ["pytest==8.3.0"])]
+
+
+def test_a_shard_row_prefers_the_os_it_named_over_the_kernel():
+    shard = ShardMeta(_leg("leg-1", platform="Linux 5.15.0", os="Ubuntu 22.04.4 LTS (x86_64)"))
+
+    assert "Ubuntu 22.04.4 LTS (x86_64)" in shard.summary
+    assert "5.15.0" not in shard.summary
+
+
+def test_an_older_shard_row_still_names_its_kernel():
+    """The fallback that keeps a half-upgraded matrix readable: one leg's
+    bundle knows about the os key and the other's does not."""
+    shard = ShardMeta(_leg("leg-1", platform="Linux 5.15.0"))
+
+    assert "Linux 5.15.0" in shard.summary
+
+
+def test_a_shard_row_says_how_many_workers_split_it():
+    shard = ShardMeta(_leg("leg-1", xdist_workers=["gw0", "gw1", "gw2", "gw3"]))
+
+    assert "4 workers" in shard.summary
+
+
+def test_a_serial_shard_row_says_nothing_about_workers():
+    assert "workers" not in ShardMeta(_leg("leg-1", xdist_workers=["gw0"])).summary
+
+
+def test_the_panel_links_the_pipeline_the_shards_came_from():
+    rows = merged_environment_rows(_Meta(ci="GitHub Actions · 42",
+                                         pipeline="https://ci.acme.dev/42"), MergeOptions())
+
+    assert "GitHub Actions · 42" in rows
+    assert 'href="https://ci.acme.dev/42"' in rows
+
+
+def test_a_shards_own_build_info_still_beats_what_was_detected():
+    """A leg that published "commit=..." through --build-info meant that one."""
+    meta = _Meta(build_info=[("commit", "stated")], commit="detected")
+
+    rows = merged_environment_rows(meta, MergeOptions())
+
+    assert "stated" in rows
+    assert "detected" not in rows
+
+
+def test_the_packages_are_the_last_thing_on_the_panel():
+    """Longest row on the page by two orders of magnitude, and everything above
+    it is what somebody opened the panel for."""
+    meta = _Meta(shards=[_Shard()], package_rows=[("", ["pytest==8.2.0"])])
+
+    rows = merged_environment_rows(meta, MergeOptions())
+
+    assert "Packages (1)" in rows
+    assert rows.index("Packages (1)") > rows.index("Merged from")

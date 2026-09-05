@@ -118,6 +118,57 @@ def test_the_xdist_workers_this_leg_used_are_named(tmp_path):
     assert describe_run(reporter, 0)["xdist_workers"] == ["gw0", "gw1"]
 
 
+def test_the_leg_records_the_ci_run_it_belonged_to(tmp_path, monkeypatch):
+    """The merge very often runs in a job of its own: a merging step asking its
+    own environment which CI run this was would answer with the merge job, and
+    one running on a laptop would answer with nothing at all."""
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "acme/app")
+    monkeypatch.setenv("GITHUB_RUN_ID", "1717")
+    monkeypatch.setenv("GITHUB_RUN_NUMBER", "42")
+
+    ci = describe_run(_reporter(tmp_path), 0)["ci"]
+
+    assert ci["system"] == "github"
+    assert ci["build"] == "42"
+    assert ci["url"].endswith("/actions/runs/1717")
+
+
+def test_the_leg_records_the_revision_it_ran(tmp_path, monkeypatch):
+    # Cleared rather than assumed absent: this suite runs on GitHub Actions,
+    # where a pull request sets GITHUB_HEAD_REF and it outranks GITHUB_REF_NAME.
+    monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setenv("GITHUB_SHA", "0123456789abcdef0123456789abcdef01234567")
+
+    assert describe_run(_reporter(tmp_path), 0)["git"] == {"branch": "main",
+                                                           "commit": "0123456789ab"}
+
+
+def test_the_leg_keeps_the_kernel_string_beside_the_os_one(tmp_path):
+    """A merge reading an old bundle beside a new one has to put the two legs'
+    rows side by side without either going blank, so the key every older bundle
+    carries is still written."""
+    run = describe_run(_reporter(tmp_path), 0)
+
+    assert run["platform"].strip()
+    assert run["os"].strip()
+    assert run["python_detail"].startswith(run["python"])
+    assert run["interpreter"]
+
+
+def test_a_leg_lists_no_packages_unless_it_was_asked_to(tmp_path):
+    assert describe_run(_reporter(tmp_path), 0)["packages"] == []
+
+
+def test_a_leg_asked_for_packages_carries_them_into_the_merge(tmp_path):
+    """Collected on the shard for the same reason as everything else here - the
+    merging machine's site-packages is not the one the tests imported from."""
+    packages = describe_run(_reporter(tmp_path, report_packages=True), 0)["packages"]
+
+    assert any(name.startswith("pytest==") for name in packages)
+
+
 def test_build_info_is_written_as_lists_because_json_has_no_tuples(tmp_path):
     """A merge reading them back as lists and comparing against tuples would
     find no build info anywhere."""

@@ -13,7 +13,7 @@ Everything the render path actually reaches, and where:
     util.report_path (``path``), util.environment_name (``environment``),
     util.build_info (``build_info``), util.report_links (``report_link``),
     util.archive_count / archive_days / archive_since, util's five
-    report_* mode helpers, util._capture_is_off (``capture``),
+    report_* mode helpers, util.report_packages_enabled (``report_packages``), util._capture_is_off (``capture``),
     util._log_level_name (``log_level``), report_opener.open_mode
     (``report_open``), coverage_report's coverage_mode / coverage_file /
     coverage_limit and coverage_target (``cov_fail_under``). Every one of them

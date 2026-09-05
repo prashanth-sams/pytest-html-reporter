@@ -3684,6 +3684,21 @@
                     overflow-wrap: anywhere;
                 }
 
+                /* The pipeline row is the one value in this panel worth
+                   clicking. A build url read out of a monospace span is a url
+                   somebody has to select, copy and paste somewhere else before
+                   it does anything, and it is read at exactly the moment
+                   nobody has patience for that. */
+                .env-item__link {
+                    color: var(--accent-link);
+                    text-decoration: none;
+                }
+
+                .env-item__link:hover,
+                .env-item__link:focus-visible {
+                    text-decoration: underline;
+                }
+
                 @media screen and (max-width: 640px) {
                     .env-grid {
                         grid-template-columns: minmax(0, 1fr);
@@ -4216,6 +4231,184 @@
                 .metrics-card td.metric-rerun .metric-pill {
                     background-color: var(--status-rerun-tint);
                     color: var(--status-rerun-fg);
+                }
+
+                /* ---- Rerun count: a button when there is a trail behind it ---- */
+
+                /* The button inherits the pill above and adds only what a
+                   button needs undone, so the two spellings of the count are
+                   the same object on the page whichever one is showing. */
+                .metrics-card td.metric-rerun .rerun-btn {
+                    border: none;
+                    font: inherit;
+                    font-weight: 600;
+                    cursor: pointer;
+                    text-decoration: underline;
+                    text-decoration-style: dotted;
+                    text-underline-offset: 3px;
+                    transition: background-color 0.15s ease, color 0.15s ease;
+                }
+
+                .metrics-card td.metric-rerun .rerun-btn:hover,
+                .metrics-card td.metric-rerun .rerun-btn:focus {
+                    background-color: var(--status-rerun);
+                    color: var(--text-inverse);
+                    outline: none;
+                }
+
+                /* A test that ran once has no trail to open, and neither has a
+                   test retried before this version - an archive read back
+                   carries the count and nothing behind it. Both keep the flat
+                   figure the column has always shown.
+                
+                   Written twice on purpose. decorateMetricsTable disables the
+                   button, which is the state that matters and the one that
+                   also takes it out of the tab order; the attribute says the
+                   same thing before that first draw has run. Both carry the
+                   .metrics-card td prefix because the rule they are overriding
+                   does, and a shorter selector would lose to it and leave a
+                   figure that is underlined and pointing like a control it is
+                   not. */
+                .metrics-card td.metric-rerun .rerun-btn:disabled,
+                .metrics-card td.rerun-cell[data-attempts="0"] .rerun-btn,
+                .metrics-card td.rerun-cell[data-attempts=""] .rerun-btn {
+                    cursor: default;
+                    text-decoration: none;
+                }
+
+                /* The disabled button is a rendered figure, not a dead control,
+                   so it keeps the pill's own colours rather than taking the
+                   browser's greyed-out ones. */
+                .metrics-card td.metric-rerun .rerun-btn:disabled {
+                    background-color: var(--status-rerun-tint);
+                    color: var(--status-rerun-fg);
+                    opacity: 1;
+                }
+
+                /* ---- The trail itself, inside the shared overlay ---- */
+                .attempt-trail {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+
+                .attempt {
+                    border: 1px solid var(--border-subtle);
+                    border-left: 3px solid var(--text-inactive);
+                    border-radius: 8px;
+                    background: var(--surface-hover);
+                    overflow: hidden;
+                }
+
+                .attempt__head {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                    padding: 9px 13px;
+                    font-size: 12px;
+                }
+
+                .attempt__n {
+                    font-weight: 700;
+                    color: var(--text-muted);
+                    letter-spacing: 0.03em;
+                }
+
+                .attempt__status {
+                    padding: 2px 9px;
+                    border-radius: 999px;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                    background-color: var(--status-xpass-tint);
+                    color: var(--status-xpass-fg);
+                }
+
+                .attempt--pass .attempt__status {
+                    background-color: var(--status-pass-tint);
+                    color: var(--status-pass-fg);
+                }
+
+                .attempt--fail .attempt__status {
+                    background-color: var(--status-fail-tint);
+                    color: var(--status-fail-fg);
+                }
+
+                .attempt--skip .attempt__status {
+                    background-color: var(--status-skip-tint);
+                    color: var(--status-skip-fg);
+                }
+
+                .attempt--xfail .attempt__status {
+                    background-color: var(--status-xfail-tint);
+                    color: var(--status-xfail-fg);
+                }
+
+                .attempt--error .attempt__status {
+                    background-color: var(--status-error-tint);
+                    color: var(--status-error-fg);
+                }
+
+                /* The spine says the shape of the trail at a glance - a column
+                   of red ending in green is a flake, ending in red is a test
+                   that simply fails. */
+                .attempt--pass { border-left-color: var(--status-pass); }
+                .attempt--fail { border-left-color: var(--status-fail); }
+                .attempt--error { border-left-color: var(--status-error); }
+                .attempt--skip { border-left-color: var(--status-skip); }
+
+                /* The attempt the table is showing, lifted off the ones it
+                   superseded. */
+                .attempt--final {
+                    background: var(--surface-raised);
+                    border-style: solid;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+                }
+
+                .attempt__dur,
+                .attempt__worker {
+                    color: var(--text-muted);
+                    font-variant-numeric: tabular-nums;
+                }
+
+                .attempt__worker::before { content: "\00b7\00a0"; }
+
+                .attempt__tag {
+                    margin-left: auto;
+                    padding: 2px 8px;
+                    border-radius: 5px;
+                    background: var(--status-rerun-tint);
+                    color: var(--status-rerun-fg-heavy);
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                }
+
+                /* Nothing to show is shown as nothing: a passing attempt has no
+                   message, a serial run has no worker, and only the attempt
+                   that stuck carries the tag. */
+                .attempt__msg:empty,
+                .attempt__worker:empty,
+                .attempt__tag:empty { display: none; }
+
+                /* A traceback, drawn the way the captured-output panel draws
+                   one - same surface, same face, same wrapping - because it is
+                   the same kind of thing being read in the same overlay. */
+                .attempt__msg {
+                    margin: 0;
+                    padding: 12px 14px;
+                    border-top: 1px solid var(--code-border);
+                    background: var(--code-bg);
+                    font-family: Menlo, Consolas, "Liberation Mono", monospace;
+                    font-size: 12px;
+                    line-height: 1.55;
+                    color: var(--code-text);
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                    overflow-x: auto;
                 }
 
                 /* A zero is not news: keep it quiet so real counts carry the row. */
@@ -7460,6 +7653,41 @@
                         toggleLogs(true);
                     }
 
+                    // The trail is markup that was built server-side and
+                    // parked, like the captured output above, so this moves it
+                    // into the panel rather than assembling it here. What it
+                    // copies out for the Copy button is one line per attempt
+                    // followed by that attempt's message, which is the shape
+                    // somebody pastes into an issue.
+                    function showAttemptsFor(runt) {
+                        var source = document.getElementById('attempts-' + runt);
+                        if (!source) return;
+
+                        var body = document.getElementById('logOverlayBody');
+                        body.innerHTML = '<div class="attempt-trail">' + source.innerHTML + '</div>';
+
+                        overlayText = '';
+                        body.querySelectorAll('.attempt').forEach(function(attempt) {
+                            var head = attempt.querySelector('.attempt__head');
+                            var message = attempt.querySelector('.attempt__msg');
+
+                            // The head is spread over several elements and the
+                            // message sits inside a <pre> the template indented,
+                            // so both are squeezed back to what they say rather
+                            // than pasted with the markup's own whitespace.
+                            var text = message ? message.textContent.trim() : '';
+
+                            overlayText += head.textContent.split(/\s+/).filter(Boolean).join(' ') + '\n';
+                            if (text) overlayText += text + '\n';
+                            overlayText += '\n';
+                        });
+
+                        fillOverlay('fa-history', 'Every attempt',
+                                    source.getAttribute('data-test') || 'Every attempt',
+                                    source.getAttribute('data-suite'));
+                        toggleLogs(true);
+                    }
+
                     // The error is written in as text, not as markup: it is
                     // escaped for the attribute it travels in, and handing that
                     // to innerHTML would show the entities rather than the
@@ -7945,6 +8173,10 @@
                      it would be searched, sorted and exported along with the
                      rest of the table. -->
                 <div id="logStore" hidden>%(test_logs)%</div>
+                <!-- And the rerun trail beside it, parked for the same reason:
+                     one traceback per attempt in a cell would be searched,
+                     sorted and exported with the rest of the table. -->
+                <div id="attemptStore" hidden>%(test_attempts)%</div>
             </div>
         </div>
         <div class="tabcontent" id="testSteps">
@@ -8765,6 +8997,17 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
                 table.find('td.metric-num .metric-pill').each(function() {
                     $(this).toggleClass('is-zero', $(this).text().trim() === '0');
+                });
+
+                // A rerun count with no trail stored behind it is a figure, not
+                // a control: disabled rather than merely styled flat, so it is
+                // not a tab stop and cannot be clicked into an empty panel.
+                table.find('td.rerun-cell').each(function() {
+                    var cell = $(this);
+                    var trail = Number(cell.attr('data-attempts')) > 0;
+
+                    cell.find('.rerun-btn').prop('disabled', !trail)
+                        .attr('title', trail ? 'See what happened on every attempt' : null);
                 });
 
                 // Split the suite path so the file name leads and the

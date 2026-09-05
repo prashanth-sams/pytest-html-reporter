@@ -23,6 +23,8 @@ from html_page.icon_styles import icon_styles
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
+from html_page.test_attempt import TestAttempt
+from html_page.test_attempts import TestAttempts
 from html_page.test_log import TestLog
 from html_page.test_log_section import TestLogSection
 from html_page.test_row import TestRow
@@ -39,6 +41,9 @@ from pytest_html_reporter.util import (
     merge_log_sections,
     format_log_sections,
     escape_report_text,
+    attempt_seconds,
+    attempt_trail,
+    status_tone,
     rerun_command,
     row_anchor,
     js_literal,
@@ -253,7 +258,7 @@ class HTMLReporter(object):
         # make inline, so a plain run is unchanged and a merge replaces the
         # answer rather than the pipeline that asks for it.
         self.coverage_source = lambda base: collect_coverage(self.config, base, self._sessionstarttime)
-        self.environment_source = lambda: generate_environment_info(self.config)
+        self.environment_source = lambda: generate_environment_info(self.config, self._records)
         self.logs_notice_source = lambda: generate_logs_notice(self.config)
 
         # And the fourth: what a merged JUnit document knows that a single
@@ -312,6 +317,7 @@ class HTMLReporter(object):
             'message': message,
             'duration': 0,
             'rerun': 0,
+            'attempts': [],
             # Collection runs before any test does, and before collection order
             # is even known, so these sort ahead of the run itself: a file that
             # never loaded is the first thing worth seeing.
@@ -848,6 +854,10 @@ class HTMLReporter(object):
             'message': str(ConfigVars._current_error),
             'duration': round(ConfigVars._duration, 2),
             'rerun': 0,
+            # Filled by store_test_record when this test turns out to have been
+            # attempted before. Empty on the vast majority of records, which
+            # were attempted once.
+            'attempts': [],
             'index': self._collected.get(item.nodeid, len(self._collected) + len(self._records)),
             'worker': self.worker_id,
             'screenshots': self.collect_screenshots(),
@@ -962,6 +972,12 @@ class HTMLReporter(object):
         # worker sends back - and the one being replaced is an attempt itself.
         record['rerun'] = int(superseded['rerun']) + int(record['rerun']) + 1
 
+        # What each of those attempts actually did, kept before the survivor
+        # replaces it. The count alone says a test was retried; only the trail
+        # says what it failed with on the way, and a test that ends up passing
+        # has no message of its own left to say it.
+        record['attempts'] = attempt_trail(superseded, record)
+
         # A retry that produced no screenshot of its own keeps the ones from the
         # attempt it replaces, rather than dropping them from the report. The
         # same goes for its attachments: a flaky test that captured the failing
@@ -1074,6 +1090,7 @@ class HTMLReporter(object):
             # same group in the Test Steps rail that the Test Case cell crosses
             # into - one id, derived once, rather than two that can disagree.
             sindex=row_id.split('-')[0],
+            attempt_count=str(self.attach_test_attempts(record, row_id)),
             log_count=str(self.attach_test_logs(record, row_id)),
             attach_count=str(self.attach_test_data(record, row_id)),
             step_count=str(len(record.get('steps') or [])),
@@ -1139,6 +1156,68 @@ class HTMLReporter(object):
         ))
 
         return count_log_lines(sections)
+
+    def attach_test_attempts(self, record, row_id):
+        """Park a test's attempt trail outside the table, return its length.
+
+        Hidden alongside the captured output and for the same reason: a cell
+        holding one traceback per attempt would be swept into the table's
+        search index and into every CSV, Excel and print export. The row
+        already shows the count as its rerun figure; all it needs back is
+        whether there is anything to open.
+
+        The trail rendered is the superseded attempts *and then the record
+        itself*, so the panel ends on the outcome the row is showing rather
+        than stopping at the last attempt that was thrown away.
+        """
+        attempts = record.get('attempts') or []
+        if not attempts: return 0
+
+        rows = ''
+        for number, attempt in enumerate(attempts, start=1):
+            rows += self.attempt_row(attempt, number, final=False)
+
+        rows += self.attempt_row(record, len(attempts) + 1, final=True)
+
+        ConfigVars._test_attempts_content += str(TestAttempts(
+            runt=row_id,
+            sname=escape_report_text(record['suite_name']),
+            name=escape_report_text(record['test_name']),
+            rows=rows
+        ))
+
+        return len(attempts)
+
+    @staticmethod
+    def attempt_row(attempt, number, final):
+        """One line of the trail: what this attempt did, and what it said.
+
+        Takes a superseded attempt or a whole record - the trail ends on the
+        record itself - which is why every field is read with .get(): the four
+        an attempt carries are the four this reads.
+        """
+        status = str(attempt.get('status') or '')
+
+        return str(TestAttempt(
+            key=status_tone(status),
+            # The row that stuck is the one the table is showing. Marking it
+            # keeps the panel from reading as though the test were still
+            # running, and is what tells a passing trail apart from a failing
+            # one at a glance.
+            final='attempt--final' if final else '',
+            label='Attempt %d' % number,
+            status=escape_report_text(status),
+            dur='%ss' % attempt_seconds(attempt.get('duration')),
+            # Only ever set under xdist, and hidden when it is not: on a serial
+            # run every attempt ran in this process and saying so on each of
+            # them is noise.
+            worker=escape_report_text(attempt.get('worker') or ''),
+            tag='kept' if final else '',
+            # Whole, not cut to fifty characters the way the row's cell is:
+            # this panel is where the full text of a superseded attempt is
+            # read, and there is nowhere else left to read it.
+            msg=escape_report_text(str(attempt.get('message') or ''))
+        ))
 
     def attach_test_shots(self, record):
         """The thumbnails for one row, and the gallery cards behind them.
@@ -1549,6 +1628,7 @@ class HTMLReporter(object):
             tskip=str(ConfigVars.tskip),
             attach_screenshot_details=str(ConfigVars._attach_screenshot_details),
             test_logs=str(ConfigVars._test_logs_content),
+            test_attempts=str(ConfigVars._test_attempts_content),
             attachment_items=str(ConfigVars._attachment_items),
             attachment_store=str(ConfigVars._attachment_store),
             logs_notice=str(ConfigVars._logs_notice),
