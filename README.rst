@@ -2,9 +2,9 @@
 pytest-html-reporter
 =====================
 
-.. image:: https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg
-   :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
-   :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+.. image:: https://pepy.tech/badge/pytest-html-reporter
+    :target: https://pepy.tech/project/pytest-html-reporter
+    :alt: Downloads
 
 .. image:: https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.1
     :target: https://badge.fury.io/py/pytest-html-reporter
@@ -13,9 +13,9 @@ pytest-html-reporter
 .. image:: https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.1
     :target: https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.1
 
-.. image:: https://pepy.tech/badge/pytest-html-reporter
-    :target: https://pepy.tech/project/pytest-html-reporter
-    :alt: Downloads
+.. image:: https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg
+   :alt: Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter
+   :target: https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 .. image:: https://img.shields.io/badge/docs-pytest--html--reporter-blue
     :target: https://prashanth-sams.github.io/pytest-html-reporter.github.io/
@@ -24,7 +24,7 @@ pytest-html-reporter
 
 ..
 
-        Generates a light-weight static html report based on ``pytest`` framework
+        Generates a clean and light-weight static html report based on ``pytest`` framework
 
 
 .. image:: https://i.imgur.com/4TYia5j.png
@@ -137,7 +137,7 @@ up to date, is at https://prashanth-sams.github.io/pytest-html-reporter.github.i
 
 .. list-table::
    :header-rows: 1
-   :widths: 12 26 20 20 22
+   :widths: 18 46 12 12 12
 
    * - Section
      - Capability
