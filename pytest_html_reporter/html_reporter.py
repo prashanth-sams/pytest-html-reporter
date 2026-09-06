@@ -65,7 +65,7 @@ from pytest_html_reporter.util import (
     trace_markers,
     generate_run_delta,
 )
-from pytest_html_reporter.step_report import generate_steps_view
+from pytest_html_reporter.step_report import duration as duration_text, generate_steps_view
 from pytest_html_reporter import merge
 from pytest_html_reporter.junit import (
     junit_path,
@@ -745,8 +745,12 @@ class HTMLReporter(object):
         # the three of them, so a test with no steps of its own still says
         # where its time went. Taken from the report rather than measured here
         # because a wrapper around the phase would be timing itself as well.
+        # Kept to two decimal places rather than whole milliseconds: a unit
+        # test's setup is routinely under a millisecond, and rounding that to
+        # an integer here is what made the tab read "0 ms" for every phase of
+        # every test - which says "never ran" rather than "was fast".
         if rep.when in ('setup', 'call', 'teardown'):
-            self._phase_ms[rep.when] = int(round(rep.duration * 1000))
+            self._phase_ms[rep.when] = round(rep.duration * 1000, 2)
 
         # Only the outcome of this one test is tracked here. Suite grouping and
         # every total are worked out at the end, from the merged records, so
@@ -838,7 +842,12 @@ class HTMLReporter(object):
         # And the duration with it, for the same reason: measured over the
         # three phases, a test's time is only complete once the third of them
         # has been reported.
-        record['duration'] = round(self._test_duration(), 2)
+        # Six places, not two: two places of *seconds* is a 10ms floor, and
+        # every test quicker than that reached the report as a flat 0.0 - the
+        # Time column, the "time in tests" tile and the Test Steps rail all
+        # said a test nobody could measure took no time at all. What is worth
+        # printing is decided on the way to the page, not here.
+        record['duration'] = round(self._test_duration(), 6)
 
     def append_test_record(self, item):
         """Store one finished test as a plain dict.
@@ -853,7 +862,9 @@ class HTMLReporter(object):
             'nodeid': str(item.nodeid),
             'status': str(ConfigVars._test_status),
             'message': str(ConfigVars._current_error),
-            'duration': round(ConfigVars._duration, 2),
+            # See store_test_record: two places of seconds floors every fast
+            # test at zero, so the record carries microseconds.
+            'duration': round(ConfigVars._duration, 6),
             'rerun': 0,
             # Filled by store_test_record when this test turns out to have been
             # attempted before. Empty on the vast majority of records, which
@@ -1073,7 +1084,13 @@ class HTMLReporter(object):
             sname=escape_report_text(record['suite_name']),
             name=escape_report_text(record['test_name']),
             stat=str(record['status']),
-            dur=str(record['duration']),
+            # Shown in the unit that fits rather than as a bare number of
+            # seconds: a test measured in microseconds printed itself as 0.0,
+            # which reads as untimed. data_dur is the raw seconds the column
+            # sorts on - "0.44 ms", "250 ms" and "1.23 s" compared as text
+            # would file the slowest test of the run in the middle.
+            dur=escape_report_text(duration_text(record['duration'] * 1000)),
+            data_dur=repr(float(record['duration'])),
             rerun=str(record['rerun']),
             msg=escape_report_text(cut),
             msg_tail=escape_report_text(faded),
@@ -1208,7 +1225,7 @@ class HTMLReporter(object):
             final='attempt--final' if final else '',
             label='Attempt %d' % number,
             status=escape_report_text(status),
-            dur='%ss' % attempt_seconds(attempt.get('duration')),
+            dur=duration_text(attempt_seconds(attempt.get('duration')) * 1000),
             # Only ever set under xdist, and hidden when it is not: on a serial
             # run every attempt ran in this process and saying so on each of
             # them is noise.

@@ -1022,7 +1022,10 @@ def attempt_seconds(value):
     reason to lose the report the tests have already paid for.
     """
     try:
-        return round(float(value or 0), 2)
+        # Six places rather than two, for the reason the record's own duration
+        # keeps them: two places of seconds is a 10ms floor, and an attempt
+        # quicker than that reads back as having taken no time at all.
+        return round(float(value or 0), 6)
     except (TypeError, ValueError):
         return 0.0
 

@@ -262,7 +262,10 @@ def _normalise(data, stamp):
         # None, not zero: builds archived before per-test durations were
         # recorded never measured this, and drawing them as instant would
         # invent a cliff in the duration trend that never happened.
-        'duration': round(total_duration, 2) if timed else None,
+        # Six places, like the per-test durations it adds up. Rounded to two
+        # places of seconds, a whole suite of unit tests summed to 0.0 and the
+        # "time in tests" tile said the run was never timed.
+        'duration': round(total_duration, 6) if timed else None,
         'reruns': sum(test['rerun'] for test in tests.values()),
     }
 
@@ -362,7 +365,7 @@ def _summarise(history, build_count):
     history['outcome'] = states[-1]
     history['streak'] = _streak(decided)
     history['duration'] = points[-1]['duration']
-    history['avg_duration'] = round(sum(durations) / len(durations), 2) if durations else None
+    history['avg_duration'] = round(sum(durations) / len(durations), 6) if durations else None
     history['spark'] = states[-SPARK_BUILDS:]
     history['current'] = points[-1]['build'] == build_count - 1
 
@@ -591,6 +594,13 @@ def _pass_rate(build):
 
 def _duration_text(seconds):
     if seconds is None: return '--'
+
+    # Under ten milliseconds the decimals are the whole of the figure: a suite
+    # of unit tests adds up to a fraction of a millisecond, and rounding that
+    # to a whole one left the "time in tests" tile reading 0ms - which says
+    # the run was never timed rather than that it was fast. Above ten there is
+    # nothing for them to say, so 250ms stays 250ms.
+    if seconds < 0.01: return '%.2fms' % (seconds * 1000)
     if seconds < 1: return '%dms' % round(seconds * 1000)
     if seconds < 60: return '%ss' % round(seconds, 1)
 
@@ -822,7 +832,7 @@ def owner_totals(tracked):
         # holding one test that has run two hundred times and forty that ran
         # once should not have the two hundred decide their number.
         row['pass_rate'] = round(sum(row['rates']) / len(row['rates']), 1) if row['rates'] else None
-        row['duration'] = round(row['duration'], 2)
+        row['duration'] = round(row['duration'], 6)
         row['share'] = 0
 
     rows = sorted(totals.values(), key=_owner_rank)
@@ -944,7 +954,7 @@ def severity_totals(tracked):
 
     for row in totals.values():
         row['pass_rate'] = round(sum(row['rates']) / len(row['rates']), 1) if row['rates'] else None
-        row['duration'] = round(row['duration'], 2)
+        row['duration'] = round(row['duration'], 6)
         row['share'] = 0
 
     rows = sorted(totals.values(), key=_severity_row_rank)

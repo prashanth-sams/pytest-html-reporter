@@ -535,7 +535,13 @@ def _duration_text(seconds):
     except (TypeError, ValueError):
         return ""
 
-    return "%.2f s" % seconds if seconds >= 1 else "%d ms" % round(seconds * 1000)
+    if seconds >= 1: return "%.2f s" % seconds
+
+    # A mocked or cached call lands well under a millisecond, and rounding
+    # that to a whole one prints "0 ms" - which reads as a call that never
+    # happened. Past ten milliseconds the decimals say nothing.
+    ms = seconds * 1000
+    return "%.2f ms" % ms if ms < 10 else "%d ms" % round(ms)
 
 
 def _short_url(url):

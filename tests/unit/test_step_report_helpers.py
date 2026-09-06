@@ -39,13 +39,26 @@ def _step(**overrides):
 # ---------------------------------------------------------------- duration ---
 
 def test_a_sub_millisecond_step_is_not_shown_as_nothing():
-    """0 reads as a step that never ran; '0 ms' reads as one that was fast."""
+    """A step too quick for a whole millisecond keeps its decimals.
+
+    Rounded to an integer it printed "0 ms", which reads as a step that never
+    ran rather than one that was fast - and a unit test's three phases are
+    routinely a fraction of a millisecond each.
+    """
+    assert duration(0.4) == "0.40 ms"
+    assert duration(0.004) == "< 0.01 ms"
+
+
+def test_no_measured_time_at_all_is_still_a_flat_zero():
+    """An archive written before steps were timed, not a measurement."""
     assert duration(0) == "0 ms"
-    assert duration(0.4) == "0 ms"
 
 
 def test_milliseconds_stay_milliseconds_while_they_are_short():
-    assert duration(1) == "1 ms"
+    """Past ten there is nothing left for the decimals to say."""
+    assert duration(1) == "1.00 ms"
+    assert duration(9.5) == "9.50 ms"
+    assert duration(10) == "10 ms"
     assert duration(999) == "999 ms"
 
 
@@ -68,11 +81,22 @@ def test_a_numeric_string_is_still_a_duration():
 # ----------------------------------------------------------------- _test_ms ---
 
 def test_a_test_faster_than_the_time_column_can_show_is_not_flat_zero():
-    """duration is rounded to two places for a column headed 'Time (s)', so
-    every test under 5ms reaches this tab as 0. The phases are whole ms."""
+    """An archive whose per-test duration was floored still has its phases.
+
+    Builds written before durations kept microseconds carry 0.0 for every
+    quick test; the phase timings beside them are the same test measured, so
+    the rail reads off those instead of drawing the test as instant.
+    """
     record = {"duration": 0.0, "phases": {"setup": 1, "call": 3, "teardown": 1}}
 
     assert _test_ms(record) == 5
+
+
+def test_sub_millisecond_phases_survive_into_the_rail():
+    """The phases are no longer whole milliseconds, and neither is their sum."""
+    record = {"duration": 0.0, "phases": {"setup": 0.24, "call": 0.06, "teardown": 0.04}}
+
+    assert duration(_test_ms(record)) == "0.34 ms"
 
 
 def test_the_record_duration_wins_when_it_is_the_larger_of_the_two():
