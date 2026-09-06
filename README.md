@@ -1,8 +1,8 @@
 # pytest-html-reporter
 
 [![Downloads](https://pepy.tech/badge/pytest-html-reporter)](https://pepy.tech/project/pytest-html-reporter)
-[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.3)](https://badge.fury.io/py/pytest-html-reporter)
-[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.3)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.3)
+[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.4)](https://badge.fury.io/py/pytest-html-reporter)
+[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.4)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.4)
 [![Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter](https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg)](https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Documentation](https://img.shields.io/badge/docs-pytest--html--reporter-blue)](https://prashanth-sams.github.io/pytest-html-reporter.github.io/)
 
