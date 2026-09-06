@@ -267,6 +267,12 @@ class Sources(object):
         self.base_origin = ""
         self.unreadable = []
 
+        # Every file that was opened, in the order they were read. Only the
+        # explainer needs it - "which configuration file was read" is half of
+        # every question anybody asks about a setting that did not take - and
+        # a profile error already names its own file.
+        self.files = []
+
     def add(self, name, values, origin):
         # First file wins, whole. Merging one profile out of two files would
         # make the shape depend on which file pytest happened to pick as the
@@ -486,6 +492,7 @@ def load_sources(config):
             continue
 
         seen.append(path)
+        sources.files.append(path)
 
         if path.lower().endswith(".toml"):
             _read_toml(sources, path)
@@ -734,13 +741,73 @@ def environment_values(environ=None):
     return values
 
 
-def resolve(sources, name, environ=None):
-    """Every setting this run's profile decides, as {Key: (value, where)}.
+def entry_label(entry):
+    """The name a KEY=VALUE entry answers to, lowered.
 
-    The layers, lowest first: the shared table, the profile, the environment.
-    A list-valued setting keeps every layer's entries - the same way
-    --build-info adds to the ini file's rather than replacing it - and
-    everything else takes the highest layer that said anything.
+    All three list settings are KEY=VALUE - a build_info row, a nav link, a
+    link pattern - and all three are collapsed to one entry per label by the
+    helpers that read them, case-insensitively. Deciding a collision here has
+    to answer "same label?" exactly the way `first_answer_per_key` does, or
+    the two ends disagree about what a collision even is and the layering
+    below is settling arguments the reader never sees.
+    """
+    return str(entry).partition("=")[0].strip().lower()
+
+
+def merge_entries(key, layers):
+    """`layers` of list entries folded into one, highest layer winning a label.
+
+    Returns [(entry, where), ...]: the entry as it will be written onto the
+    option, and the layer that had the last word on it.
+
+    `layers` arrives lowest first - the shared table, then the profile, then
+    the environment - and a higher layer that names a label a lower one
+    already named replaces its value *in place*. Both halves of that matter:
+
+    * Replacing, because these layers are documented to override one another
+      and a list was the one shape where they did not. Every layer's entries
+      were kept end to end and the reader collapsed to the first answer, so
+      the *lowest* layer that named a label won it: a `branch` in
+      [tool.pytest-html-reporter] outranked the `branch` in the profile
+      written to override it, and outranked the PYTEST_HTML_REPORTER_BUILD_INFO
+      a single job had set to say otherwise. The report then showed the row
+      the run had not been given, which is worse than showing no row at all.
+    * In place, because the position belongs to the layer that introduced the
+      label. The shared table is where the rows are written in the order
+      somebody wants to read them down a panel; a profile answering one of
+      them differently is changing a value, not reordering the panel.
+
+    A label named twice inside one layer keeps the first, because a file that
+    says the same thing twice means it once - and because that is what the
+    reader would have done with it anyway.
+    """
+    order = []
+    entries = {}
+    claimed = {}
+
+    for index, (value, where) in enumerate(layers):
+        for entry in coerce(key, value, where):
+            label = entry_label(entry)
+
+            if label not in entries:
+                order.append(label)
+            elif claimed[label] == index:
+                continue
+
+            entries[label] = (entry, where)
+            claimed[label] = index
+
+    return [entries[label] for label in order]
+
+
+def collect(sources, name, environ=None):
+    """Every layer that said anything, as {Key: [(value, where), ...]}.
+
+    Lowest layer first. Split out of resolve because resolve answers "what is
+    this setting" and throws the losing layers away, while the explainer's
+    whole job is the other half - "and what did that beat" - and the two have
+    to walk the same layers in the same order or the explanation is of a
+    different run than the one about to happen.
     """
     collected = {}
 
@@ -756,13 +823,25 @@ def resolve(sources, name, environ=None):
 
     _layer(collected, environment_values(environ), "the environment")
 
+    return collected
+
+
+def resolve(sources, name, environ=None):
+    """Every setting this run's profile decides, as {Key: (value, where)}.
+
+    The layers, lowest first: the shared table, the profile, the environment.
+    Everything takes the highest layer that said anything; a list-valued
+    setting takes that per label, keeping the entries no higher layer
+    mentioned - the same way --build-info adds to the ini file's rows rather
+    than replacing them. See merge_entries.
+    """
+    collected = collect(sources, name, environ)
+
     resolved = {}
     for key, layers in collected.items():
         if key.kind == "list":
-            entries = []
-            for value, where in layers:
-                entries += coerce(key, value, where)
-            resolved[key] = (entries, layers[-1][1])
+            merged = merge_entries(key, layers)
+            resolved[key] = ([entry for entry, _where in merged], layers[-1][1])
         else:
             value, where = layers[-1]
             resolved[key] = (coerce(key, value, where), where)
@@ -843,3 +922,486 @@ def apply_profile(config, environ=None):
     config.option.report_profile = settled
 
     return settled
+
+
+# --------------------------------------------------------------------------
+# explaining it
+# --------------------------------------------------------------------------
+#
+# The precedence above is worth having and impossible to hold in your head.
+# Six layers, three of them in files that may not be the files you think, and
+# a wrong answer never announces itself - the run is green and the report is
+# simply not the one you configured. Every question anybody actually asks
+# about it is a question about provenance rather than about values: which
+# profile did this run pick, which file did it come out of, did a variable
+# left over in the shell beat it, and why is the setting I wrote not the one
+# in the report. So the answer is a table of where, not a dump of what.
+
+COMMAND_LINE = "the command line"
+
+DEFAULT_SOURCE = "the option's default"
+
+# The [pytest] ini key each setting falls back to when nothing above it
+# answered. It is the option's own dest for all but two: `path` is spelled
+# html_report in an ini file, and `title` has no ini key at all.
+INI_NAMES = {"path": "html_report", "title": ""}
+
+
+def ini_key_name(key):
+    """The plain ini key this setting falls back to, or ''."""
+    return INI_NAMES.get(key.name, key.dest)
+
+
+def _ini_layer(config, key):
+    """What the plain ini key holds, or None where there is nothing there."""
+    name = ini_key_name(key)
+    if not name:
+        return None
+
+    value = _ini(config, name)
+
+    # An unset ini key comes back as '' or [] depending on its type, and
+    # neither is somebody saying something.
+    return value if value not in (None, "", []) else None
+
+
+def _shown(value):
+    """A value as the table prints it."""
+    if value is None:
+        return ""
+
+    if isinstance(value, bool):
+        return "true" if value else "false"
+
+    return str(value)
+
+
+class Setting(object):
+    """One row of the explanation: a setting, its value, and who decided it.
+
+    `overrode` is every layer that also named this setting and lost, highest
+    first. It is the half that answers "why is my value not the one I wrote":
+    a profile listed there is a profile that was read, found, and outranked -
+    which is a different problem from one that was never read at all.
+    """
+
+    def __init__(self, name, value, source, overrode=()):
+        self.name = name
+        self.value = value
+        self.source = source
+        self.overrode = tuple(overrode)
+
+    def payload(self):
+        return {"setting": self.name, "value": self.value,
+                "source": self.source, "overrode": list(self.overrode)}
+
+
+class Explanation(object):
+    """What a run's configuration resolves to, and out of which files."""
+
+    def __init__(self, profile, requested, sources, settings, root=""):
+        self.profile = profile
+        self.requested = requested
+        self.root = str(root or "")
+        self.files = tuple(sources.files)
+        self.unreadable = tuple(sources.unreadable)
+        self.available = tuple(sources.names())
+        self.settings = tuple(settings)
+
+    def shorten(self, text):
+        """`text` with the project root taken off the front of any path in it.
+
+        Only for printing. A source is "profile 'ci' in <file>", and spelled
+        absolutely that is eighty characters of path this reader already knows
+        - they are standing in it - in front of the one word they came for.
+        The stored strings stay absolute, because an error message about a
+        file somebody has to go and open should say exactly which one.
+        """
+        if not self.root:
+            return text
+
+        return str(text).replace(self.root + os.sep, "")
+
+    def payload(self):
+        return {
+            "profile": self.profile,
+            "requested": self.requested,
+            "files": list(self.files),
+            "unreadable": [{"file": path, "problem": problem}
+                           for path, problem in self.unreadable],
+            "profiles": list(self.available),
+            "settings": [setting.payload() for setting in self.settings],
+        }
+
+
+def _explain_scalar(config, key, layers):
+    """One Setting for a single-valued option, and what its answer beat.
+
+    Only the winning layer is coerced. The losing ones are named and not
+    parsed, deliberately: resolve does not parse them either, so a profile
+    holding `logs = "fail"` that the command line overrides is a run that
+    starts - and an explainer that refused to describe it would be failing
+    runs that work, which is a worse trade than not validating a value
+    nothing is going to read.
+    """
+    beaten = []
+    winner = None
+
+    if given_on_command_line(config, key):
+        winner = (_shown(getattr(config.option, key.dest)), COMMAND_LINE)
+
+    # Highest layer first, which is the order the losers are listed in too.
+    for value, where in reversed(layers):
+        if winner is None:
+            winner = (_shown(coerce(key, value, where)), where)
+        else:
+            beaten.append(where)
+
+    ini = _ini_layer(config, key)
+    if ini is not None:
+        where = "the %s ini key" % ini_key_name(key)
+        if winner is None:
+            winner = (_shown(ini), where)
+        else:
+            beaten.append(where)
+
+    if winner is None:
+        winner = (_shown(key.default), DEFAULT_SOURCE)
+
+    return Setting(key.name, winner[0], winner[1], beaten)
+
+
+def _explain_list(config, key, layers):
+    """One Setting per entry of a list-valued option, and what each one beat.
+
+    Two walks over the same layers, because the two halves of the answer come
+    apart. merge_entries settles what the list *is* - and having settled it,
+    has thrown the losing layers away - while the question a reader brings to
+    this table is which layers there were. So the winner and the row order
+    come from the fold the run itself performs, and the losers are gathered by
+    walking the layers again from the top.
+    """
+    name = ini_key_name(key)
+    ini_where = "the %s ini key" % name
+
+    given = [str(entry).strip() for entry in (getattr(config.option, key.dest, None) or [])]
+    from_ini = [str(entry).strip() for entry in (_ini_layer(config, key) or [])]
+
+    # Every entry any layer wrote, highest layer first - the order the readers
+    # collapse in, so the first candidate for a label is the answer and the
+    # rest are what it beat. The file and environment layers arrive lowest
+    # first and so are walked backwards.
+    candidates = [(entry, COMMAND_LINE) for entry in given if entry]
+
+    for value, where in reversed(layers):
+        candidates += [(entry, where) for entry in coerce(key, value, where) if entry]
+
+    candidates += [(entry, ini_where) for entry in from_ini if entry]
+
+    # The order the entries actually reach the report in: what the command
+    # line appended, then the fold of the file and environment layers - which
+    # keeps a label where the layer that introduced it put it - then the plain
+    # ini key the option helpers append last.
+    order = [entry_label(entry) for entry in given if entry]
+    order += [entry_label(entry) for entry, _where in merge_entries(key, layers)]
+    order += [entry_label(entry) for entry in from_ini if entry]
+
+    settings = []
+    seen = set()
+
+    for label in order:
+        if label in seen:
+            continue
+
+        seen.add(label)
+
+        answers = [pair for pair in candidates if entry_label(pair[0]) == label]
+        if not answers:
+            continue
+
+        entry, where = answers[0]
+
+        overrode = []
+        for _entry, beaten in answers[1:]:
+            # A layer that wrote the label twice is one layer, said once here.
+            if beaten != where and beaten not in overrode:
+                overrode.append(beaten)
+
+        settings.append(Setting(key.name, entry, where, overrode))
+
+    return settings
+
+
+def explain(config, environ=None):
+    """What this run's configuration comes to, as an Explanation.
+
+    Must be called *before* apply_profile, and is: once a profile has been
+    written onto config.option there is no longer anything to tell a value
+    somebody typed from a value a profile chose, because writing it onto the
+    option the flag parses into is the whole mechanism. Explaining afterwards
+    would report every setting the profile decided as having come from the
+    command line - the one answer that is never useful.
+    """
+    sources = load_sources(config)
+    requested = requested_name(config, sources, environ)
+
+    name = requested
+    if name and name.lower() != NO_PROFILE:
+        name = find(sources, name)[0]
+
+    collected = collect(sources, name, environ)
+
+    settings = []
+    for key in KEYS:
+        layers = collected.get(key, [])
+
+        if key.kind == "list":
+            settings += _explain_list(config, key, layers)
+        else:
+            settings.append(_explain_scalar(config, key, layers))
+
+    profile = "" if name.lower() == NO_PROFILE else name
+
+    return Explanation(profile, requested, sources, settings, _root_path(config))
+
+
+def _profile_line(explanation):
+    if explanation.profile:
+        return "Profile: %s" % explanation.profile
+
+    if explanation.requested.lower() == NO_PROFILE:
+        return "Profile: none (--report-profile=%s)" % NO_PROFILE
+
+    return "Profile: none (no profile was selected)"
+
+
+def render_explanation(explanation, show_all=False):
+    """The explanation as lines of text, ready to print.
+
+    Settings nobody named are left out unless `show_all`: the question being
+    asked is which of the things somebody wrote actually took, and answering
+    it inside thirty rows of defaults buries the two lines that matter.
+    """
+    rows = [setting for setting in explanation.settings
+            if show_all or setting.source != DEFAULT_SOURCE]
+
+    lines = [_profile_line(explanation)]
+
+    if explanation.files:
+        lines.append("Files read: %s"
+                     % ", ".join(explanation.shorten(path) for path in explanation.files))
+    else:
+        lines.append("Files read: none")
+
+    if explanation.available:
+        lines.append("Profiles defined: %s" % ", ".join(explanation.available))
+
+    for path, problem in explanation.unreadable:
+        lines.append("Warning: %s %s" % (explanation.shorten(path), problem))
+
+    lines.append("")
+
+    if not rows:
+        lines.append("Every setting is at its default.")
+        return lines
+
+    # Sized to the content rather than to a fixed width: a source is "profile
+    # 'ci' in /a/long/path/pyproject.toml" as often as it is "the environment",
+    # and a table that wrapped it would hide the very column it exists for.
+    first = max([len("Setting")] + [len(row.name) for row in rows])
+    second = max([len("Value")] + [len(row.value) for row in rows])
+
+    template = "%-*s  %-*s  %s"
+
+    lines.append(template % (first, "Setting", second, "Value", "Source"))
+    lines.append("-" * (first + second + len("Source") + 4))
+
+    for row in rows:
+        lines.append((template % (first, row.name, second, row.value,
+                                  explanation.shorten(row.source))).rstrip())
+
+        # Under the row it lost to, indented into the Source column, so the
+        # eye reads "this, over that" rather than hunting for a footnote.
+        for where in row.overrode:
+            lines.append("%s  over %s"
+                         % (" " * (first + second + 2), explanation.shorten(where)))
+
+    return lines
+
+
+# --------------------------------------------------------------------------
+# explaining it without a run
+# --------------------------------------------------------------------------
+#
+# `pytest-html-reporter config` answers the same question as
+# --report-show-config, from a console script that has no pytest Config to
+# ask - and wants none: the whole point of asking before the run is that you
+# have not spent forty minutes of CI finding out. Everything the resolution
+# actually reads is reconstructed here: which file pytest would pick, what its
+# [pytest] section holds, and the options a bare command line would have left.
+
+# The order pytest itself considers these in. pytest.ini wins even when it is
+# empty - it is the file that exists to say "this is the root" - while the
+# other three only count when they carry pytest's own section, which is why
+# each of them names the section to look for.
+INI_CANDIDATES = (
+    ("pytest.ini", "pytest"),
+    ("pyproject.toml", None),
+    ("tox.ini", "pytest"),
+    ("setup.cfg", "tool:pytest"),
+)
+
+
+def find_inipath(root):
+    """The config file pytest would choose for a run rooted at `root`, or ''."""
+    for name, section in INI_CANDIDATES:
+        path = os.path.join(root, name)
+
+        if not os.path.isfile(path):
+            continue
+
+        if name == "pyproject.toml":
+            # pytest only treats it as the config file when it carries
+            # [tool.pytest.ini_options]; a pyproject.toml holding nothing but
+            # build metadata does not make the run's configuration.
+            if _toml_pytest_options(path) is not None:
+                return path
+            continue
+
+        if section is None or _ini_has_section(path, section):
+            return path
+
+    return ""
+
+
+def _ini_has_section(path, section):
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            parser.read_file(handle)
+    except (OSError, configparser.Error):
+        return False
+
+    return parser.has_section(section)
+
+
+def _toml_pytest_options(path):
+    """[tool.pytest.ini_options] as a dict, or None where there is none."""
+    loader = _toml_loader()
+    if loader is None:
+        return None
+
+    try:
+        with open(path, "rb") as handle:
+            data = loader(handle)
+    except Exception:
+        return None
+
+    tool = data.get("tool")
+    if not isinstance(tool, dict):
+        return None
+
+    pytest_table = tool.get("pytest")
+    if not isinstance(pytest_table, dict):
+        return None
+
+    options = pytest_table.get("ini_options")
+
+    return options if isinstance(options, dict) else None
+
+
+def read_ini_keys(path):
+    """{ini key: value} for this plugin's keys, out of pytest's own section.
+
+    The bottom layer of the precedence, and the one somebody is most likely to
+    have forgotten is there - a build_info written in [pytest] years ago, still
+    supplying the row a profile is being blamed for. A list key comes back as a
+    list, because that is what config.getini hands back for the linelist keys
+    and the explainer has to see the same shape either way.
+    """
+    values = {}
+
+    if not path:
+        return values
+
+    if path.lower().endswith(".toml"):
+        raw = _toml_pytest_options(path) or {}
+    else:
+        parser = configparser.ConfigParser(interpolation=None, strict=False)
+
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                parser.read_file(handle)
+        except (OSError, configparser.Error):
+            return values
+
+        raw = {}
+        for section in ("pytest", "tool:pytest"):
+            if parser.has_section(section):
+                raw = dict(parser.items(section))
+                break
+
+    for key in KEYS:
+        name = ini_key_name(key)
+        if not name or name not in raw:
+            continue
+
+        value = raw[name]
+
+        if key.kind == "list":
+            if isinstance(value, (list, tuple)):
+                values[name] = [str(item).strip() for item in value if str(item).strip()]
+            else:
+                values[name] = [line.strip()
+                                for line in str(value).splitlines() if line.strip()]
+        else:
+            values[name] = value
+
+    return values
+
+
+class StandaloneConfig(object):
+    """Enough of pytest's Config for load_sources, resolve and explain.
+
+    The options start at the defaults pytest_addoption registers, which is the
+    honest starting point: this command is describing a `pytest` run that was
+    given no flags of its own, so every value it shows came from a file, the
+    environment or a default - and `--profile` is the one flag it does model,
+    because naming the profile is the question being asked.
+    """
+
+    def __init__(self, root=".", profile=""):
+        self.rootpath = os.path.abspath(os.path.expanduser(str(root)))
+        self.rootdir = self.rootpath
+        self.inipath = find_inipath(self.rootpath)
+
+        self.option = _DefaultOptions(profile)
+        self._ini = read_ini_keys(self.inipath)
+
+    def getoption(self, name, default=None):
+        value = getattr(self.option, name, default)
+
+        return default if value is None else value
+
+    def getini(self, name):
+        if name not in self._ini:
+            # What pytest raises for a key nothing registered, and what _ini
+            # is already written to swallow.
+            raise ValueError(name)
+
+        return self._ini[name]
+
+
+class _DefaultOptions(object):
+    """config.option holding exactly what the flags default to."""
+
+    def __init__(self, profile=""):
+        for key in KEYS:
+            # A fresh list per instance: the list settings are merged into in
+            # place, and a shared default would carry one project's entries
+            # into the next call in the same process.
+            default = list(key.default) if isinstance(key.default, list) else key.default
+            setattr(self, key.dest, default)
+
+        self.report_profile = str(profile or "")

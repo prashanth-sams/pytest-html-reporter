@@ -14,6 +14,7 @@ The layers, highest first, and each of them has a test below:
     the plain ini key > the option's own default
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -21,17 +22,20 @@ import textwrap
 
 import pytest
 
-from pytest_html_reporter import plugin, profiles
+from pytest_html_reporter import cli, plugin, profiles
 from pytest_html_reporter.coverage_report import coverage_limit, coverage_mode
 from pytest_html_reporter.junit import junit_path
 from pytest_html_reporter.profiles import (
     KEYS,
     NO_PROFILE,
     ProfileError,
+    StandaloneConfig,
     apply_profile,
     environment_values,
+    explain,
     load_sources,
     lookup,
+    render_explanation,
     requested_name,
     resolve,
 )
@@ -40,6 +44,7 @@ from pytest_html_reporter.shards import report_shard_merge
 from pytest_html_reporter.util import (
     build_info,
     link_patterns,
+    report_links,
     report_logs_mode,
     report_step_limit,
 )
@@ -1129,3 +1134,477 @@ def test_a_link_pattern_a_profile_claims_is_not_taken_back_by_the_ini_key(tmp_pa
     apply_profile(config, environ={})
 
     assert link_patterns(config) == {"jira": "https://acme.atlassian.net/browse/{}"}
+
+
+# --------------------------------------------------------------------------
+# the lists, and which layer wins a label they both name
+# --------------------------------------------------------------------------
+#
+# The section above covers a list adding up across layers, which was the easy
+# half. This is the other one: a label two layers both name is a collision,
+# and until it was tested the *lowest* layer won every one of them. The
+# entries were concatenated lowest layer first and the readers collapse to the
+# first answer per label, so a `branch` in the shared table outranked the
+# `branch` in the profile written to override it, and outranked the
+# PYTEST_HTML_REPORTER_BUILD_INFO a job had set to say otherwise - a report
+# showing main on a run that had been told, twice, that it was hotfix.
+#
+# Tested on all three list settings rather than on build_info alone, because
+# they are three different readers - a list of pairs, a list of pairs through
+# a url sieve, and a dict - and the ordering they share is the only reason
+# they agree.
+
+
+class _ListSetting(object):
+    """One list-valued setting, and how to write and read one label of it."""
+
+    def __init__(self, key, dest, label, template, other, read):
+        self.key = key
+        self.dest = dest
+        self.label = label
+        self.template = template
+        # A second label of the same setting, for the cases that are about a
+        # row nobody is arguing over - it has to be a different label or the
+        # test is quietly writing the same collision twice.
+        self.other = other
+        self.read = read
+
+    @property
+    def other_label(self):
+        return self.other.partition("=")[0].strip()
+
+    @property
+    def env(self):
+        return "PYTEST_HTML_REPORTER_" + self.key.upper()
+
+    def entry(self, layer):
+        """The KEY=VALUE line a layer writes, carrying the layer's own name."""
+        return self.template % layer
+
+    def value(self, layer):
+        return self.entry(layer).partition("=")[2]
+
+
+LIST_SETTINGS = (
+    _ListSetting("build_info", "build_info", "branch", "branch=%s",
+                 "team=payments", lambda config: dict(build_info(config))),
+    _ListSetting("links", "report_link", "Coverage", "Coverage=https://%s.example.com/",
+                 "Docs=https://docs.example.com/",
+                 lambda config: dict(report_links(config))),
+    _ListSetting("link_patterns", "report_link_pattern", "jira",
+                 "jira=https://%s.example.com/{}",
+                 "testcase=https://cases.example.com/{}", link_patterns),
+)
+
+LIST_IDS = [setting.key for setting in LIST_SETTINGS]
+
+
+def _stacked(tmp_path, setting, options=None):
+    """A project naming one label in the shared table and again in a profile."""
+    return _config(tmp_path, pyproject="""
+        [tool.pytest-html-reporter]
+        %s = ["%s"]
+
+        [tool.pytest-html-reporter.profiles.ci]
+        %s = ["%s"]
+    """ % (setting.key, setting.entry("shared"),
+           setting.key, setting.entry("profile")),
+        options=dict({"report_profile": "ci"}, **(options or {})),
+        ini_keys={setting.dest: [setting.entry("ini")]})
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_profile_list_label_overrides_shared_table(tmp_path, setting):
+    """The collision a profile is written to cause, and used to lose.
+
+    A profile that names a row the shared table already names is the ordinary
+    way to write one - the table holds what every shape agrees on and the
+    profile changes the one row that differs.
+    """
+    config = _stacked(tmp_path, setting)
+
+    apply_profile(config, environ={})
+
+    assert setting.read(config)[setting.label] == setting.value("profile")
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_environment_list_label_overrides_profile_and_shared_table(tmp_path, setting):
+    """The variable is the layer that exists to override the committed files.
+
+    One job, one machine or one debugging session saying otherwise without
+    editing a file everybody else reads - which it cannot do if the file it is
+    overriding wins.
+    """
+    config = _stacked(tmp_path, setting)
+
+    apply_profile(config, environ={setting.env: setting.entry("environment")})
+
+    assert setting.read(config)[setting.label] == setting.value("environment")
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_cli_list_label_overrides_every_lower_layer(tmp_path, setting):
+    """All four layers naming one label, with the top one winning."""
+    config = _stacked(tmp_path, setting,
+                      options={setting.dest: [setting.entry("commandline")]})
+
+    apply_profile(config, environ={setting.env: setting.entry("environment")})
+
+    assert setting.read(config)[setting.label] == setting.value("commandline")
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_a_list_label_no_higher_layer_names_is_kept(tmp_path, setting):
+    """Overriding a label is not replacing the list.
+
+    The rows a lower layer contributed and nobody argued with have to survive,
+    or every profile would have to restate the whole table to change one line
+    of it - which is the thing lists adding up exists to avoid.
+    """
+    config = _config(tmp_path, pyproject="""
+        [tool.pytest-html-reporter]
+        %s = ["%s", "%s"]
+
+        [tool.pytest-html-reporter.profiles.ci]
+        %s = ["%s"]
+    """ % (setting.key, setting.entry("shared"), setting.other,
+           setting.key, setting.entry("profile")),
+        options={"report_profile": "ci"})
+
+    apply_profile(config, environ={})
+
+    read = setting.read(config)
+    assert read[setting.label] == setting.value("profile")
+    assert setting.other_label in read
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_a_list_label_keeps_the_position_the_lower_layer_gave_it(tmp_path, setting):
+    """A higher layer changes a value; it does not reorder the panel.
+
+    The shared table is where the rows are written in the order somebody wants
+    to read them down the Environment panel. A profile answering one of them
+    differently should not move that row to the bottom - or, worse, to the
+    top, which is what appending the winning layer's entries would do.
+    """
+    config = _config(tmp_path, pyproject="""
+        [tool.pytest-html-reporter]
+        %s = ["%s", "%s"]
+
+        [tool.pytest-html-reporter.profiles.ci]
+        %s = ["%s"]
+    """ % (setting.key, setting.other, setting.entry("shared"),
+           setting.key, setting.entry("profile")),
+        options={"report_profile": "ci"})
+
+    apply_profile(config, environ={})
+
+    # The shared table wrote the other row first and this one second; the
+    # profile changed the second one's value and nothing else.
+    labels = list(setting.read(config))
+    assert labels.index(setting.other_label) < labels.index(setting.label)
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_the_plain_ini_key_loses_a_list_label_to_every_layer_above_it(tmp_path, setting):
+    """The bottom of the stack, which the readers already handled - checked
+    here too so the three settings are pinned against the same full order."""
+    config = _stacked(tmp_path, setting)
+
+    apply_profile(config, environ={})
+
+    assert setting.read(config)[setting.label] != setting.value("ini")
+
+
+@pytest.mark.parametrize("setting", LIST_SETTINGS, ids=LIST_IDS)
+def test_a_label_said_twice_inside_one_layer_keeps_the_first(tmp_path, setting):
+    """Which is what a file saying the same thing twice means.
+
+    Only worth pinning because the fold that makes a higher layer win is the
+    same fold, and "the last one wins" inside a layer would have made a
+    profile's own entries argue with each other in file order.
+    """
+    config = _config(tmp_path, pyproject="""
+        [tool.pytest-html-reporter.profiles.ci]
+        %s = ["%s", "%s"]
+    """ % (setting.key, setting.entry("first"), setting.entry("second")),
+        options={"report_profile": "ci"})
+
+    apply_profile(config, environ={})
+
+    assert setting.read(config)[setting.label] == setting.value("first")
+
+
+def test_a_list_label_is_matched_the_way_the_readers_match_it(tmp_path):
+    """Case-insensitively, because that is what first_answer_per_key does.
+
+    A profile writing `Branch` over a shared table's `branch` is one row being
+    overridden, not two rows in a panel disagreeing - and the two ends have to
+    agree about that or the layering settles arguments the reader never sees.
+    """
+    config = _config(tmp_path, pyproject="""
+        [tool.pytest-html-reporter]
+        build_info = ["branch=main"]
+
+        [tool.pytest-html-reporter.profiles.ci]
+        build_info = ["Branch=release"]
+    """, options={"report_profile": "ci"})
+
+    apply_profile(config, environ={})
+
+    assert build_info(config) == [("Branch", "release")]
+
+
+# --------------------------------------------------------------------------
+# explaining what was resolved
+# --------------------------------------------------------------------------
+#
+# Six layers is more precedence than anybody holds in their head, and getting
+# it wrong is silent: the run is green and the report is simply not the one
+# that was configured. So both surfaces - `--report-show-config` on the run
+# and `pytest-html-reporter config` before it - answer in provenance rather
+# than in values. The value was never the hard part; "out of which file, and
+# what did it beat" is.
+
+
+def _explained(config, environ=None):
+    """{setting name: [Setting, ...]}, since a list setting has a row each."""
+    rows = {}
+    for setting in explain(config, environ=environ or {}).settings:
+        rows.setdefault(setting.name, []).append(setting)
+
+    return rows
+
+
+PROJECT = """
+    [tool.pytest-html-reporter]
+    screenshots = "failed"
+    build_info = { branch = "main", team = "payments" }
+
+    [tool.pytest-html-reporter.profiles.ci]
+    open = "none"
+    logs = "failed"
+    build_info = { branch = "release" }
+"""
+
+
+def test_the_explanation_names_the_layer_each_setting_came_from(tmp_path):
+    config = _config(tmp_path, pyproject=PROJECT, options={"report_profile": "ci"})
+
+    rows = _explained(config, {"PYTEST_HTML_REPORTER_LOGS": "all"})
+
+    assert rows["open"][0].source.startswith("profile 'ci'")
+    assert rows["screenshots"][0].source.startswith("[tool.pytest-html-reporter]")
+    assert rows["logs"][0].source == "the environment"
+    assert rows["title"][0].source == profiles.DEFAULT_SOURCE
+
+
+def test_the_explanation_says_what_a_value_overrode(tmp_path):
+    """The half that answers "why is my setting not the one in the report".
+
+    A profile listed as overridden is a profile that was found and read and
+    then outranked, which is a different problem - and a different fix - from
+    one that was never read at all.
+    """
+    config = _config(tmp_path, pyproject=PROJECT, options={"report_profile": "ci"})
+
+    rows = _explained(config, {"PYTEST_HTML_REPORTER_LOGS": "all"})
+
+    logs = rows["logs"][0]
+    assert logs.value == "all"
+    assert logs.source == "the environment"
+    assert len(logs.overrode) == 1
+    assert logs.overrode[0].startswith("profile 'ci'")
+
+
+def test_the_explanation_gives_a_list_a_row_per_label(tmp_path):
+    """And each row its own source, because the layers differ per label."""
+    config = _config(tmp_path, pyproject=PROJECT, options={"report_profile": "ci"})
+
+    rows = _explained(config, {"PYTEST_HTML_REPORTER_BUILD_INFO": "branch=hotfix"})
+
+    by_entry = dict((row.value, row) for row in rows["build_info"])
+
+    assert by_entry["branch=hotfix"].source == "the environment"
+    assert by_entry["team=payments"].source.startswith("[tool.pytest-html-reporter]")
+
+    # The two layers the environment beat, highest first.
+    assert len(by_entry["branch=hotfix"].overrode) == 2
+    assert by_entry["branch=hotfix"].overrode[0].startswith("profile 'ci'")
+
+
+def test_the_explanation_reports_a_typed_value_as_the_command_line(tmp_path):
+    """Which is the reason explain runs before apply_profile and not after.
+
+    A profile reaches the run by being written onto config.option - that is
+    the whole mechanism - so once it has been there is nothing left to tell a
+    value somebody typed from a value a profile chose, and an explanation
+    built afterwards would report every one of them as typed.
+    """
+    config = _config(tmp_path, pyproject=PROJECT,
+                     options={"report_profile": "ci", "report_logs": "none"})
+
+    rows = _explained(config)
+
+    assert rows["logs"][0].value == "none"
+    assert rows["logs"][0].source == profiles.COMMAND_LINE
+    assert rows["logs"][0].overrode[0].startswith("profile 'ci'")
+
+
+def test_the_explanation_reaches_the_plain_ini_key_last(tmp_path):
+    config = _config(tmp_path, options={}, ini_keys={"report_logs": "failed"})
+
+    rows = _explained(config)
+
+    assert rows["logs"][0].value == "failed"
+    assert rows["logs"][0].source == "the report_logs ini key"
+
+
+def test_a_setting_nobody_named_is_left_out_until_all_is_asked_for(tmp_path):
+    """Thirty rows of defaults would bury the two lines somebody came for."""
+    config = _config(tmp_path, pyproject=PROJECT, options={"report_profile": "ci"})
+    explanation = explain(config, environ={})
+
+    named = "\n".join(render_explanation(explanation))
+    every = "\n".join(render_explanation(explanation, show_all=True))
+
+    assert "archive_days" not in named
+    assert "archive_days" in every
+    assert "open" in named
+
+
+def test_the_explanation_prints_the_files_it_read_and_the_profiles_in_them(tmp_path):
+    """"Which configuration file was read" is half of every question asked."""
+    config = _config(tmp_path, pyproject=PROJECT, options={"report_profile": "ci"})
+
+    text = "\n".join(render_explanation(explain(config, environ={})))
+
+    assert "Profile: ci" in text
+    assert "pyproject.toml" in text
+    assert "Profiles defined: ci" in text
+
+
+def test_the_explanation_shortens_the_paths_it_prints(tmp_path):
+    """The reader is standing in the project; the absolute path is the noise.
+
+    Kept absolute on the Explanation itself, because an error about a file
+    somebody has to open should say exactly which one.
+    """
+    config = _config(tmp_path, pyproject=PROJECT, options={"report_profile": "ci"})
+    explanation = explain(config, environ={})
+
+    text = "\n".join(render_explanation(explanation))
+
+    assert "profile 'ci' in pyproject.toml" in text
+    assert str(tmp_path) not in text
+    assert str(tmp_path) in explanation.payload()["files"][0]
+
+
+def test_no_profile_is_said_out_loud(tmp_path):
+    config = _config(tmp_path, pyproject=PROJECT,
+                     options={"report_profile": NO_PROFILE})
+
+    text = "\n".join(render_explanation(explain(config, environ={})))
+
+    assert "Profile: none" in text
+
+
+# --------------------------------------------------------------------------
+# and the command that does it without a run
+# --------------------------------------------------------------------------
+
+def test_the_config_command_reads_a_project_without_running_anything(tmp_path):
+    """The point of asking before the run: no forty minutes of CI to find out.
+
+    StandaloneConfig has to find the same file pytest would and read the same
+    [pytest] section out of it, or the bottom layer of the answer is missing -
+    and a build_info written in [pytest] years ago is exactly the layer
+    somebody has forgotten is there.
+    """
+    (tmp_path / "pyproject.toml").write_text(textwrap.dedent(PROJECT).lstrip())
+    (tmp_path / "pytest.ini").write_text(textwrap.dedent("""
+        [pytest]
+        report_logs = none
+        build_info =
+            lane=nightly
+    """).lstrip())
+
+    config = StandaloneConfig(tmp_path, "ci")
+    rows = _explained(config)
+
+    assert config.inipath == str(tmp_path / "pytest.ini")
+
+    # The profile outranks the ini key, and the ini key is still read.
+    assert rows["logs"][0].value == "failed"
+    assert rows["logs"][0].overrode[-1] == "the report_logs ini key"
+    assert "lane=nightly" in [row.value for row in rows["build_info"]]
+
+
+def test_the_config_command_takes_a_pyproject_only_project(tmp_path):
+    """pytest picks pyproject.toml as the config file only when it carries
+    [tool.pytest.ini_options], and this has to agree with it about that."""
+    (tmp_path / "pyproject.toml").write_text(textwrap.dedent("""
+        [tool.pytest.ini_options]
+        report_logs = "none"
+
+        [tool.pytest-html-reporter.profiles.ci]
+        open = "none"
+    """).lstrip())
+
+    config = StandaloneConfig(tmp_path, "ci")
+
+    assert config.inipath == str(tmp_path / "pyproject.toml")
+    assert _explained(config)["logs"][0].source == "the report_logs ini key"
+
+
+def test_the_config_command_ignores_a_pyproject_that_does_not_configure_pytest(tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "acme"\n')
+
+    assert StandaloneConfig(tmp_path).inipath == ""
+
+
+def test_the_config_command_prints_the_table_and_leaves(tmp_path, capsys):
+    (tmp_path / "pyproject.toml").write_text(textwrap.dedent(PROJECT).lstrip())
+
+    assert cli.main(["config", str(tmp_path), "--profile=ci"]) == 0
+
+    out = capsys.readouterr().out
+    assert "Profile: ci" in out
+    assert "open" in out
+
+
+def test_the_config_command_says_so_when_the_profile_is_not_there(tmp_path, capsys):
+    (tmp_path / "pyproject.toml").write_text(textwrap.dedent(PROJECT).lstrip())
+
+    assert cli.main(["config", str(tmp_path), "--profile=nope"]) == 2
+    assert "no such profile" in capsys.readouterr().err
+
+
+def test_the_config_command_can_answer_as_json(tmp_path, capsys):
+    (tmp_path / "pyproject.toml").write_text(textwrap.dedent(PROJECT).lstrip())
+
+    assert cli.main(["config", str(tmp_path), "--profile=ci", "--json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["profile"] == "ci"
+    assert payload["profiles"] == ["ci"]
+
+    logs = [row for row in payload["settings"] if row["setting"] == "logs"][0]
+    assert logs["value"] == "failed"
+
+
+def test_show_config_prints_the_table_in_a_real_runs_header(tmp_path):
+    """End to end, because the flag's whole job is to be readable in output
+    somebody pastes into an issue when a setting did not take."""
+    (tmp_path / "pyproject.toml").write_text(textwrap.dedent(PROJECT).lstrip())
+
+    result = _run(tmp_path, "--report-profile=ci", "--report-show-config",
+                  env={"PYTEST_HTML_REPORTER_LOGS": "all"})
+
+    assert result.returncode == 0, result.stdout
+    assert "pytest-html-reporter configuration:" in result.stdout
+    assert "logs" in result.stdout
+    assert "the environment" in result.stdout
+    assert "1 passed" in result.stdout

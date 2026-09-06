@@ -37,7 +37,7 @@
 | Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. |
 | Light and Dark Themes | Provides a side-navigation theme switch that remembers the user's choice and follows the operating-system theme until changed. |
 | Custom Side-Navigation Links | Adds links to custom pages directly within the report's side navigation. |
-| Named Configuration Profiles | Keeps `local` and `ci` as two named sets of settings in `pyproject.toml` or `pytest.ini` rather than two long command lines, selected with `--report-profile=ci` and overridable per job through `PYTEST_HTML_REPORTER_*` variables. |
+| Named Configuration Profiles | Keeps `local` and `ci` as two named sets of settings in `pyproject.toml` or `pytest.ini` rather than two long command lines, selected with `--report-profile=ci` and overridable per job through `PYTEST_HTML_REPORTER_*` variables. `pytest-html-reporter config` prints what a run would resolve and which layer decided each setting. |
 | Test Reruns | Reports a retried test as one row carrying the outcome that stuck, and keeps every attempt behind it - open the rerun count to see what each one failed with. |
 | Parallel Execution | Supports parallel test execution using `pytest-xdist`. |
 | Sharded and Cross-Machine Runs | Combines test shards from parallel machines or sequential stages using `pytest-html-reporter merge`, producing one set of totals, one archived build, and one JUnit XML file. |
@@ -689,9 +689,27 @@ being answered exactly the way it was before, which is what makes adopting one c
 and `link_patterns` are the exception and add up rather than replace, the same way `--build-info` adds to the
 ini key - so a profile that wants one more row does not have to restate the rows the repository already had.
 
-A label named by more than one layer is still one row, and it is the highest layer's answer. So a profile that
-repeats a `build_info` row the ini file already has - which is what copying a block of keys under a name
-produces - shows that row once rather than twice, and a profile that answers it differently wins.
+A label named by more than one layer is still one row, and it is the highest layer's answer - at every layer
+of the list above, not only against the ini key. So a profile that repeats a `build_info` row the ini file
+already has - which is what copying a block of keys under a name produces - shows that row once rather than
+twice; a profile that answers it differently wins over the shared table; and a variable set for one job wins
+over both:
+
+```toml
+[tool.pytest-html-reporter]
+build_info = { branch = "main", team = "payments" }
+
+[tool.pytest-html-reporter.profiles.ci]
+build_info = { branch = "release" }
+```
+
+```bash
+PYTEST_HTML_REPORTER_BUILD_INFO="branch=hotfix" pytest --report-profile=ci
+```
+
+shows `branch = hotfix` and `team = payments`: the label three layers argued over takes the highest answer,
+and the row nobody argued over is kept. The row also stays where the layer that introduced it put it, so
+overriding a value does not reorder the panel.
 
 #### The settings a profile can carry
 
@@ -735,6 +753,53 @@ names the file it is in. An unknown profile name lists the ones that are defined
 
 **Note:** the report's `Environment` panel carries a `Profile` row naming the profile the run was built with,
 so a report found on a CI server months later says which shape produced it.
+
+#### Seeing what a run resolved
+
+Six layers is more precedence than anybody holds in their head, and getting it wrong is silent: the run is
+green and the report is simply not the one that was configured. Both of these print the answer, in provenance
+rather than in values - which layer decided each setting, and which layers it overrode.
+
+Before the run, without running anything:
+
+```bash
+pytest-html-reporter config --profile=ci
+```
+
+```text
+Profile: ci
+Files read: pytest.ini, pyproject.toml
+Profiles defined: ci, local
+
+Setting      Value             Source
+-------------------------------------
+path         report/ci         profile 'ci' in pyproject.toml
+build_info   branch=hotfix     the environment
+                               over profile 'ci' in pyproject.toml
+                               over [tool.pytest-html-reporter] in pyproject.toml
+build_info   team=payments     [tool.pytest-html-reporter] in pyproject.toml
+build_info   lane=nightly      the build_info ini key
+logs         all               the environment
+                               over profile 'ci' in pyproject.toml
+screenshots  failed            [tool.pytest-html-reporter] in pyproject.toml
+open         none              profile 'ci' in pyproject.toml
+junit        report/junit.xml  profile 'ci' in pyproject.toml
+```
+
+Or during one, in the pytest header - which is the part of the output that gets pasted into an issue:
+
+```bash
+pytest --report-profile=ci --report-show-config
+```
+
+`--profile` is optional; without it the command resolves the profile a bare `pytest` would use, including one
+pinned as the default. `--all` also lists the settings nobody named, at their defaults, and `--json` prints
+the same thing as a document for a CI step to assert on.
+
+Between them they answer the questions the precedence raises: which profile was selected, which configuration
+files were read, whether a variable left over in the shell beat the profile, and why a setting somebody wrote
+is not the one in the report. Every value shown is what gets written onto `config.option`, which is the copy
+an xdist worker is handed - so what the table says is what the workers ran with.
 
 ## Capturing evidence
 
@@ -2001,14 +2066,6 @@ staged screenshots relative to the XML.
 **Note:** a run or a merge that collected nothing still writes a valid `tests="0"` document - CI is owed an answer -
 while the HTML report is written only when there is something to put in it. A pipeline step that publishes both will
 see one arrive without the other in that case, which is the one place the two outputs do not track each other.
-
-## Is there a demo available for this gem?
-
-Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter:
-
-```
-$ pytest tests/functional/
-```
 
 ---
 
