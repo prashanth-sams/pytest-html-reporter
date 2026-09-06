@@ -7,6 +7,11 @@ its own rows: it opens Test Metrics, filters the table to that outcome, and
 says so in the URL - #test-metrics?status=FAIL - so the address of "the
 failures in this run" can be pasted somewhere else. The way back out is a
 clear control beside the chips, for the filter nobody clicked into.
+
+Rerun is the one counter that does not name an outcome - a test that was
+rerun still ended on one of the six - so it is not a seventh slice of the run
+but a cut across it, and it opens the table on the tests that ran more than
+once.
 """
 
 import os
@@ -41,22 +46,17 @@ def _body(start, end):
 # what a counter is
 # --------------------------------------------------------------------------
 
-def test_every_outcome_a_test_can_end_on_is_a_button():
+def test_every_counter_on_the_dashboard_is_a_button():
     counters = _footer().findAll("button", class_="stat-jump")
 
-    assert [counter["data-status"] for counter in counters] == list(STATUSES)
+    assert [counter["data-status"] for counter in counters] == list(STATUSES) + ["rerun"]
     assert all(counter["type"] == "button" for counter in counters)
 
 
-def test_rerun_stays_a_figure():
-    """Rerun is not a status a row carries, so there is no filter to send
-    anyone to - and a control that goes nowhere is worse than a number."""
-    footer = _footer()
-
-    rerun = footer.findAll("div", class_="card__footer-section")
-    assert len(rerun) == 1
-    assert rerun[0].find("div", class_="footer-section__label").text.strip() == "rerun"
-    assert rerun[0].find("button") is None
+def test_no_counter_is_left_as_a_figure_nobody_can_press():
+    """Rerun was the one that was, and reading a count of retries off the
+    dashboard with no way to see which tests they belonged to was the gap."""
+    assert _footer().findAll("div", class_="card__footer-section") == []
 
 
 def test_a_counter_still_shows_the_count_it_always_did():
@@ -66,7 +66,7 @@ def test_a_counter_still_shows_the_count_it_always_did():
                     for counter in counters]
 
     assert placeholders == ["%(_pass)%", "%(fail)%", "%(skip)%",
-                            "%(xpass)%", "%(xfail)%", "%(error)%"]
+                            "%(xpass)%", "%(xfail)%", "%(error)%", "%(rerun)%"]
 
 
 def test_a_counter_standing_at_zero_is_not_pressable():
@@ -105,7 +105,32 @@ def test_the_click_does_the_work_rather_than_leaving_it_to_the_hash():
 def test_the_filter_is_anchored_so_pass_does_not_pull_in_xpass():
     body = _body("function applyTestStatusFilter(status) {", "\n            }")
 
-    assert ".search(status ? '^' + status + '$' : '', true, false)" in body
+    assert ".column(2).search(status && status !== 'rerun' ? '^' + status + '$' : '', true, false)" in body
+
+
+def test_rerun_is_asked_of_the_rerun_column_instead():
+    """It is a count, not an outcome: any figure that is not zero is a test
+    that ran more than once."""
+    body = _body("function applyTestStatusFilter(status) {", "\n            }")
+
+    assert ".column(4).search(status === 'rerun' ? '^[1-9][0-9]*$' : '', true, false)" in body
+
+
+def test_the_column_that_is_not_filtering_lets_go_of_its_term():
+    """Both are set on every call. Otherwise FAIL then RERUN asks for the
+    tests that failed *and* were rerun, and the counter pressed says neither."""
+    body = _body("function applyTestStatusFilter(status) {", "\n            }")
+
+    assert body.count(".search(") == 2
+
+
+def test_the_rerun_column_is_matched_on_the_count_rather_than_its_markup():
+    """The cell is a button wrapped round the figure, and DataTables searches
+    what the cell holds - which without this is markup and a nodeid."""
+    with open(os.path.join(os.path.dirname(TEMPLATE), "test_row.html"), encoding="utf-8") as row:
+        cell = BeautifulSoup(row.read(), "html.parser").find("td", class_="rerun-cell")
+
+    assert cell["data-search"] == "%(rerun)%"
 
 
 def test_a_filter_that_is_already_on_is_not_drawn_again():
@@ -140,10 +165,16 @@ def test_test_metrics_is_opened_rather_than_clicked_into():
 def test_a_status_the_report_does_not_know_filters_nothing():
     """?status=NOPE shows the whole table; filtering it down to no rows at all
     is the one reading nobody wanted."""
-    body = _body("function testStatus(value) {", "\n            }")
+    body = _body("function testFilter(value) {", "\n            }")
 
-    assert "TEST_STATUSES.indexOf(status) === -1 ? '' : status" in body
+    assert "TEST_FILTERS.indexOf(filter) === -1 ? '' : filter" in body
     assert "var TEST_STATUSES = ['pass', 'fail', 'skip', 'xpass', 'xfail', 'error'];" in _template()
+
+
+def test_rerun_is_a_filter_the_url_may_name():
+    """It rides with the outcomes through every place the filter is parsed -
+    the counter, the chip and #test-metrics?status=RERUN alike."""
+    assert "var TEST_FILTERS = TEST_STATUSES.concat(['rerun']);" in _template()
 
 
 def test_the_chips_keep_the_url_in_step_with_the_table():
@@ -185,6 +216,24 @@ def test_a_filter_offers_a_way_out_of_itself():
     assert "if (testStatusFilter) {" in body
     assert "metric-chip metric-chip--clear" in body
     assert "Clear filter" in body
+
+
+def test_the_chips_over_the_table_offer_the_rerun_cut_too():
+    """The counter and the chip are two ends of one filter, so the state the
+    dashboard can put the table into is one the table can show and toggle."""
+    body = _body("function renderTestSummary(api) {", "renderMetricsChips($('#testSummary')")
+
+    assert "label: 'rerun', status: 'rerun'" in body
+    assert "if (parseInt(metricsText(value), 10) > 0) { rerun += 1; }" in body
+
+
+def test_the_rerun_chip_counts_rows_rather_than_attempts():
+    """A chip stands over the table saying what pressing it leaves on screen,
+    and eleven retries can belong to three tests."""
+    body = _body("function renderTestSummary(api) {", "renderMetricsChips($('#testSummary')")
+
+    assert "api.column(4, { search: 'applied' }).data().each" in body
+    assert "value: rerun," in body
 
 
 def test_the_way_out_clears_the_filter_and_the_url_with_it():

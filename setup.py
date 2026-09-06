@@ -33,7 +33,7 @@ def read_long_description(fname):
 
 setup(
     name="pytest-html-reporter",
-    version="0.4.3",
+    version="0.4.4",
     author="Prashanth Sams",
     author_email="sams.prashanth@gmail.com",
     maintainer="Prashanth Sams",

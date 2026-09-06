@@ -1,3 +1,10 @@
+0.4.4 (06/09/2026)
+-------------------
+- The dashboard's `RERUN` figure is now a counter you can press, like the six beside it. It was left inert because rerun is not a status a row carries - a test that was retried still ended on `PASS` or `FAIL` - so there was no outcome to filter the table to, and a figure with a pointer over it that does nothing reads as broken rather than as deliberate
+- What it opens is the cut across the run rather than a slice of it: Test Metrics filtered to the tests that ran more than once, at `#test-metrics?status=RERUN`, so "which tests were flaky in this build" is an address like every other filter. `11 RERUN` and four rows is not a disagreement - it is eleven retries belonging to four tests, and the chip over the table says `4 rerun` so the figure you land on is the one the table is showing
+- The chip is a filter of its own, sitting after the outcomes rather than among them, and clears the way they do. A run with nothing retried has no chip and a disabled counter, unchanged
+- Matching is done against the count rather than the cell it lives in. The rerun cell is a button wrapped round a figure, and the table searches what a cell holds, so `rerun-btn` typed into the search box used to match every row in the report
+
 0.4.3 (06/09/2026)
 -------------------
 - A suite is run in more than one shape, and until now each shape was a command line. On a laptop you want the browser to open, every log kept and a handful of builds archived; on CI you want no browser, logs only where something failed, a JUnit xml beside the report and a month of history. That was two long invocations living in a Makefile target and a workflow file, drifting the moment one of them was edited, and the drift stayed invisible until somebody read a report missing the thing they went looking for
