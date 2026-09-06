@@ -1063,3 +1063,69 @@ def test_a_setup_cfg_may_spell_the_sections_the_way_it_spells_pytests(tmp_path):
     assert apply_profile(config, environ={}) == "CI"
     assert open_mode(config) == "none"
     assert report_logs_mode(config) == "failed"
+
+
+def test_a_row_a_profile_repeats_from_the_ini_file_is_shown_once(tmp_path):
+    """The shape somebody writes first, and the panel it used to produce.
+
+    A profile is very often a block of ini keys moved under a name, and the
+    obvious way to write one is to copy the keys and leave the originals where
+    they are. build_info adds up rather than replaces, so the profile's rows
+    and the ini file's rows both reached the panel and every one of them was
+    rendered twice - two Branch rows saying main, two Team rows saying
+    payments, with nothing to say which the run had used.
+    """
+    config = _config(tmp_path, ini="""
+        [pytest]
+        build_info =
+            branch=main
+            team=payments
+
+        [pytest-html-reporter.profiles.ci]
+        build_info =
+            branch=main
+            team=payments
+    """, options={"report_profile": "ci"}, ini_keys={
+        "build_info": ["branch=main", "team=payments"]})
+
+    apply_profile(config, environ={})
+
+    assert build_info(config) == [("branch", "main"), ("team", "payments")]
+
+
+def test_a_row_the_profile_answers_differently_is_the_profiles_answer(tmp_path):
+    """Which is the same rule, and the reason it is first-wins rather than a set.
+
+    The lists are built highest layer first, so collapsing to the first answer
+    per label is what makes a profile outrank the ini key it overlaps - the
+    precedence every other setting already has.
+    """
+    config = _config(tmp_path, ini="""
+        [pytest-html-reporter.profiles.ci]
+        build_info =
+            lane=ci
+    """, options={"report_profile": "ci"}, ini_keys={
+        "build_info": ["lane=nightly", "team=payments"]})
+
+    apply_profile(config, environ={})
+
+    assert build_info(config) == [("lane", "ci"), ("team", "payments")]
+
+
+def test_a_link_pattern_a_profile_claims_is_not_taken_back_by_the_ini_key(tmp_path):
+    """The same collision, on the dict the patterns are read into.
+
+    Written straight through, the last entry won - and the last entry is the
+    ini file's, so a profile that repointed `jira` at another tracker was
+    silently overruled by the key it was meant to override.
+    """
+    config = _config(tmp_path, ini="""
+        [pytest-html-reporter.profiles.ci]
+        link_patterns =
+            jira = https://acme.atlassian.net/browse/{}
+    """, options={"report_profile": "ci"}, ini_keys={
+        "report_link_pattern": ["jira = https://old.example.com/{}"]})
+
+    apply_profile(config, environ={})
+
+    assert link_patterns(config) == {"jira": "https://acme.atlassian.net/browse/{}"}

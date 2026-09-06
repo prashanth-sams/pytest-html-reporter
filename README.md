@@ -546,7 +546,8 @@ the useful case rather than a gap: the run token is then taken from the CI syste
 keys take `1`, `true`, `yes` or `on`.
 
 **Note:** `--html-report` overrides the `html_report` ini value; `--environment` overrides the `environment`
-ini value; `--build-info` entries are added to the ones set in the ini file rather than replacing them;
+ini value; `--build-info` entries are added to the ones set in the ini file rather than replacing them, and a
+label named on both sides is shown once, as the command line's answer;
 `--report-link` and `--report-link-pattern` entries are added to the ones set in the ini file the same way;
 `--archive-count`,
 `--archive-days`, `--archive-since`, `--report-logs`, `--report-log-limit`, `--report-attachments`,
@@ -684,6 +685,10 @@ A profile is a set of overrides rather than a replacement configuration: everyth
 being answered exactly the way it was before, which is what makes adopting one cheap. `build_info`, `links`
 and `link_patterns` are the exception and add up rather than replace, the same way `--build-info` adds to the
 ini key - so a profile that wants one more row does not have to restate the rows the repository already had.
+
+A label named by more than one layer is still one row, and it is the highest layer's answer. So a profile that
+repeats a `build_info` row the ini file already has - which is what copying a block of keys under a name
+produces - shows that row once rather than twice, and a profile that answers it differently wins.
 
 #### The settings a profile can carry
 
