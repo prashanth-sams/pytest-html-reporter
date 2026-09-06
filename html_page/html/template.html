@@ -1327,11 +1327,13 @@
 
                 /* The six status counters open Test Metrics filtered to that
                    outcome, so they are buttons - stripped back to the figure
-                   and label they have always been, and lit only under the
-                   pointer so the dashboard still reads as figures rather than
-                   as a row of controls. A counter standing at zero would land
-                   on "No matching records found", so it is disabled rather
-                   than merely styled flat: not a tab stop, and not clickable. */
+                   and label they have always been, and left unlit under the
+                   pointer so the dashboard reads as figures rather than as a
+                   row of controls. Only keyboard focus lights one, because a
+                   tab stop with no visible ring is a tab stop nobody can
+                   follow. A counter standing at zero would land on "No
+                   matching records found", so it is disabled rather than
+                   merely styled flat: not a tab stop, and not clickable. */
                 .card__footer-section.stat-jump {
                   -webkit-appearance: none;
                   appearance: none;
@@ -1351,15 +1353,14 @@
                   display: block;
                 }
 
-                .stat-jump:hover:not(:disabled),
+                .stat-jump:focus {
+                  outline: none;
+                }
+
                 .stat-jump:focus-visible {
                   outline: none;
                   background-color: var(--surface-track);
                   border-color: var(--border-strong);
-                }
-
-                .stat-jump:focus {
-                  outline: none;
                 }
 
                 .stat-jump:disabled {
