@@ -960,6 +960,22 @@
                     color: var(--icon-faint);
                 }
 
+                /* The version of the plugin that wrote the page, next to the
+                   name it wrote it under: a report outlives the run, and the
+                   first question asked of an old one is which release drew it.
+                   Set a step fainter than the credit so the pair still reads
+                   as one line rather than as two links. */
+                .page-footer__version {
+                    margin-left: 6px;
+                    font-size: 10px;
+                    color: var(--text-faint);
+                }
+
+                .page-footer--inline .page-footer__version {
+                    font-size: 9px;
+                    margin-left: 5px;
+                }
+
                 /* The dashboard is laid out to fit one screen at desktop widths,
                    so its own footer sits in the strip the credit line already
                    held: no border, no added height. The page-level footer stands
@@ -7578,6 +7594,7 @@
 
                 <footer class="page-footer page-footer--inline">
                     <a class="page-footer__credit" href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank" rel="noopener noreferrer">pytest-html-reporter</a>
+                    <span class="page-footer__version">v%(reporter_version)%</span>
                     <span class="page-footer__dot">&middot;</span>
                     <span class="page-footer__label">Sponsored by</span>
                     <a class="sponsor-link" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="pickoh.com">
@@ -8876,6 +8893,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
 
         <footer class="page-footer">
             <a class="page-footer__credit" href="https://github.com/prashanth-sams/pytest-html-reporter" target="_blank" rel="noopener noreferrer">pytest-html-reporter</a>
+            <span class="page-footer__version">v%(reporter_version)%</span>
             <span class="page-footer__dot">&middot;</span>
             <span class="page-footer__label">Sponsored by</span>
             <a class="sponsor-link" href="https://pickoh.com/" target="_blank" rel="noopener noreferrer" title="pickoh.com">

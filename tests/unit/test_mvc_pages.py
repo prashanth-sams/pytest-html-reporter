@@ -564,6 +564,18 @@ def test_the_api_logs_tab_is_reachable_by_both_of_its_names():
     assert hashes["attachments"] == "attachments"
 
 
+def test_both_footers_name_the_version_that_drew_the_page():
+    """The dashboard's inline strip and the page-level footer, both of them.
+
+    A report outlives the run that wrote it, and the release it was drawn by
+    is stated nowhere else on the page - so a page rendered without the
+    version is a page nobody can date to a release later on.
+    """
+    page = str(HtmlTemplate(reporter_version="9.9.9"))
+
+    assert page.count('<span class="page-footer__version">v9.9.9</span>') == 2
+
+
 def test_template():
     custom_logo = get_random_string()
     execution_time = str(get_random_number())

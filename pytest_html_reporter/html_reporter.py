@@ -23,6 +23,7 @@ from html_page.icon_styles import icon_styles
 from html_page.screenshot_details import ScreenshotDetails
 from html_page.suite_row import SuiteRow
 from html_page.template import HtmlTemplate
+from pytest_html_reporter import __version__
 from html_page.test_attempt import TestAttempt
 from html_page.test_attempts import TestAttempts
 from html_page.test_log import TestLog
@@ -1586,6 +1587,10 @@ class HTMLReporter(object):
     def renew_template_text(self, logo_url):
         template_text = HtmlTemplate(
             vendor_assets=vendor_assets(),
+            # Stamped into the footer beside the plugin's name: a report is
+            # read long after the run that wrote it, and the release that drew
+            # it is otherwise nowhere on the page.
+            reporter_version=__version__,
             icon_styles=icon_styles(),
             favicon=image('favicon.png'),
             custom_logo=logo_url,
