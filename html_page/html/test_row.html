@@ -6,7 +6,10 @@
         title="Open this test in Test Steps"
         style="word-wrap: break-word;max-width: 200px; white-space: normal; text-align:left">%(name)%</td>
     <td>%(stat)%</td>
-    <td>%(dur)%</td>
+    <!-- data-order is the raw number of seconds. The cell itself carries the
+         unit that fits the figure - "0.44 ms" beside "1.23 s" - and sorting a
+         column of those as text puts the fastest test of the run at the top. -->
+    <td data-order="%(data_dur)%">%(dur)%</td>
     <!-- The count opens the trail behind it when there is one, and reads as a
          plain figure when the test ran once - which is nearly every row. One
          element either way, not a button beside a span: the cell's text is

@@ -1,8 +1,8 @@
 # pytest-html-reporter
 
 [![Downloads](https://pepy.tech/badge/pytest-html-reporter)](https://pepy.tech/project/pytest-html-reporter)
-[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.2)](https://badge.fury.io/py/pytest-html-reporter)
-[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.2)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.2)
+[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.3)](https://badge.fury.io/py/pytest-html-reporter)
+[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.3)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.3)
 [![Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter](https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg)](https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Documentation](https://img.shields.io/badge/docs-pytest--html--reporter-blue)](https://prashanth-sams.github.io/pytest-html-reporter.github.io/)
 
@@ -34,9 +34,10 @@
 | Attachments | Stores API events and calls, JSON data, and free-text attachments against the test that produced them. |
 | Captured Logs | Displays captured `stdout`, `stderr`, and `logging` output for each test. |
 | Test Coverage | Shows overall coverage, file-level coverage, and coverage trends across builds. |
-| Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. |
+| Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. The dashboard's status counts are links of the same kind: clicking one opens Test Metrics filtered to that outcome, at an address - `#test-metrics?status=FAIL` - that can be pasted anywhere. |
 | Light and Dark Themes | Provides a side-navigation theme switch that remembers the user's choice and follows the operating-system theme until changed. |
 | Custom Side-Navigation Links | Adds links to custom pages directly within the report's side navigation. |
+| Named Configuration Profiles | Keeps `local` and `ci` as two named sets of settings in `pyproject.toml` or `pytest.ini` rather than two long command lines, selected with `--report-profile=ci` and overridable per job through `PYTEST_HTML_REPORTER_*` variables. `pytest-html-reporter config` prints what a run would resolve and which layer decided each setting. |
 | Test Reruns | Reports a retried test as one row carrying the outcome that stuck, and keeps every attempt behind it - open the rerun count to see what each one failed with. |
 | Parallel Execution | Supports parallel test execution using `pytest-xdist`. |
 | Sharded and Cross-Machine Runs | Combines test shards from parallel machines or sequential stages using `pytest-html-reporter merge`, producing one set of totals, one archived build, and one JUnit XML file. |
@@ -95,6 +96,9 @@ which suits your project; it is kept up to date in the
 |  | A report with no flags at all | ❌ | ❌ | ✅ |
 |  | Nothing to install beyond Python | ✅ | ❌ | ✅ |
 |  | It opens itself when the run ends | ❌ | ✅ | ✅ |
+| Configuration | Named profiles for local and CI, chosen by name | ❌ | ❌ | ✅ |
+|  | A default profile pinned so a bare `pytest` uses it | ❌ | ❌ | ✅ |
+|  | Any setting overridden per job from the environment | ❌ | ❌ | ✅ |
 | Report portability | One self-contained HTML file | ✅ | ✅ | ✅ |
 |  | No second tool to render it | ✅ | ❌ | ✅ |
 |  | Mail it, or attach it to a ticket | ✅ | ✅ | ✅ |
@@ -469,6 +473,7 @@ Alternate option is to add this snippet in the `pytest.ini` file:
 ```
 [pytest]
 addopts = -v -rf --capture=tee-sys --title='PYTEST REPORT'
+report_profile = ci
 html_report = ./reports/%Y%m%d/report_%H%M.html
 archive_count = 7
 archive_days = 30
@@ -520,6 +525,11 @@ rather than being replaced by it.
 that marker into a link on every test carrying it - see [Jira, test cases and ownership](#jira-test-cases-and-ownership). It adds to whatever
 `--report-link-pattern` passes, the same way.
 
+`report_profile` names the profile a bare `pytest` uses - see
+[Named configuration profiles](#named-configuration-profiles) - and mirrors `--report-profile`. Everything a
+profile sets overrides the plain keys in this file, since the profile is the more specific answer and the one
+that was selected.
+
 `html_report` takes the same value as `--html-report`, placeholders included, and is the way to set the report
 location without going through `addopts`.
 
@@ -539,7 +549,8 @@ the useful case rather than a gap: the run token is then taken from the CI syste
 keys take `1`, `true`, `yes` or `on`.
 
 **Note:** `--html-report` overrides the `html_report` ini value; `--environment` overrides the `environment`
-ini value; `--build-info` entries are added to the ones set in the ini file rather than replacing them;
+ini value; `--build-info` entries are added to the ones set in the ini file rather than replacing them, and a
+label named on both sides is shown once, as the command line's answer;
 `--report-link` and `--report-link-pattern` entries are added to the ones set in the ini file the same way;
 `--archive-count`,
 `--archive-days`, `--archive-since`, `--report-logs`, `--report-log-limit`, `--report-attachments`,
@@ -550,6 +561,245 @@ switches rather than values: the flag turns the behaviour on, and so does a trut
 the command line that turns off an ini file that has already said yes - and `--report-packages` behaves the same way
 
 **Note:** If you fail to provide `--html-report` tag, it consider your project's home directory as the base
+
+### Named configuration profiles
+
+A suite is run in more than one shape. On a laptop you want the browser to open, every log kept and a
+handful of builds in the archive; on CI you want no browser, logs only where something failed, a JUnit xml
+beside the report and a month of history. That is two long command lines living in two places - a Makefile
+target and a workflow file - which drift the moment one of them is edited, and the drift is invisible until
+somebody reads a report that is missing the thing they went looking for.
+
+A profile is those two shapes written down once, under a name:
+
+```toml
+# pyproject.toml
+[tool.pytest-html-reporter.profiles.local]
+open = "auto"
+logs = "all"
+screenshots = "failed"
+archive_count = 10
+
+[tool.pytest-html-reporter.profiles.ci]
+open = "none"
+logs = "failed"
+screenshots = "failed"
+junit = "report/junit.xml"
+archive_days = 30
+```
+
+```
+pytest --report-profile=ci
+```
+
+The same profiles in a `pytest.ini`, `tox.ini` or `setup.cfg`, as a section per name:
+
+```
+[pytest-html-reporter.profiles.local]
+open = auto
+logs = all
+screenshots = failed
+archive_count = 10
+
+[pytest-html-reporter.profiles.ci]
+open = none
+logs = failed
+screenshots = failed
+junit = report/junit.xml
+archive_days = 30
+```
+
+In a `setup.cfg`, where pytest's own section is `[tool:pytest]`, the sections may be written
+`[tool:pytest-html-reporter.profiles.ci]` too.
+
+Both files are read - the one pytest chose as this run's config file first - so a repository that keeps a
+`pytest.ini` does not have to grow a `pyproject.toml` to say `ci` in a single word. When both define the same
+name, the ini file's definition is the one used, whole: half a profile from each file would be a shape nobody
+composed.
+
+#### Choosing one
+
+```
+pytest --report-profile=ci                  # the command line
+PYTEST_HTML_REPORTER_PROFILE=ci pytest      # the environment
+```
+
+```
+[pytest]
+report_profile = ci
+```
+
+```toml
+[tool.pytest-html-reporter]
+profile = "ci"
+```
+
+The last two pin the profile a bare `pytest` uses, so the shape this repository agreed on is the one that
+happens by default. `--report-profile=none` opts one run back out of a pinned default, which is why no
+profile can be called `none`.
+
+#### Settings every profile shares
+
+What is true of every shape of a run - the title, whether the Coverage tab is built - goes in the tool table
+itself, and a profile then says only what it changes:
+
+```toml
+[tool.pytest-html-reporter]
+title = "PAYMENTS"
+coverage = "auto"
+links = { Coverage = "htmlcov/index.html" }
+
+[tool.pytest-html-reporter.profiles.ci]
+open = "none"
+logs = "failed"
+```
+
+In an ini file that table is a `[pytest-html-reporter]` section. It applies to a run that names no profile
+at all, so it is a layer rather than a thing that only sometimes exists.
+
+#### Overriding from the environment
+
+Every setting has a `PYTEST_HTML_REPORTER_` variable, under both its short name and its ini spelling:
+
+```
+PYTEST_HTML_REPORTER_LOGS=all pytest --report-profile=ci
+PYTEST_HTML_REPORTER_JUNIT=out/junit.xml pytest
+PYTEST_HTML_REPORTER_BUILD_INFO="commit=$GITHUB_SHA" pytest
+```
+
+It sits **above** the profile, which is what an override is for: the profile is what the repository
+committed, and the variable is one job, one machine or one debugging session saying otherwise without editing
+a file everybody else reads. A variable set to nothing is not an answer - `PYTEST_HTML_REPORTER_JUNIT=` in a
+matrix leg that left its value blank means "I am not saying", not "write no xml". A list takes one entry per
+line.
+
+#### What wins
+
+Highest first:
+
+1. a flag on the command line - including one reached through `addopts`
+2. a `PYTEST_HTML_REPORTER_*` environment variable
+3. the selected profile
+4. the `[tool.pytest-html-reporter]` table every profile shares
+5. the plain ini key in `[pytest]`
+6. the option's own default
+
+A profile is a set of overrides rather than a replacement configuration: everything it is silent about goes on
+being answered exactly the way it was before, which is what makes adopting one cheap. `build_info`, `links`
+and `link_patterns` are the exception and add up rather than replace, the same way `--build-info` adds to the
+ini key - so a profile that wants one more row does not have to restate the rows the repository already had.
+
+A label named by more than one layer is still one row, and it is the highest layer's answer - at every layer
+of the list above, not only against the ini key. So a profile that repeats a `build_info` row the ini file
+already has - which is what copying a block of keys under a name produces - shows that row once rather than
+twice; a profile that answers it differently wins over the shared table; and a variable set for one job wins
+over both:
+
+```toml
+[tool.pytest-html-reporter]
+build_info = { branch = "main", team = "payments" }
+
+[tool.pytest-html-reporter.profiles.ci]
+build_info = { branch = "release" }
+```
+
+```bash
+PYTEST_HTML_REPORTER_BUILD_INFO="branch=hotfix" pytest --report-profile=ci
+```
+
+shows `branch = hotfix` and `team = payments`: the label three layers argued over takes the highest answer,
+and the row nobody argued over is kept. The row also stays where the layer that introduced it put it, so
+overriding a value does not reorder the panel.
+
+#### The settings a profile can carry
+
+| In a profile | On the command line | |
+|---|---|---|
+| `path` | `--html-report` | `html_report` and `report` also work |
+| `title` | `--title` | |
+| `open` | `--report-open` | `auto`, `always`, `none` |
+| `logs` | `--report-logs` | `all`, `failed`, `none` |
+| `log_limit` | `--report-log-limit` | |
+| `attachments` | `--report-attachments` | `all`, `failed`, `none` |
+| `attachment_limit` | `--report-attachment-limit` | |
+| `screenshots` | `--report-screenshots` | `failed`, `all`, `none` |
+| `steps` | `--report-steps` | `all`, `failed`, `none` |
+| `step_limit` | `--report-step-limit` | |
+| `coverage` | `--report-coverage` | `auto`, `none` |
+| `coverage_file` | `--report-coverage-file` | |
+| `coverage_limit` | `--report-coverage-limit` | |
+| `environment` | `--environment` | |
+| `build_info` | `--build-info` | a list, or a table of `key = "value"` |
+| `links` | `--report-link` | a list, or a table of `Label = "url"` |
+| `link_patterns` | `--report-link-pattern` | a list, or a table of `marker = "url"` |
+| `archive_count` | `--archive-count` | |
+| `archive_days` | `--archive-days` | |
+| `archive_since` | `--archive-since` | |
+| `junit` | `--report-junit` | |
+| `junit_xpass` | `--report-junit-xpass` | `pass`, `fail`, `skip` |
+| `packages` | `--report-packages` | `true` / `false` |
+| `shard` | `--report-shard` | |
+| `shard_merge` | `--report-shard-merge` | `true` / `false` |
+| `shard_run` | `--report-shard-run` | |
+| `shard_reset` | `--report-shard-reset` | `true` / `false` |
+
+The ini spelling of each - `report_logs`, `report_open`, `report_junit_xpass` - works too, so a block of ini
+keys can be moved under a name without being rewritten.
+
+**Note:** a profile that says something the flag would have refused fails the run at configure time, with one
+line, before a test is collected. `logs = "fail"` is a typo, not a setting, and the alternative is a run that
+quietly keeps every log because six letters were typed instead of seven. An unknown key fails the same way and
+names the file it is in. An unknown profile name lists the ones that are defined.
+
+**Note:** the report's `Environment` panel carries a `Profile` row naming the profile the run was built with,
+so a report found on a CI server months later says which shape produced it.
+
+#### Seeing what a run resolved
+
+Six layers is more precedence than anybody holds in their head, and getting it wrong is silent: the run is
+green and the report is simply not the one that was configured. Both of these print the answer, in provenance
+rather than in values - which layer decided each setting, and which layers it overrode.
+
+Before the run, without running anything:
+
+```bash
+pytest-html-reporter config --profile=ci
+```
+
+```text
+Profile: ci
+Files read: pytest.ini, pyproject.toml
+Profiles defined: ci, local
+
+Setting      Value             Source
+-------------------------------------
+path         report/ci         profile 'ci' in pyproject.toml
+build_info   branch=hotfix     the environment
+                               over profile 'ci' in pyproject.toml
+                               over [tool.pytest-html-reporter] in pyproject.toml
+build_info   team=payments     [tool.pytest-html-reporter] in pyproject.toml
+build_info   lane=nightly      the build_info ini key
+logs         all               the environment
+                               over profile 'ci' in pyproject.toml
+screenshots  failed            [tool.pytest-html-reporter] in pyproject.toml
+open         none              profile 'ci' in pyproject.toml
+junit        report/junit.xml  profile 'ci' in pyproject.toml
+```
+
+Or during one, in the pytest header - which is the part of the output that gets pasted into an issue:
+
+```bash
+pytest --report-profile=ci --report-show-config
+```
+
+`--profile` is optional; without it the command resolves the profile a bare `pytest` would use, including one
+pinned as the default. `--all` also lists the settings nobody named, at their defaults, and `--json` prints
+the same thing as a document for a CI step to assert on.
+
+Between them they answer the questions the precedence raises: which profile was selected, which configuration
+files were read, whether a variable left over in the shell beat the profile, and why a setting somebody wrote
+is not the one in the report. Every value shown is what gets written onto `config.option`, which is the copy
+an xdist worker is handed - so what the table says is what the workers ran with.
 
 ## Capturing evidence
 
@@ -1816,14 +2066,6 @@ staged screenshots relative to the XML.
 **Note:** a run or a merge that collected nothing still writes a valid `tests="0"` document - CI is owed an answer -
 while the HTML report is written only when there is something to put in it. A pipeline step that publishes both will
 see one arrive without the other in that case, which is the one place the two outputs do not track each other.
-
-## Is there a demo available for this gem?
-
-Yes, you can use this demo as an example, https://github.com/prashanth-sams/pytest-html-reporter:
-
-```
-$ pytest tests/functional/
-```
 
 ---
 

@@ -312,6 +312,7 @@ def test_a_duration_that_cannot_be_one_is_read_as_unmeasured(tmp_path):
 
 def test_a_long_run_is_read_in_hours():
     """Minutes stop being a unit somewhere, and "608889402m 03s" is past it."""
+    assert _duration_text(0.00044) == "0.44ms"
     assert _duration_text(0.25) == "250ms"
     assert _duration_text(9.4) == "9.4s"
     assert _duration_text(125) == "2m 05s"

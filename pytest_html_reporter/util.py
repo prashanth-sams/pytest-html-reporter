@@ -227,8 +227,43 @@ def environment_label(name):
     return _fit(name, ENVIRONMENT_LABEL_MAX)
 
 
+def first_answer_per_key(pairs):
+    """`pairs` with only the first entry for each key kept.
+
+    Every list these come out of is built highest layer first - what the
+    command line said, then what a profile said, then the ini key - so the
+    first answer to a name is the one that outranks the rest, and the ones
+    behind it are the same row said again by a layer that lost.
+
+    Keeping them put two rows with one label in a key/value panel, where there
+    is nothing to say which of them the run actually used. It is the rule
+    environment_entries already applies one layer up, where a `branch` somebody
+    named themselves means git does not get to add a second Branch row beside
+    it disagreeing.
+
+    Matched case-insensitively: `Team` and `team` are one row, not two.
+    """
+    seen = set()
+    kept = []
+
+    for key, value in pairs:
+        lowered = str(key).strip().lower()
+        if lowered in seen:
+            continue
+
+        seen.add(lowered)
+        kept.append((key, value))
+
+    return kept
+
+
 def build_info(config):
-    """(label, value) pairs from --build-info and the build_info ini key."""
+    """(label, value) pairs from --build-info and the build_info ini key.
+
+    A label named more than once is shown once, as the highest layer that named
+    it - so a profile that repeats a row the ini file already has does not put
+    that row in the panel twice, and one that answers it differently wins.
+    """
     entries = list(config.getoption("build_info", None) or [])
     entries += list(_ini(config, "build_info") or [])
 
@@ -241,7 +276,7 @@ def build_info(config):
         key, _, value = entry.partition("=")
         pairs.append((key.strip(), value.strip()))
 
-    return pairs
+    return first_answer_per_key(pairs)
 
 
 # A scheme of two characters or more, so a Windows drive letter - C:/reports -
@@ -293,7 +328,7 @@ def report_links(config):
         if label and url:
             links.append((label, url))
 
-    return links
+    return first_answer_per_key(links)
 
 
 def link_patterns(config):
@@ -340,7 +375,10 @@ def parse_link_patterns(entries):
         # said, so a report is only ever as safe as the schemes it will render.
         template = safe_link(template)
 
-        if marker and template:
+        # The first answer, not the last: these arrive highest layer first,
+        # and a dict written straight through would have handed the ini key
+        # the marker the command line - or the profile - had just claimed.
+        if marker and template and marker not in patterns:
             patterns[marker] = template
 
     return patterns
@@ -535,6 +573,16 @@ def environment_entries(config, records=None):
     environment = environment_name(config)
     if environment:
         entries.append(("Environment", environment))
+
+    # Which named profile shaped this run, when one did. The row is worth its
+    # line for the same reason the Arguments row is: a report is read months
+    # later by somebody who did not start it, and "logs are missing" and "this
+    # was built with the ci profile, which keeps them only on failures" are the
+    # same fact. pytest_configure resolves the name and writes it back onto the
+    # option, so this is reading a settled answer rather than working one out.
+    profile = str(config.getoption("report_profile", None) or "").strip()
+    if profile:
+        entries.append(("Profile", profile))
 
     named = build_info(config)
     entries += named
@@ -974,7 +1022,10 @@ def attempt_seconds(value):
     reason to lose the report the tests have already paid for.
     """
     try:
-        return round(float(value or 0), 2)
+        # Six places rather than two, for the reason the record's own duration
+        # keeps them: two places of seconds is a 10ms floor, and an attempt
+        # quicker than that reads back as having taken no time at all.
+        return round(float(value or 0), 6)
     except (TypeError, ValueError):
         return 0.0
 

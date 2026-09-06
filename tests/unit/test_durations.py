@@ -51,7 +51,7 @@ SAMPLE = {
 
 @pytest.fixture(scope="module")
 def report(tmp_path_factory):
-    """One run of the sample suite, and the output.json it wrote."""
+    """One run of the sample suite, and the two files it wrote."""
     base = tmp_path_factory.mktemp("durations")
 
     for name, body in SAMPLE.items():
@@ -75,6 +75,7 @@ def report(tmp_path_factory):
 
     data = json.loads(written.read_text())
     data["_last_started"] = float((base / "started").read_text())
+    data["_html"] = (base / "report" / "pytest_html_report.html").read_text()
 
     return data
 
@@ -126,3 +127,27 @@ def test_the_build_is_stamped_with_the_start_of_the_run(report):
     the wrong order.
     """
     assert report["start_time"] <= report["_last_started"] - 1.0
+
+
+# ------------------------------------------------------- what the page says ---
+
+def test_a_fast_test_is_not_printed_as_no_time_at_all(report):
+    """The Time column used to floor everything quicker than 10ms at "0.0".
+
+    Two decimal places of *seconds* is what the record carried, so a unit
+    suite printed a column of zeros - and "0.0" reads as a test that was
+    never timed rather than one that finished before the clock moved.
+    """
+    fast = _durations(report)["test_last"]
+
+    assert 0 < fast < 0.01
+    assert "%.2f ms" % (fast * 1000) in report["_html"]
+
+
+def test_the_time_column_sorts_on_the_seconds_it_no_longer_prints(report):
+    """The cell carries the unit that fits - "0.44 ms" beside "1.23 s" - and
+    those two compared as text put the slowest test of the run in the middle,
+    so the raw number of seconds rides along on data-order."""
+    slow = _durations(report)["test_slow_enough_to_measure"]
+
+    assert 'data-order="%r"' % float(slow) in report["_html"]

@@ -222,7 +222,10 @@ def take_steps():
 # -------------------------------------------------------------- recording ---
 
 def _close(frame, started, status, error):
-    frame['ms'] = int(round((time.time() - started) * 1000))
+    # Two decimal places rather than a whole millisecond: plenty of steps are
+    # an assertion and nothing else, and an integer here rounds all of them to
+    # a zero the rail then draws as "0 ms".
+    frame['ms'] = round((time.time() - started) * 1000, 2)
 
     # A step that already failed keeps the failure it was reported with. The
     # exception walks out through every step it was raised inside, and each of

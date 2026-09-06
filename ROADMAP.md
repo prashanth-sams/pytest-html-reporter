@@ -24,12 +24,20 @@ opened from a chip on the summary card's existing "Time taken" line. An inline s
 dashboard is a fixed-height flex column at >=1200px, so a third row compressed both chart rows.
 The overlay adds nothing to that layout.
 
-### 2. Status filter chips on Test Metrics
+### 2. Status filter chips on Test Metrics — SHIPPED
 The Dashboard already renders PASS / FAIL / SKIP / xPASS / xFAIL / ERROR counts. Make those pills
 clickable so they drive `table.column(2).search(...)` on the existing DataTable.
 
 *Why:* one-click "show me only the failures" is the most common action on a report like this.
 *Effort:* ~15 lines of JS. The DataTables API is already loaded.
+*Shipped as:* chips over the table itself, counting what the search box is currently showing, and
+then the dashboard counters as a second way in - a counter opens Test Metrics filtered to that
+outcome. The filter lives in the URL as `#test-metrics?status=FAIL`, which is what makes it
+shareable rather than only clickable; the chips replace that address as they are toggled, so Back
+leaves the tab rather than the last chip. A `Clear filter` control stands beside the chips while a
+filter is on, since a link that arrives already filtered was never clicked into a chip. Counters
+standing at zero are disabled: the filtered table would say "No matching records found", which is
+not what the figure said. Rerun is not one of them - it is not a status a row carries.
 
 ### 3. Slowest-tests panel — SHIPPED
 `ConfigVars._duration` is already captured per test (`html_reporter.py:41`) and rendered into

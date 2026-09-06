@@ -16,6 +16,7 @@ from pytest_html_reporter.shards import (
     shards_root,
 )
 from pytest_html_reporter.markers import OWNER_MARKER, SEVERITY_LEVELS, SEVERITY_MARKER
+from pytest_html_reporter.profiles import apply_profile, explain, render_explanation
 from pytest_html_reporter.util import (
     archive_count,
     clean_screenshots,
@@ -48,6 +49,29 @@ def report_base(path):
 
 def pytest_addoption(parser):
     group = parser.getgroup("report generator")
+
+    group.addoption(
+        "--report-profile",
+        action="store",
+        dest="report_profile",
+        default="",
+        metavar="NAME",
+        help="use the settings written down under NAME - in pyproject.toml as "
+             "[tool.pytest-html-reporter.profiles.NAME] or in pytest.ini as "
+             "[pytest-html-reporter.profiles.NAME] - so that 'local' and 'ci' "
+             "are one word each rather than two command lines; 'none' uses no "
+             "profile even where one is configured as the default",
+    )
+
+    group.addoption(
+        "--report-show-config",
+        action="store_true",
+        dest="report_show_config",
+        default=False,
+        help="print the settings this run resolved - each one's value, which "
+             "layer decided it and which layers it overrode - in the pytest "
+             "header, then carry on and run the suite",
+    )
 
     group.addoption(
         "--html-report",
@@ -319,6 +343,12 @@ def pytest_addoption(parser):
     )
 
     parser.addini(
+        "report_profile",
+        help="the profile to use when --report-profile is not passed, e.g. ci",
+        default="",
+    )
+
+    parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
              "%d, %H, %M, ...) are expanded, e.g. ./reports/%Y%m%d/report_%H%M.html",
@@ -482,6 +512,21 @@ def pytest_addoption(parser):
     )
 
 
+def pytest_report_header(config):
+    """The resolved configuration, when --report-show-config asked for it.
+
+    Returned as lines rather than printed, so pytest puts them in the header
+    it already prints - which is the part of the output that gets pasted into
+    an issue when somebody is asking why their setting did not take.
+    """
+    explanation = getattr(config, "_html_reporter_explanation", None)
+    if explanation is None:
+        return None
+
+    return ["pytest-html-reporter configuration:"] + [
+        ("  " + line).rstrip() for line in render_explanation(explanation)]
+
+
 def register_markers(config):
     """Tell pytest about the markers this plugin gives a meaning to.
 
@@ -506,6 +551,21 @@ def register_markers(config):
 
 
 def pytest_configure(config):
+    # Before apply_profile, which is the only moment this can be answered:
+    # a profile reaches the run by being written onto config.option, so once
+    # it has been there is nothing left to tell a value somebody typed from a
+    # value a profile chose. Held on the config and printed from
+    # pytest_report_header, where it lands above the run rather than in the
+    # middle of the collection output.
+    config._html_reporter_explanation = (
+        explain(config) if config.getoption("report_show_config", False) else None)
+
+    # First, because every line below this one reads an option and a profile
+    # is a set of answers to those very options - register_markers included,
+    # which reads report_link_pattern. Whatever it settles is written onto
+    # config.option, so nothing else in the tree has to know profiles exist.
+    apply_profile(config)
+
     # Named before anything is collected, so that a suite using them is not
     # warned about - or, under --strict-markers, refused - for markers this
     # plugin asked it to write.

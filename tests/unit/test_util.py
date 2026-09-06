@@ -457,3 +457,36 @@ def test_reset_config_vars_does_not_disturb_what_an_isolating_fixture_saved(_res
         setattr(ConfigVars, name, value)
 
     assert ConfigVars._test_pass_list == ["tests/test_a.py"]
+
+
+def test_build_info_shows_a_label_once_however_many_layers_named_it():
+    """Two rows with one label is a panel that cannot say which was used.
+
+    The entries arrive highest layer first - the command line, then a profile,
+    then the ini key - so the first answer is the one that outranks the rest.
+    """
+    config = _FakeConfig(
+        options={"build_info": ["branch=release", "team=payments"]},
+        ini={"build_info": ["branch=main", "team=payments", "lane=nightly"]},
+    )
+
+    assert build_info(config) == [
+        ("branch", "release"),
+        ("team", "payments"),
+        ("lane", "nightly"),
+    ]
+
+
+def test_build_info_reads_two_spellings_of_one_label_as_one_row():
+    config = _FakeConfig(options={"build_info": ["Team=payments"]},
+                         ini={"build_info": ["team=finance"]})
+
+    assert build_info(config) == [("Team", "payments")]
+
+
+def test_report_links_show_a_label_once_too():
+    config = _FakeConfig(options={"report_link": ["Coverage=htmlcov/index.html"]},
+                         ini={"report_link": ["Coverage=https://ci/old", "CI=b.html"]})
+
+    assert report_links(config) == [("Coverage", "htmlcov/index.html"),
+                                    ("CI", "b.html")]

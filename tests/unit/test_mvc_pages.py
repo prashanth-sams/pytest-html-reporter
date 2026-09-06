@@ -564,6 +564,18 @@ def test_the_api_logs_tab_is_reachable_by_both_of_its_names():
     assert hashes["attachments"] == "attachments"
 
 
+def test_both_footers_name_the_version_that_drew_the_page():
+    """The dashboard's inline strip and the page-level footer, both of them.
+
+    A report outlives the run that wrote it, and the release it was drawn by
+    is stated nowhere else on the page - so a page rendered without the
+    version is a page nobody can date to a release later on.
+    """
+    page = str(HtmlTemplate(reporter_version="9.9.9"))
+
+    assert page.count('<span class="page-footer__version">v9.9.9</span>') == 2
+
+
 def test_template():
     custom_logo = get_random_string()
     execution_time = str(get_random_number())
@@ -686,7 +698,10 @@ def test_template():
     assert total_count.text.strip() == total
     assert count_block.find("span", class_="total_count__label").text.strip() == "TEST CASES"
 
-    test_metrics = soup.findAll("div", class_="footer-section__data")
+    # The six status counters are buttons into Test Metrics; rerun is not a
+    # status a row carries, so it stayed the plain figure it always was.
+    footer = soup.find("div", class_="card__footer")
+    test_metrics = footer.findAll(class_="footer-section__data")
     for metric, val in zip(test_metrics, (_pass, fail, skip, xpass, xfail, error, rerun)):
         assert metric.text.strip() == val
 

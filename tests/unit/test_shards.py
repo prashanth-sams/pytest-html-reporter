@@ -582,7 +582,7 @@ def test_a_record_missing_keys_is_repaired_not_crashed(tmp_path):
 
     _render([tmp_path / "shards"], tmp_path / "out")
 
-    assert _rows() == [("tests/test_a.py", "test_one", "PASS", "0.5", "0")]
+    assert _rows() == [("tests/test_a.py", "test_one", "PASS", "500 ms", "0")]
 
 
 def test_a_record_with_no_nodeid_is_quarantined(tmp_path):
@@ -599,7 +599,7 @@ def test_a_record_with_no_nodeid_is_quarantined(tmp_path):
 
     result = _render([tmp_path / "shards"], tmp_path / "out")
 
-    assert _rows() == [("tests/test_a.py", "test_one", "PASS", "0.01", "0")]
+    assert _rows() == [("tests/test_a.py", "test_one", "PASS", "10 ms", "0")]
     assert len(result.quarantined) == 1
     assert any("test_nameless" in note for note in result.notes), result.notes
 
@@ -642,9 +642,9 @@ def test_shards_are_ordered_by_natural_id_not_by_load_order(tmp_path):
         rendered.append(_rows())
 
     assert rendered[0] == [
-        ("tests/test_a.py", "test_one", "PASS", "0.01", "0"),
-        ("tests/test_b.py", "test_two", "PASS", "0.01", "0"),
-        ("tests/test_c.py", "test_ten", "PASS", "0.01", "0"),
+        ("tests/test_a.py", "test_one", "PASS", "10 ms", "0"),
+        ("tests/test_b.py", "test_two", "PASS", "10 ms", "0"),
+        ("tests/test_c.py", "test_ten", "PASS", "10 ms", "0"),
     ]
     assert rendered[1] == rendered[0]
     assert rendered[2] == rendered[0]
@@ -766,7 +766,7 @@ def test_a_duplicate_nodeid_folds_as_a_rerun_by_default(tmp_path):
 
     result = _render([tmp_path / "shards"], tmp_path / "out")
 
-    assert _rows() == [("tests/test_a.py", "test_flaky", "PASS", "0.01", "1")]
+    assert _rows() == [("tests/test_a.py", "test_flaky", "PASS", "10 ms", "1")]
     assert _built(tmp_path / "out")["total_tests"] == "1"
     assert [fold["nodeid"] for fold in result.folds] == ["tests/test_a.py::test_flaky"]
 

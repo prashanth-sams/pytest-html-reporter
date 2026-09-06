@@ -68,13 +68,28 @@ SUITE_TAIL_MAX = 34
 
 
 def duration(ms):
-    """A step's time in the unit that keeps it to three or four digits."""
+    """A step's time in the unit that keeps it to three or four digits.
+
+    Anything under ten milliseconds keeps two decimal places. A unit test's
+    three phases are routinely a fraction of a millisecond each, and whole
+    milliseconds rounded every one of them to "0 ms" - which reads as a phase
+    that never ran rather than one that was quick. Above ten there is nothing
+    left for the decimals to say, so they are dropped.
+    """
     try:
         ms = float(ms)
     except (TypeError, ValueError):
         return ''
 
-    if ms < 1: return '0 ms'
+    # Exactly nothing is still "0 ms": that is a step with no measured time at
+    # all - an archive written before steps were timed - and "0.00 ms" would
+    # dress it up as a measurement.
+    if ms <= 0: return '0 ms'
+
+    # Quicker than the two decimals can hold, but it did happen - and
+    # "0.00 ms" is the flat zero this rounding exists to avoid.
+    if ms < 0.01: return '< 0.01 ms'
+    if ms < 10: return '%.2f ms' % ms
 
     return '%.2f s' % (ms / 1000.0) if ms >= 1000 else '%d ms' % round(ms)
 
@@ -82,15 +97,15 @@ def duration(ms):
 def _test_ms(record):
     """How long a test took, in milliseconds.
 
-    The record's own duration is kept in seconds rounded to two places, for a
-    column that has always been headed "Time (s)" - so every test faster than
-    5ms reaches this tab as a flat 0. The phase timings are whole milliseconds
-    taken from pytest's own report, and they add up to the same test.
+    Two sources for the one number, and the larger wins. The phase timings
+    come from pytest's own report and add up to the test; the record's own
+    duration is the fallback for an archive written before phases were
+    stored, or for a record whose phases never arrived.
     """
     phases = record.get('phases') or {}
-    measured = sum(int(phases.get(phase) or 0) for phase in PHASES)
+    measured = sum(float(phases.get(phase) or 0) for phase in PHASES)
 
-    return max(measured, int(round((record.get('duration') or 0) * 1000)))
+    return max(measured, round((record.get('duration') or 0) * 1000, 2))
 
 
 def _short(path):
@@ -117,10 +132,10 @@ def _widths(steps):
     line for every test but one, and the question being asked here is always
     "which part of this test was slow", never "which test was slow".
     """
-    longest = max([int(step.get('ms') or 0) for step in steps] or [0])
+    longest = max([float(step.get('ms') or 0) for step in steps] or [0])
     if longest <= 0: return [0] * len(steps)
 
-    return [int(round(int(step.get('ms') or 0) * 100.0 / longest)) for step in steps]
+    return [int(round(float(step.get('ms') or 0) * 100.0 / longest)) for step in steps]
 
 
 def _kind_badge(step):

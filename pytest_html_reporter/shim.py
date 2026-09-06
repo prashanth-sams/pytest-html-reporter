@@ -11,6 +11,8 @@ Everything the render path actually reaches, and where:
 
 ``getoption(name, default=None)``
     util.report_path (``path``), util.environment_name (``environment``),
+    util.environment_entries (``report_profile``, for the Profile row - a
+    merge names no profile and the row is left out),
     util.build_info (``build_info``), util.report_links (``report_link``),
     util.archive_count / archive_days / archive_since, util's five
     report_* mode helpers, util.report_packages_enabled (``report_packages``), util._capture_is_off (``capture``),

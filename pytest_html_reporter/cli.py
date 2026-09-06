@@ -53,6 +53,12 @@ from pytest_html_reporter.merge import (
     MergeOptions,
     provenance_lines,
 )
+from pytest_html_reporter.profiles import (
+    ProfileError,
+    StandaloneConfig,
+    explain,
+    render_explanation,
+)
 from pytest_html_reporter.shim import MergeConfig
 from pytest_html_reporter.util import (
     archive_count,
@@ -673,6 +679,35 @@ def inspect_command(args):
     return EXIT_OK
 
 
+def config_command(args):
+    """Say what a run would resolve its settings to, and out of what.
+
+    Asked before the run rather than after it. The precedence this plugin has
+    grown - the command line over the environment over the profile over the
+    shared table over the plain ini key - is worth having and impossible to
+    hold in your head, and every way of getting it wrong produces a green run
+    and a report that is quietly not the one that was configured. Printing
+    where each value came from is the whole feature; the values themselves
+    were never the hard part.
+    """
+    try:
+        config = StandaloneConfig(args.path, args.profile)
+        explanation = explain(config)
+    except ProfileError as error:
+        return _fail(str(error))
+
+    if args.json:
+        json.dump(explanation.payload(), sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write("\n")
+
+        return EXIT_OK
+
+    for line in render_explanation(explanation, show_all=args.all):
+        sys.stdout.write("%s\n" % line)
+
+    return EXIT_OK
+
+
 # --------------------------------------------------------------------------
 # the parser
 # --------------------------------------------------------------------------
@@ -762,7 +797,7 @@ def build_parser():
     parser = argparse.ArgumentParser(
         prog=PROG,
         description="Merge sharded pytest-html-reporter runs into one report and one "
-                    "JUnit XML.")
+                    "JUnit XML, and say what a run's configuration comes to.")
 
     parser.add_argument("--version", action="version", version="%s %s" % (PROG, __version__))
 
@@ -898,6 +933,33 @@ def build_parser():
         help="suppress the per-decision notes; errors still print")
 
     inspect.set_defaults(handler=inspect_command)
+
+    # ---- config ----------------------------------------------------------
+    config = commands.add_parser(
+        "config", help="show the settings a run would resolve, and where each came from",
+        description="Print every setting a pytest run in this project would resolve - its "
+                    "value, which layer decided it and which layers it overrode - without "
+                    "running anything.")
+
+    config.add_argument(
+        "path", nargs="?", default=".", metavar="PATH",
+        help="the project to read, i.e. the directory pytest would call its rootdir "
+             "(default: the working directory)")
+
+    config.add_argument(
+        "--profile", default="", metavar="NAME",
+        help="resolve as though --report-profile=NAME had been passed; by default the "
+             "profile the files pin as the default, if they pin one")
+
+    config.add_argument(
+        "--all", action="store_true",
+        help="also list the settings nobody named, at their defaults")
+
+    config.add_argument(
+        "--json", action="store_true",
+        help="print the same thing as a json document")
+
+    config.set_defaults(handler=config_command)
 
     return parser
 
