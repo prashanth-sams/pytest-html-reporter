@@ -16,6 +16,7 @@ from pytest_html_reporter.shards import (
     shards_root,
 )
 from pytest_html_reporter.markers import OWNER_MARKER, SEVERITY_LEVELS, SEVERITY_MARKER
+from pytest_html_reporter.profiles import apply_profile
 from pytest_html_reporter.util import (
     archive_count,
     clean_screenshots,
@@ -48,6 +49,19 @@ def report_base(path):
 
 def pytest_addoption(parser):
     group = parser.getgroup("report generator")
+
+    group.addoption(
+        "--report-profile",
+        action="store",
+        dest="report_profile",
+        default="",
+        metavar="NAME",
+        help="use the settings written down under NAME - in pyproject.toml as "
+             "[tool.pytest-html-reporter.profiles.NAME] or in pytest.ini as "
+             "[pytest-html-reporter.profiles.NAME] - so that 'local' and 'ci' "
+             "are one word each rather than two command lines; 'none' uses no "
+             "profile even where one is configured as the default",
+    )
 
     group.addoption(
         "--html-report",
@@ -319,6 +333,12 @@ def pytest_addoption(parser):
     )
 
     parser.addini(
+        "report_profile",
+        help="the profile to use when --report-profile is not passed, e.g. ci",
+        default="",
+    )
+
+    parser.addini(
         "html_report",
         help="path to generate html report; date and time placeholders (%Y, %m, "
              "%d, %H, %M, ...) are expanded, e.g. ./reports/%Y%m%d/report_%H%M.html",
@@ -506,6 +526,12 @@ def register_markers(config):
 
 
 def pytest_configure(config):
+    # First, because every line below this one reads an option and a profile
+    # is a set of answers to those very options - register_markers included,
+    # which reads report_link_pattern. Whatever it settles is written onto
+    # config.option, so nothing else in the tree has to know profiles exist.
+    apply_profile(config)
+
     # Named before anything is collected, so that a suite using them is not
     # warned about - or, under --strict-markers, refused - for markers this
     # plugin asked it to write.

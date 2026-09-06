@@ -536,6 +536,16 @@ def environment_entries(config, records=None):
     if environment:
         entries.append(("Environment", environment))
 
+    # Which named profile shaped this run, when one did. The row is worth its
+    # line for the same reason the Arguments row is: a report is read months
+    # later by somebody who did not start it, and "logs are missing" and "this
+    # was built with the ci profile, which keeps them only on failures" are the
+    # same fact. pytest_configure resolves the name and writes it back onto the
+    # option, so this is reading a settled answer rather than working one out.
+    profile = str(config.getoption("report_profile", None) or "").strip()
+    if profile:
+        entries.append(("Profile", profile))
+
     named = build_info(config)
     entries += named
 
