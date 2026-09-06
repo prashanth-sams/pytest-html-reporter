@@ -686,7 +686,10 @@ def test_template():
     assert total_count.text.strip() == total
     assert count_block.find("span", class_="total_count__label").text.strip() == "TEST CASES"
 
-    test_metrics = soup.findAll("div", class_="footer-section__data")
+    # The six status counters are buttons into Test Metrics; rerun is not a
+    # status a row carries, so it stayed the plain figure it always was.
+    footer = soup.find("div", class_="card__footer")
+    test_metrics = footer.findAll(class_="footer-section__data")
     for metric, val in zip(test_metrics, (_pass, fail, skip, xpass, xfail, error, rerun)):
         assert metric.text.strip() == val
 

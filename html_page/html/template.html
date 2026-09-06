@@ -1325,6 +1325,47 @@
                   border-right: none;
                 }
 
+                /* The six status counters open Test Metrics filtered to that
+                   outcome, so they are buttons - stripped back to the figure
+                   and label they have always been, and lit only under the
+                   pointer so the dashboard still reads as figures rather than
+                   as a row of controls. A counter standing at zero would land
+                   on "No matching records found", so it is disabled rather
+                   than merely styled flat: not a tab stop, and not clickable. */
+                .card__footer-section.stat-jump {
+                  -webkit-appearance: none;
+                  appearance: none;
+                  background: none;
+                  border: 1px solid var(--border-none);
+                  border-radius: 0.5rem;
+                  font: inherit;
+                  color: inherit;
+                  padding: 0;
+                  cursor: pointer;
+                  transition: background-color 0.15s ease, border-color 0.15s ease;
+                }
+
+                /* The counter was two stacked divs before it was a button. */
+                .stat-jump .footer-section__data,
+                .stat-jump .footer-section__label {
+                  display: block;
+                }
+
+                .stat-jump:hover:not(:disabled),
+                .stat-jump:focus-visible {
+                  outline: none;
+                  background-color: var(--surface-track);
+                  border-color: var(--border-strong);
+                }
+
+                .stat-jump:focus {
+                  outline: none;
+                }
+
+                .stat-jump:disabled {
+                  cursor: default;
+                }
+
                 .footer-section__data {
                   font-size: 2.6rem;
                   font-weight: 900;
@@ -3818,6 +3859,44 @@
 
                 .metric-chip--filter.is-active {
                     border-color: var(--border-strong-active);
+                }
+
+                /* The way out of a filter, standing beside the chips that get
+                   you into one. Clicking the chip that is holding clears it
+                   too, but that is only discoverable once you know it - and a
+                   link opened on #test-metrics?status=FAIL was never clicked
+                   into at all. Shown only while something is filtering. */
+                .metric-chip--clear {
+                    font: inherit;
+                    cursor: pointer;
+                    gap: 6px;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+                }
+
+                .metric-chip--clear:hover {
+                    border-color: var(--border-strong);
+                    box-shadow: 0 1px 5px var(--shadow-hover);
+                }
+
+                .metric-chip--clear:focus {
+                    outline: none;
+                }
+
+                .metric-chip--clear:focus-visible {
+                    outline: none;
+                    border-color: var(--border-strong-active);
+                    box-shadow: 0 1px 5px var(--shadow-hover);
+                }
+
+                .metric-chip--clear i,
+                .metric-chip__clear-label {
+                    color: var(--text-label);
+                }
+
+                .metric-chip__clear-label {
+                    text-transform: uppercase;
+                    font-size: 8.5pt;
+                    letter-spacing: 0.03em;
                 }
 
                 /* ---- Card shell ---- */
@@ -7389,31 +7468,35 @@
                           </div>
                           <div class="suite-stats-wrapper" style="margin-top: 23%;position: static;">
                               <div class="suite_count_section">
+                                  <!-- Every outcome a test can end on is a way into Test
+                                       Metrics filtered to it, so the six counters are
+                                       buttons; rerun is not a status a row carries, so it
+                                       stays the figure it always was. -->
                                   <div class="card__footer">
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-pass)">%(_pass)%</div>
-                                      <div class="footer-section__label">passed</div>
-                                    </div>
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-fail)">%(fail)%</div>
-                                      <div class="footer-section__label">failed</div>
-                                    </div>
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-skip)">%(skip)%</div>
-                                      <div class="footer-section__label">skipped</div>
-                                    </div>
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-xpass)">%(xpass)%</div>
-                                      <div class="footer-section__label">xpassed</div>
-                                    </div>
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-xfail)">%(xfail)%</div>
-                                      <div class="footer-section__label">xfailed</div>
-                                    </div>
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-error)">%(error)%</div>
-                                      <div class="footer-section__label">error</div>
-                                    </div>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="pass" title="Show the passed tests on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-pass)">%(_pass)%</span>
+                                      <span class="footer-section__label">passed</span>
+                                    </button>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="fail" title="Show the failed tests on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-fail)">%(fail)%</span>
+                                      <span class="footer-section__label">failed</span>
+                                    </button>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="skip" title="Show the skipped tests on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-skip)">%(skip)%</span>
+                                      <span class="footer-section__label">skipped</span>
+                                    </button>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="xpass" title="Show the xpassed tests on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-xpass)">%(xpass)%</span>
+                                      <span class="footer-section__label">xpassed</span>
+                                    </button>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="xfail" title="Show the xfailed tests on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-xfail)">%(xfail)%</span>
+                                      <span class="footer-section__label">xfailed</span>
+                                    </button>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="error" title="Show the error tests on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-error)">%(error)%</span>
+                                      <span class="footer-section__label">error</span>
+                                    </button>
                                     <div class="card__footer-section">
                                       <div class="footer-section__data" style="color:var(--status-rerun)">%(rerun)%</div>
                                       <div class="footer-section__label">rerun</div>
@@ -8972,23 +9055,114 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 }
 
                 renderMetricsChips($('#testSummary'), testStatusChips);
+
+                // The way out, offered only while there is something to get
+                // out of - and the only one on offer to a link that arrived
+                // already filtered, which was never clicked into a chip.
+                if (testStatusFilter) {
+                    $('#testSummary').append(
+                        '<button type="button" class="metric-chip metric-chip--clear" title="Show every test again">' +
+                            '<i class="fa fa-times" aria-hidden="true"></i>' +
+                            '<span class="metric-chip__clear-label">Clear filter</span>' +
+                        '</button>'
+                    );
+                }
+            }
+
+            // The outcomes a row's status column can hold, and so the only
+            // values a ?status= is allowed to name.
+            var TEST_STATUSES = ['pass', 'fail', 'skip', 'xpass', 'xfail', 'error'];
+
+            // '' for anything that is not one of them - an empty parameter, a
+            // typo, a status the report does not know: showing the whole table
+            // beats filtering it down to nothing at all.
+            function testStatus(value) {
+                var status = String(value === null || value === undefined ? '' : value).trim().toLowerCase();
+                return TEST_STATUSES.indexOf(status) === -1 ? '' : status;
+            }
+
+            // Filter the test table down to one outcome, '' for none. The term
+            // is anchored so that 'pass' does not also pull in the xPASS rows.
+            // A draw re-renders the whole table, so an ask for the filter that
+            // is already on is dropped rather than paid for.
+            function applyTestStatusFilter(status) {
+                status = testStatus(status);
+                if (!window.jQuery || !$.fn.dataTable || !$.fn.dataTable.isDataTable('#tm')) { return; }
+                if (status === testStatusFilter) { return; }
+
+                testStatusFilter = status;
+                $('#tm').DataTable()
+                        .column(2)
+                        .search(status ? '^' + status + '$' : '', true, false)
+                        .draw();
+            }
+
+            // Keep the address bar saying what the table is showing, so a link
+            // copied off a filtered table opens filtered. This replaces rather
+            // than pushes: a chip toggled four times is one place to leave, not
+            // four steps to back out of.
+            function syncTestStatusHash() {
+                if (!window.history || !window.history.replaceState) { return; }
+
+                var page = document.getElementById('testMetrics');
+                if (!page || page.style.display !== 'block') { return; }
+
+                var hash = '#test-metrics' + (testStatusFilter ? '?status=' + testStatusFilter.toUpperCase() : '');
+                if (window.location.hash !== hash) { window.history.replaceState(null, '', hash); }
             }
 
             // Clicking a status chip filters the table down to that outcome;
             // clicking the active one - or the run total, which is always the
-            // unfiltered position - clears it. The term is anchored so that
-            // 'pass' does not also pull in the xPASS rows.
+            // unfiltered position - clears it.
             $(document).on('click', '#testSummary .metric-chip--filter', function() {
                 var status = String($(this).data('status'));
-                testStatusFilter = (status === 'all' || status === testStatusFilter) ? '' : status;
-                $('#tm').DataTable()
-                        .column(2)
-                        .search(testStatusFilter ? '^' + testStatusFilter + '$' : '', true, false)
-                        .draw();
+                applyTestStatusFilter((status === 'all' || status === testStatusFilter) ? '' : status);
+                syncTestStatusHash();
                 // The draw rebuilds the chips, so hand focus back to the one
                 // that was clicked instead of dropping it on the document.
                 $('#testSummary .metric-chip--filter[data-status="' + status + '"]').focus();
             });
+
+            // The clear control is only there while a filter is, so it takes
+            // itself out of the document on the draw it causes; there is
+            // nothing left to hand focus back to.
+            $(document).on('click', '#testSummary .metric-chip--clear', function() {
+                applyTestStatusFilter('');
+                syncTestStatusHash();
+            });
+
+            // A dashboard counter is that same filter reached from the other end
+            // of the report: open Test Metrics, filter to the outcome, and say so
+            // in the URL. The tab and the filter are done here rather than left to
+            // the hashchange, which does not fire when the hash is already the one
+            // being asked for - clicking FAIL twice would otherwise do nothing the
+            // second time.
+            $(document).on('click', '.stat-jump', function() {
+                var status = testStatus($(this).data('status'));
+                if (!status) { return; }
+
+                showTestMetricsTab();
+                applyTestStatusFilter(status);
+                window.location.hash = '#test-metrics?status=' + status.toUpperCase();
+            });
+
+            // A counter standing at zero would land on "No matching records
+            // found", which is not what the figure it was read off said. Taken
+            // from the rendered counter rather than passed in, so a merged
+            // report is covered by the same line as a single run. Disabled
+            // rather than styled flat: not a tab stop, and not clickable.
+            function disableEmptyStatJumps() {
+                $('.stat-jump').each(function() {
+                    var count = parseInt($(this).find('.footer-section__data').text().trim(), 10);
+                    // The title offers to show rows that are not there, so it
+                    // goes with the press it was describing.
+                    $(this).prop('disabled', !count)
+                           .attr('aria-disabled', count ? null : 'true')
+                           .attr('title', count ? $(this).attr('title') : null);
+                });
+            }
+
+            $(disableEmptyStatJumps);
 
             // DataTables re-renders rows on every draw, so the presentation
             // touches are re-applied here rather than baked into the markup.
@@ -9365,9 +9539,32 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 setTimeout(function() { markTestRow(node); }, switched ? 60 : 0);
             }
 
+            // A tab hash can carry options behind a '?' - #test-metrics?status=FAIL -
+            // so the tab is what stands in front of it and the rest is read as a
+            // query string. A hash without one parses to the name and nothing
+            // else, which is what every other link in the report is.
+            function parseHash(raw) {
+                var cut = raw.indexOf('?');
+                var route = { name: cut === -1 ? raw : raw.slice(0, cut), params: {} };
+
+                if (cut !== -1) {
+                    $.each(raw.slice(cut + 1).split('&'), function(_, pair) {
+                        if (!pair) { return; }
+                        var eq = pair.indexOf('=');
+                        try {
+                            route.params[decodeURIComponent(eq === -1 ? pair : pair.slice(0, eq)).toLowerCase()] =
+                                decodeURIComponent(eq === -1 ? '' : pair.slice(eq + 1));
+                        } catch (e) {}
+                    });
+                }
+
+                return route;
+            }
+
             // Function to open page based on URL hash
             function openPageFromHash() {
-                var hash = window.location.hash.substring(1); // Remove the # symbol
+                var route = parseHash(window.location.hash.substring(1));
+                var hash = route.name;
                 if (hash) {
                     // Map hash to page IDs
                     var hashToPageMap = {
@@ -9387,6 +9584,18 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     };
                     
                     var pageId = hashToPageMap[hash];
+
+                    // Test Metrics is opened rather than clicked into: the nav
+                    // link's own href is a bare #test-metrics, and following it
+                    // would throw away the ?status= this hash was opened with.
+                    // The URL is what says which filter is on, so arriving
+                    // without one clears whatever was.
+                    if (pageId === 'testMetrics') {
+                        showTestMetricsTab();
+                        applyTestStatusFilter(route.params.status);
+                        return;
+                    }
+
                     if (pageId) {
                         // Find the corresponding tab link. An alias - #attachments
                         // for #api-logs - matches no href, so the page id is the
