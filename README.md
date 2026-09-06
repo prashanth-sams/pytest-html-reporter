@@ -96,6 +96,9 @@ which suits your project; it is kept up to date in the
 |  | A report with no flags at all | ❌ | ❌ | ✅ |
 |  | Nothing to install beyond Python | ✅ | ❌ | ✅ |
 |  | It opens itself when the run ends | ❌ | ✅ | ✅ |
+| Configuration | Named profiles for local and CI, chosen by name | ❌ | ❌ | ✅ |
+|  | A default profile pinned so a bare `pytest` uses it | ❌ | ❌ | ✅ |
+|  | Any setting overridden per job from the environment | ❌ | ❌ | ✅ |
 | Report portability | One self-contained HTML file | ✅ | ✅ | ✅ |
 |  | No second tool to render it | ✅ | ❌ | ✅ |
 |  | Mail it, or attach it to a ticket | ✅ | ✅ | ✅ |
