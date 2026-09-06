@@ -34,7 +34,7 @@
 | Attachments | Stores API events and calls, JSON data, and free-text attachments against the test that produced them. |
 | Captured Logs | Displays captured `stdout`, `stderr`, and `logging` output for each test. |
 | Test Coverage | Shows overall coverage, file-level coverage, and coverage trends across builds. |
-| Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. The dashboard's status counts are links of the same kind: clicking one opens Test Metrics filtered to that outcome, at an address - `#test-metrics?status=FAIL` - that can be pasted anywhere. |
+| Deep Links | Gives every test row a permanent link that opens the report directly at that test, regardless of its current table page. The dashboard's counts are links of the same kind: clicking one opens Test Metrics filtered to that outcome - or, for `RERUN`, to the tests that ran more than once - at an address like `#test-metrics?status=FAIL` that can be pasted anywhere. |
 | Light and Dark Themes | Provides a side-navigation theme switch that remembers the user's choice and follows the operating-system theme until changed. |
 | Custom Side-Navigation Links | Adds links to custom pages directly within the report's side navigation. |
 | Named Configuration Profiles | Keeps `local` and `ci` as two named sets of settings in `pyproject.toml` or `pytest.ini` rather than two long command lines, selected with `--report-profile=ci` and overridable per job through `PYTEST_HTML_REPORTER_*` variables. `pytest-html-reporter config` prints what a run would resolve and which layer decided each setting. |
