@@ -1341,8 +1341,10 @@
                   border-right: none;
                 }
 
-                /* The six status counters open Test Metrics filtered to that
-                   outcome, so they are buttons - stripped back to the figure
+                /* The counters open Test Metrics filtered to that outcome -
+                   to the tests that were rerun, for the one counter that is a
+                   count rather than an outcome - so they are buttons, stripped
+                   back to the figure
                    and label they have always been, and left unlit under the
                    pointer so the dashboard reads as figures rather than as a
                    row of controls. Only keyboard focus lights one, because a
@@ -7486,9 +7488,11 @@
                           <div class="suite-stats-wrapper" style="margin-top: 23%;position: static;">
                               <div class="suite_count_section">
                                   <!-- Every outcome a test can end on is a way into Test
-                                       Metrics filtered to it, so the six counters are
-                                       buttons; rerun is not a status a row carries, so it
-                                       stays the figure it always was. -->
+                                       Metrics filtered to it, so the counters are buttons.
+                                       Rerun is not a status a row carries but a count in a
+                                       column of its own, so it is the one counter that does
+                                       not name an outcome: it opens the same table filtered
+                                       to the tests that ran more than once. -->
                                   <div class="card__footer">
                                     <button type="button" class="card__footer-section stat-jump" data-status="pass" title="Show the passed tests on Test Metrics">
                                       <span class="footer-section__data" style="color:var(--status-pass)">%(_pass)%</span>
@@ -7514,10 +7518,10 @@
                                       <span class="footer-section__data" style="color:var(--status-error)">%(error)%</span>
                                       <span class="footer-section__label">error</span>
                                     </button>
-                                    <div class="card__footer-section">
-                                      <div class="footer-section__data" style="color:var(--status-rerun)">%(rerun)%</div>
-                                      <div class="footer-section__label">rerun</div>
-                                    </div>
+                                    <button type="button" class="card__footer-section stat-jump" data-status="rerun" title="Show the tests that were rerun on Test Metrics">
+                                      <span class="footer-section__data" style="color:var(--status-rerun)">%(rerun)%</span>
+                                      <span class="footer-section__label">rerun</span>
+                                    </button>
                                   </div>
                               </div>
                           </div>
@@ -9062,6 +9066,14 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                         if (key) { counts[key] = (counts[key] || 0) + 1; }
                     });
 
+                    // Tests that ran more than once, counted as rows rather
+                    // than as attempts: the chip stands over the table, and
+                    // what it says has to be what pressing it leaves on screen.
+                    var rerun = 0;
+                    api.column(4, { search: 'applied' }).data().each(function(value) {
+                        if (parseInt(metricsText(value), 10) > 0) { rerun += 1; }
+                    });
+
                     testStatusChips = [{ color: themeValue('--chip-count-fg'), value: rows,
                                          label: rows === 1 ? 'test' : 'tests', status: 'all' }];
                     $.each([['pass', 'passed'], ['fail', 'failed'], ['skip', 'skipped'],
@@ -9071,6 +9083,14 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                                                    label: status[1], status: status[0] });
                         }
                     });
+
+                    // Last, and after the outcomes rather than among them: a
+                    // rerun test ends on one of those too, so this chip cuts
+                    // across the set instead of taking its own slice of it.
+                    if (rerun) {
+                        testStatusChips.push({ color: metricsColors().rerun, value: rerun,
+                                               label: 'rerun', status: 'rerun' });
+                    }
                 }
 
                 renderMetricsChips($('#testSummary'), testStatusChips);
@@ -9088,31 +9108,42 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 }
             }
 
-            // The outcomes a row's status column can hold, and so the only
-            // values a ?status= is allowed to name.
+            // The outcomes a row's status column can hold.
             var TEST_STATUSES = ['pass', 'fail', 'skip', 'xpass', 'xfail', 'error'];
+
+            // 'rerun' is not one of them - it is a count in a column of its
+            // own, and a test that was rerun still ends on one of the six -
+            // but it narrows the same table from the same controls, so it
+            // travels with them everywhere the filter is named or parsed.
+            var TEST_FILTERS = TEST_STATUSES.concat(['rerun']);
 
             // '' for anything that is not one of them - an empty parameter, a
             // typo, a status the report does not know: showing the whole table
             // beats filtering it down to nothing at all.
-            function testStatus(value) {
-                var status = String(value === null || value === undefined ? '' : value).trim().toLowerCase();
-                return TEST_STATUSES.indexOf(status) === -1 ? '' : status;
+            function testFilter(value) {
+                var filter = String(value === null || value === undefined ? '' : value).trim().toLowerCase();
+                return TEST_FILTERS.indexOf(filter) === -1 ? '' : filter;
             }
 
             // Filter the test table down to one outcome, '' for none. The term
             // is anchored so that 'pass' does not also pull in the xPASS rows.
+            // Rerun is asked of the rerun column instead, where any figure that
+            // is not zero is a test that ran more than once - the cells carry
+            // the bare count as their search data, so the button markup around
+            // it is not what the pattern is held against. Both columns are set
+            // on every call: whichever one is not doing the filtering is the
+            // one that was, and it has to let go of its term.
             // A draw re-renders the whole table, so an ask for the filter that
             // is already on is dropped rather than paid for.
             function applyTestStatusFilter(status) {
-                status = testStatus(status);
+                status = testFilter(status);
                 if (!window.jQuery || !$.fn.dataTable || !$.fn.dataTable.isDataTable('#tm')) { return; }
                 if (status === testStatusFilter) { return; }
 
                 testStatusFilter = status;
                 $('#tm').DataTable()
-                        .column(2)
-                        .search(status ? '^' + status + '$' : '', true, false)
+                        .column(2).search(status && status !== 'rerun' ? '^' + status + '$' : '', true, false)
+                        .column(4).search(status === 'rerun' ? '^[1-9][0-9]*$' : '', true, false)
                         .draw();
             }
 
@@ -9157,7 +9188,7 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             // being asked for - clicking FAIL twice would otherwise do nothing the
             // second time.
             $(document).on('click', '.stat-jump', function() {
-                var status = testStatus($(this).data('status'));
+                var status = testFilter($(this).data('status'));
                 if (!status) { return; }
 
                 showTestMetricsTab();
