@@ -1,8 +1,8 @@
 # pytest-html-reporter
 
 [![Downloads](https://pepy.tech/badge/pytest-html-reporter)](https://pepy.tech/project/pytest-html-reporter)
-[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.4)](https://badge.fury.io/py/pytest-html-reporter)
-[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.4)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.4)
+[![PyPI version](https://badge.fury.io/py/pytest-html-reporter.svg?v=0.4.5)](https://badge.fury.io/py/pytest-html-reporter)
+[![](https://coveralls.io/repos/github/prashanth-sams/pytest-html-reporter/badge.svg?branch=0.4.5)](https://coveralls.io/github/prashanth-sams/pytest-html-reporter?branch=0.4.5)
 [![Join the chat at https://gitter.im/prashanth-sams/pytest-html-reporter](https://badges.gitter.im/prashanth-sams/pytest-html-reporter.svg)](https://gitter.im/prashanth-sams/pytest-html-reporter?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Documentation](https://img.shields.io/badge/docs-pytest--html--reporter-blue)](https://prashanth-sams.github.io/pytest-html-reporter.github.io/)
 
@@ -917,7 +917,8 @@ $ pytest tests/functional/test_attachments.py --html-report=./report
 A picture is no use when the thing under test is an API. `attach_text`, `attach_json`, `attach_api` and
 `attach_file` take the payloads instead, and everything a test hands over is kept against that test and opened from
 the new `API Logs` tab. The `Test Metrics` table gains a `Data` column counting what each test attached;
-clicking it crosses to the tab with the list already narrowed to that one test.
+clicking it crosses to the tab with the list already narrowed to that one test. Everything attached can also be read
+on `Test Steps`, [under the step - or the phase - it was made in](#anything-attached-lands-on-the-step).
 
 ```python
 from pytest_html_reporter import attach_api, attach_file, attach_json, attach_text
@@ -1266,6 +1267,13 @@ belong to - whatever is open when they are called is what they are filed under, 
 with step("Submit credentials"):
     attach_api(requests.post(url, json=payload))
 ```
+
+The payload is shown right there, under the step, already open: the response, the request, both sets of headers and
+the curl line, with the same `Copy` and `Download` the `API Logs` tab has. A failing step's response sits directly under
+its error, so a test can be read step by step without crossing to `API Logs` to find the same call again, and the
+paperclip folds a payload away when it is in the way.
+Anything attached while no step was open - by a test that names no steps at all, or from a fixture's teardown - sits
+at the foot of the phase it was made in, open the same way and with the same paperclip.
 
 ### Cucumber / Gherkin
 

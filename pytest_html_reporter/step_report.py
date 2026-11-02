@@ -29,6 +29,7 @@ from html_page.step_scenario import StepScenario
 from html_page.step_suite import StepSuite
 from html_page.step_test import StepTest
 from html_page.test_shot import TestShot
+from pytest_html_reporter.attachments import attachment_id
 from pytest_html_reporter.const_vars import ConfigVars
 from pytest_html_reporter.markers import SEVERITY_MARKER_KIND, severity_value
 from pytest_html_reporter.util import (
@@ -159,14 +160,66 @@ def _params_text(params):
     return ', '.join('%s=%s' % (name, value) for name, value in params)
 
 
-def _attach_chip(step, attachments):
-    """How many payloads were attached while this step was open."""
-    count = sum(1 for item in attachments if item.get('step') == step.get('id'))
-    if not count: return ''
+def _attachments_filed(record, sid):
+    """This test's attachments, by the id each is parked under in the page, as
+    (filed by step id, filed by phase).
 
-    return ('<span class="step-line__attach" title="%s attached here">'
-            '<i class="fa fa-paperclip" aria-hidden="true"></i>%d</span>'
-            % (_pluralise(count, 'attachment'), count))
+    One made while a step was open goes on that step. Every other one goes at
+    the foot of the phase it was made in: one made outside every step, and one
+    naming a step this record does not carry - which a run that dropped its
+    steps, or a retry that kept an earlier attempt's attachments, can leave
+    behind. Nothing API Logs shows is left without a place on this tab.
+
+    A build that did not say which phase gets the test body, where a test with
+    no named steps does its work.
+    """
+    named = set(step.get('id') for step in record.get('steps') or [] if step.get('id') is not None)
+    by_step, by_phase = {}, {}
+
+    for index, attachment in enumerate(record.get('attachments') or []):
+        aid = attachment_id(sid, index)
+
+        if attachment.get('step') in named:
+            by_step.setdefault(attachment['step'], []).append(aid)
+        else:
+            phase = attachment.get('phase')
+            by_phase.setdefault(phase if phase in PHASES else 'call', []).append(aid)
+
+    return by_step, by_phase
+
+
+def _attach_chip(aids):
+    """The paperclip on a step, over what was attached while it ran.
+
+    It starts open: the payload is what a step-by-step read is after, so it is
+    shown beside the step that made it rather than behind a click, and the
+    paperclip folds it away. The page opens whatever this says it starts as.
+
+    It carries the ids of those payloads rather than the payloads. Every one of
+    them is already in the page, parked in the API Logs tab's store, and the
+    page clones it from there into the step when the test is shown - the way
+    the API Logs viewer opens one. Writing them out again here would double the
+    heaviest thing an API suite puts in its report, for a pane that shows one
+    test at a time.
+    """
+    if not aids: return ''
+
+    label = '%s attached here' % _pluralise(len(aids), 'attachment')
+
+    return ('<button type="button" class="step-line__attach" aria-expanded="true" '
+            'data-attach="%s" title="%s" aria-label="%s" onclick="toggleStepAttachments(this)">'
+            '<i class="fa fa-paperclip" aria-hidden="true"></i>%d'
+            '<i class="fa fa-angle-down step-line__caret" aria-hidden="true"></i></button>'
+            % (escape_report_text(' '.join(aids)), label, label, len(aids)))
+
+
+def _loose_row(aids):
+    """What a phase attached outside any of its steps, with the paperclip a step
+    carries. The last row of the phase, since it belongs to no row above it."""
+    if not aids: return ''
+
+    return ('<div class="step-loose"><span class="step-loose__label">Attached outside any step</span>%s</div>'
+            % _attach_chip(aids))
 
 
 def _threw(steps):
@@ -238,7 +291,7 @@ def _shot_strip(shots, record):
     return '<div class="step-shots">%s</div>' % thumbs
 
 
-def _line(step, width, attachments, shots, record):
+def _line(step, width, aids, shots, record):
     params = _params_text(step.get('params') or [])
     error = step.get('error') or ''
 
@@ -249,7 +302,7 @@ def _line(step, width, attachments, shots, record):
         title=escape_report_text(step.get('title') or ''),
         params=('<span class="step-line__params" title="%s">%s</span>'
                 % (escape_report_text(params), escape_report_text(params))) if params else '',
-        attach=_attach_chip(step, attachments),
+        attach=_attach_chip(aids),
         width=str(width),
         ms=escape_report_text(duration(step.get('ms'))),
         error=('<pre class="step-line__error">%s</pre>' % escape_report_text(error)) if error else '',
@@ -308,7 +361,7 @@ def _tree_order(owned):
     return ordered
 
 
-def _phases(record):
+def _phases(record, sid):
     """The three phase blocks of one test, with its steps filed under them.
 
     A phase with no steps of its own is still drawn: its duration is the answer
@@ -316,7 +369,7 @@ def _phases(record):
     that is exactly the test least likely to have named any steps.
     """
     steps = record.get('steps') or []
-    attachments = record.get('attachments') or []
+    by_step, by_phase = _attachments_filed(record, sid)
     timings = record.get('phases') or {}
     widths = dict(zip(range(len(steps)), _widths(steps)))
     shots = _shots_by_step(record)
@@ -330,7 +383,7 @@ def _phases(record):
         owned = _tree_order([(index, step) for index, step in enumerate(steps)
                              if (step.get('phase') or 'call') == phase])
 
-        lines = ''.join(_line(step, widths.get(index, 0), attachments,
+        lines = ''.join(_line(step, widths.get(index, 0), by_step.get(step.get('id')) or [],
                               shots.get(index) or [], record)
                         for index, step in owned)
 
@@ -342,6 +395,7 @@ def _phases(record):
             state='filled' if owned else 'bare',
             none='' if owned else 'No steps named here',
             shots=_shot_strip(loose if phase == 'call' else [], record),
+            attach=_loose_row(by_phase.get(phase) or []),
         ))
 
     return blocks
@@ -594,7 +648,7 @@ def generate_steps_view(suites):
                 rerun=str(record.get('rerun') or 0),
                 scenario=_scenario(record),
                 meta=_facts(record),
-                phases=_phases(record),
+                phases=_phases(record, sid),
             ))
 
         rail += str(StepSuite(

@@ -11,10 +11,15 @@ step rather than the last - and a rule is only pinned by the case that would
 break if it changed.
 """
 
+import re
+
 import pytest
 
+from pytest_html_reporter.attachments import attachment_id
 from pytest_html_reporter.step_report import (
     _attach_chip,
+    _attachments_filed,
+    _phases,
     _tree_order,
     _kind_badge,
     _params_text,
@@ -193,23 +198,88 @@ def test_a_step_called_with_nothing_says_nothing():
     assert _params_text(None) == ""
 
 
+# ------------------------------------------------------- _attachments_filed ---
+
+def test_an_attachment_is_filed_under_the_step_it_was_made_in():
+    record = {"steps": [_step(id=0), _step(id=1)],
+              "attachments": [{"step": 0}, {"step": 1}, {"step": 0}]}
+
+    assert _attachments_filed(record, "2-5") == ({0: ["2-5-0", "2-5-2"], 1: ["2-5-1"]}, {})
+
+
+def test_a_step_is_handed_the_ids_the_api_logs_tab_parks_them_under():
+    """The paperclip opens the payload API Logs already holds rather than a
+    copy, so the two tabs have to agree on what it is called - counting every
+    attachment the test made, not only the ones made inside a step."""
+    record = {"steps": [_step(id=3)], "attachments": [{"step": -1, "phase": "call"}, {"step": 3}]}
+
+    assert _attachments_filed(record, "1-4")[0][3] == [attachment_id("1-4", 1)]
+
+
+def test_one_made_outside_every_step_is_filed_under_its_phase():
+    """A fixture attaching the last call from its teardown is the recipe the
+    API Logs demo teaches, and it opens no step to do it."""
+    record = {"steps": [_step(id=0)],
+              "attachments": [{"step": -1, "phase": "teardown"}, {"step": -1, "phase": "setup"}]}
+
+    assert _attachments_filed(record, "0-0") == ({}, {"teardown": ["0-0-0"], "setup": ["0-0-1"]})
+
+
+def test_one_naming_a_step_this_record_does_not_carry_is_filed_under_its_phase():
+    """A retry that kept an earlier attempt's attachments, or a run whose steps
+    --report-steps dropped: the step is gone and the payload is not."""
+    record = {"steps": [], "attachments": [{"step": 4, "phase": "call"}]}
+
+    assert _attachments_filed(record, "0-0") == ({}, {"call": ["0-0-0"]})
+
+
+def test_one_that_does_not_say_where_it_was_made_lands_on_the_test_body():
+    """A build older than either field, or a phase that is not one of the
+    three: the body is where a test with no named steps does its work - and a
+    step without an id must not take it for its own."""
+    record = {"steps": [_step(id=None)], "attachments": [{}, {"step": -1, "phase": "lunch"}]}
+
+    assert _attachments_filed(record, "0-0") == ({}, {"call": ["0-0-0", "0-0-1"]})
+
+
+def test_what_a_phase_attached_outside_its_steps_sits_at_its_foot():
+    record = {"steps": [_step(id=0, phase="call")], "attachments": [{"step": -1, "phase": "teardown"}]}
+
+    page = _phases(record, "0-0")
+    body = page.split('data-phase="call"')[1].split('data-phase="teardown"')[0]
+    teardown = page.split('data-phase="teardown"')[1]
+
+    assert "step-line__attach" not in body
+    assert re.search(r'class="step-loose".*data-attach="0-0-0"', teardown)
+
+
 # ------------------------------------------------------------- _attach_chip ---
 
-def test_the_chip_counts_only_what_was_attached_inside_this_step():
-    attachments = [{"step": 0}, {"step": 0}, {"step": 1}]
+def test_the_chip_carries_the_ids_of_what_it_opens():
+    chip = _attach_chip(["0-1-0", "0-1-2"])
 
-    chip = _attach_chip(_step(id=0), attachments)
+    assert 'data-attach="0-1-0 0-1-2"' in chip
     assert ">2<" in chip
-    assert "2 attachments" in chip
+    assert "2 attachments attached here" in chip
 
 
 def test_one_attachment_is_counted_in_the_singular():
-    assert "1 attachment attached here" in _attach_chip(_step(id=0), [{"step": 0}])
+    assert "1 attachment attached here" in _attach_chip(["0-1-0"])
+
+
+def test_the_chip_is_a_button_that_starts_open():
+    """The payload is read beside the step that made it rather than behind a
+    click, and the paperclip folds it away - so it can be pressed, and tabbed
+    to, and says which way it is."""
+    chip = _attach_chip(["0-1-0"])
+
+    assert chip.startswith('<button type="button" class="step-line__attach"')
+    assert 'aria-expanded="true"' in chip
+    assert 'onclick="toggleStepAttachments(this)"' in chip
 
 
 def test_a_step_nothing_was_attached_in_carries_no_chip():
-    assert _attach_chip(_step(id=1), [{"step": 0}]) == ""
-    assert _attach_chip(_step(id=0), []) == ""
+    assert _attach_chip([]) == ""
 
 
 # ------------------------------------------------------------------ _threw ---

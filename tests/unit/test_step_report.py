@@ -152,6 +152,152 @@ def test_an_attachment_is_filed_under_the_step_that_made_it(tmp_path):
     assert "step-line__attach" in submit[:400]
 
 
+def test_the_paperclip_opens_the_payload_api_logs_holds_rather_than_a_copy(tmp_path):
+    # Every payload is already in the page once, parked for the API Logs tab.
+    # The step carries the id to clone it from instead of a second copy, so the
+    # heaviest thing an API suite writes is not written twice.
+    page = _run(tmp_path)
+    payload = _payload(page, "test_buys_an_item[A-12]")
+
+    (aid,) = re.findall(r'class="step-line__attach"[^>]*data-attach="([^"]+)"', payload)
+
+    assert re.search(r'<div class="attach-payload" id="attach-%s"[^>]*data-title="Credentials"'
+                     % re.escape(aid), page)
+    assert "attach-part" not in payload
+
+
+def test_each_step_opens_its_own_payloads_and_no_one_elses(tmp_path):
+    # The ids count every attachment the test made, so one made before any
+    # step shifts the ones after it - and the step still has to open "First"
+    # and "Second", not the one that came before them, which sits at the foot
+    # of the test body instead.
+    page = _run(tmp_path, '''
+        from pytest_html_reporter import attach_json, attach_text, step
+
+        def test_one():
+            attach_text("made before any step", name="Loose")
+            with step("Call twice"):
+                attach_json({"a": 1}, name="First")
+                attach_text("second", name="Second")
+            with step("Call once"):
+                attach_text("third", name="Third")
+    ''')
+    payload = _payload(page, "test_one")
+
+    opened = [[re.search(r'id="attach-%s"[^>]*data-title="([^"]*)"' % re.escape(aid), page).group(1)
+               for aid in ids.split()]
+              for ids in re.findall(r'data-attach="([^"]+)"', payload)]
+
+    assert opened == [["First", "Second"], ["Third"], ["Loose"]]
+
+
+def test_what_a_fixture_attaches_from_its_teardown_opens_from_tear_down(tmp_path):
+    # The recipe the API Logs demo teaches: a fixture attaches the last call
+    # from its teardown. No step is open and the test names none, so the
+    # paperclip sits at the foot of Tear down, where it was made - not nowhere.
+    page = _run(tmp_path, '''
+        import pytest
+        from pytest_html_reporter import attach_json
+
+        @pytest.fixture
+        def api():
+            yield
+            attach_json({"error": "order already shipped"}, name="Last call")
+
+        def test_one(api):
+            assert True
+    ''')
+    payload = _payload(page, "test_one")
+    before, teardown = payload.split('data-phase="teardown"')
+
+    (aid,) = re.findall(r'class="step-loose".*?data-attach="([^"]+)"', teardown, re.S)
+
+    assert re.search(r'id="attach-%s"[^>]*data-title="Last call"' % re.escape(aid), page)
+    assert "step-loose" not in before
+
+
+@pytest.mark.parametrize("args", [(), ("--report-steps=none",)])
+def test_everything_api_logs_holds_can_be_opened_from_test_steps(tmp_path, args):
+    # Each payload exactly once - on the step it was made in, or at the foot of
+    # its phase. With the steps dropped, the ones made inside them move to
+    # their phase rather than going with them.
+    page = _run(tmp_path, '''
+        import pytest
+        from pytest_html_reporter import attach_text, step
+
+        @pytest.fixture
+        def api():
+            attach_text("in setup", name="Setup")
+            yield
+            attach_text("in teardown", name="Teardown")
+
+        def test_one(api):
+            attach_text("in the body", name="Body")
+            with step("Call"):
+                attach_text("in a step", name="Step")
+
+        def test_two():
+            attach_text("no steps at all", name="Bare")
+    ''', *args)
+
+    store = re.findall(r'<div class="attach-payload" id="attach-([^"]+)"', page)
+    opened = [aid for ids in re.findall(r'data-attach="([^"]+)"', page) for aid in ids.split()]
+
+    assert len(store) == 5
+    assert sorted(opened) == sorted(store)
+
+
+def test_what_the_step_reads_off_the_api_logs_rail_is_there_to_read(tmp_path):
+    # The card under a step takes its kind, status and time off the rail entry
+    # API Logs draws for the same payload. A class renamed on one side and not
+    # the other would leave the paperclip throwing instead of opening.
+    page = _run(tmp_path)
+    payload = _payload(page, "test_buys_an_item[A-12]")
+
+    (aid,) = re.findall(r'data-attach="([^"]+)"', payload)
+    item = re.search(r'<button[^>]*id="attach-item-%s".*?</button>' % re.escape(aid), page, re.S)
+    card = page.split("function stepAttachmentCard(aid)")[1].split("\n            function ")[0]
+    read = re.findall(r"item\.querySelector\('\.([\w-]+)'\)", card)
+
+    assert item and read
+    for name in read:
+        assert 'class="%s' % name in item.group(0)
+
+
+def test_a_payload_is_open_as_soon_as_its_test_is_shown(tmp_path):
+    # Built for the one test being read, wherever its paperclip says it starts
+    # open, and only shown or hidden after that - a press folds it away rather
+    # than stacking a second copy under the step.
+    page = _run(tmp_path)
+
+    def body(name):
+        return page.split("function %s" % name)[1].split("\n            function ")[0]
+
+    panel = body("stepAttachmentPanel(button)")
+
+    assert "openStepAttachments(body);" in body("showStep(sid)")
+    assert ".step-line__attach[aria-expanded=\"true\"]" in body("openStepAttachments(body)")
+    assert "if (!panel)" in panel
+    # The same paperclip, under a step or at the foot of a phase.
+    assert "closest('.step-line, .step-loose')" in panel
+    assert "showStepAttachments(button, panel.hidden)" in body("toggleStepAttachments(button)")
+
+
+def test_a_payload_under_a_step_behaves_like_the_one_in_api_logs(tmp_path):
+    # One set of part buttons, one Copy and one Download for both places a
+    # payload can be read, so the two cannot come to behave differently.
+    page = _run(tmp_path)
+
+    def body(name):
+        return page.split("function %s" % name)[1].split("\n            function ")[0]
+
+    card = body("stepAttachmentCard(aid)")
+
+    assert "renderAttachmentTabs(" in body("showAttachment(aid)") and "renderAttachmentTabs(" in card
+    assert "copyAttachmentPart(" in body("copyAttachment()") and "copyAttachmentPart(" in card
+    assert "saveAttachmentPart(" in body("downloadAttachment()") and "saveAttachmentPart(" in card
+
+
 def test_the_markers_reach_the_tab(tmp_path):
     payload = _payload(_run(tmp_path), "test_buys_an_item[A-12]")
 

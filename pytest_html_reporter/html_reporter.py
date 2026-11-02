@@ -90,6 +90,7 @@ from pytest_html_reporter.report_opener import (
     open_report,
 )
 from pytest_html_reporter.attachments import (
+    attachment_id,
     attachment_size,
     filename_for,
     human_size,
@@ -1292,7 +1293,7 @@ class HTMLReporter(object):
         attachments = record.get('attachments') or []
 
         for index, attachment in enumerate(attachments):
-            aid = '%s-%s' % (row_id, index)
+            aid = attachment_id(row_id, index)
 
             parts = ''
             for part in attachment['parts']:
@@ -1872,6 +1873,16 @@ class HTMLReporter(object):
                     _archive_body_text.rerun = data['status_list']['rerun']
                 except KeyError:
                     _archive_body_text.rerun = '0'
+
+                # Not defaulted to '0' like rerun: a build archived without the
+                # count still ran suites, so the line is left out rather than
+                # say it ran none.
+                try:
+                    suites = int(data['total_suite'])
+                except (KeyError, TypeError, ValueError):
+                    _archive_body_text.suites_hidden = ' hidden'
+                else:
+                    _archive_body_text.suites = f"{suites} TEST SUITE{'' if suites == 1 else 'S'}"
 
                 index = i
                 if value != "current": index = i + 1
