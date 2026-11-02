@@ -32,6 +32,7 @@ from pytest_html_reporter.attachments import (
     trim_parts,
 )
 from pytest_html_reporter.const_vars import ConfigVars
+from pytest_html_reporter.steps import set_phase
 
 
 @pytest.fixture(autouse=True)
@@ -249,6 +250,19 @@ def test_taking_the_attachments_empties_the_buffer():
 
     assert take_attachments()
     assert take_attachments() == []
+
+
+def test_an_attachment_remembers_the_phase_it_was_made_in():
+    """So one made outside every step - the last call a fixture attaches from
+    its teardown - can still be shown on Test Steps where it happened."""
+    try:
+        for name in ("setup", "call", "teardown"):
+            set_phase(name)
+            attach_text("made in " + name)
+    finally:
+        set_phase("call")
+
+    assert [entry["phase"] for entry in take_attachments()] == ["setup", "call", "teardown"]
 
 
 def test_empty_text_attaches_nothing():

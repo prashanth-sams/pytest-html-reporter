@@ -90,6 +90,7 @@ from pytest_html_reporter.report_opener import (
     open_report,
 )
 from pytest_html_reporter.attachments import (
+    attachment_id,
     attachment_size,
     filename_for,
     human_size,
@@ -1292,7 +1293,7 @@ class HTMLReporter(object):
         attachments = record.get('attachments') or []
 
         for index, attachment in enumerate(attachments):
-            aid = '%s-%s' % (row_id, index)
+            aid = attachment_id(row_id, index)
 
             parts = ''
             for part in attachment['parts']:

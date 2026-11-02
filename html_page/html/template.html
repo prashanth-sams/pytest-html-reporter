@@ -5748,10 +5748,14 @@
                     max-width: 340px;
                 }
 
+                /* The paperclip folds away what the step attached, and opens it
+                   again - so it is a button, and says which way it will go. */
                 .step-line__attach {
                     display: inline-flex;
                     align-items: center;
                     gap: 4px;
+                    margin: 0;
+                    border: none;
                     border-radius: 4px;
                     padding: 1px 6px;
                     background-color: var(--status-teal-tint);
@@ -5759,6 +5763,26 @@
                     font-family: sans-serif;
                     font-size: 9.5px;
                     font-weight: 700;
+                    line-height: inherit;
+                    cursor: pointer;
+                    transition: box-shadow 0.15s ease;
+                }
+
+                .step-line__attach:focus { outline: none; }
+
+                .step-line__attach:hover,
+                .step-line__attach:focus-visible,
+                .step-line__attach[aria-expanded="true"] {
+                    box-shadow: inset 0 0 0 1px var(--accent-teal);
+                }
+
+                .step-line__caret {
+                    font-size: 11px;
+                    transition: transform 0.15s ease;
+                }
+
+                .step-line__attach[aria-expanded="true"] .step-line__caret {
+                    transform: rotate(180deg);
                 }
 
                 /* The bar is scaled within the test, so it answers "which part
@@ -5833,6 +5857,102 @@
                 .step-shots .shot-thumb {
                     width: 108px;
                     height: 66px;
+                }
+
+                /* What a step attached, shown under it. Each payload is a card
+                   holding what the API Logs viewer holds for it - the kind, the
+                   status and the time, the meta strip, a button per part - in
+                   the same classes, so the two cannot come to look different. */
+                .step-attach {
+                    flex: 1 1 100%;
+                    min-width: 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    margin: 8px 0 2px 0;
+                }
+
+                .step-attach__card {
+                    border: 1px solid var(--border-subtle);
+                    border-radius: 6px;
+                    background: var(--surface-card);
+                    min-width: 0;
+                }
+
+                .step-attach__head {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 8px 10px;
+                    padding: 9px 12px;
+                    border-bottom: 1px solid var(--border-hairline);
+                }
+
+                .step-attach__title {
+                    flex: 1 1 160px;
+                    min-width: 0;
+                    font-family: sans-serif;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-primary);
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                .step-attach__actions {
+                    display: flex;
+                    gap: 6px;
+                }
+
+                .step-attach__actions .attach-action {
+                    padding: 3px 10px;
+                    font-size: 10.5px;
+                }
+
+                .step-attach__meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px 24px;
+                    padding: 10px 12px 0 12px;
+                }
+
+                .step-attach__tabs {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    padding: 10px 12px 0 12px;
+                }
+
+                /* One part is not a choice - the same rule as the viewer's. */
+                .step-attach__tabs:empty { display: none; }
+
+                .step-attach__body { padding: 10px 12px 12px 12px; }
+
+                /* The step tree is still the page being read, so a long body
+                   scrolls in its own box rather than pushing the steps after it
+                   out of reach. */
+                .step-attach .attach-part__body {
+                    max-height: 360px;
+                    overflow: auto;
+                }
+
+                /* What a phase attached outside any of its steps - a fixture's
+                   teardown, or a test that names no steps at all. The last row
+                   of the phase, with the paperclip a step carries. */
+                .step-loose {
+                    display: flex;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    padding: 11px 16px;
+                    border-top: 1px solid var(--border-hairline);
+                }
+
+                .step-loose__label {
+                    font-family: sans-serif;
+                    font-size: 12.5px;
+                    color: var(--text-muted);
                 }
 
                 .step-head__tail {
@@ -7218,7 +7338,8 @@
                 :root[data-theme="dark"] .step-rail,
                 :root[data-theme="dark"] .attach-rail,
                 :root[data-theme="dark"] .attach-view__body,
-                :root[data-theme="dark"] .step-view__body {
+                :root[data-theme="dark"] .step-view__body,
+                :root[data-theme="dark"] .step-attach .attach-part__body {
                     scrollbar-color: var(--border-strong) transparent;
                 }
             </style>
@@ -8410,7 +8531,9 @@
                         <span>
                             Anything attached while a step is open is filed under that step &mdash;
                             <b>attach_json</b>, <b>attach_api</b> and the rest need no extra argument
-                            to say which one they belong to.
+                            to say which one they belong to. Anything attached outside a step sits at
+                            the foot of the phase it was made in. The payload is shown right there,
+                            open, and its paperclip folds it away.
                         </span>
                     </div>
 
@@ -11259,8 +11382,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 var parts = source.querySelectorAll('.attach-part');
                 for (var i = 0; i < parts.length; i++) { body.appendChild(parts[i].cloneNode(true)); }
 
-                renderAttachmentTabs(parts.length);
-                showAttachmentPart(0);
+                renderAttachmentTabs(document.getElementById('attachViewTabs'), body,
+                                     function() { setAttachCopyLabel('Copy'); });
 
                 attachItems().forEach(function(item) {
                     item.classList.toggle('is-active', item.getAttribute('data-aid') === aid);
@@ -11270,35 +11393,42 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 setAttachCopyLabel('Copy');
             }
 
-            function renderAttachmentTabs(count) {
-                var tabs = document.getElementById('attachViewTabs');
+            // A button per part over a payload - the response, the request,
+            // the headers, the curl line - and the first part open. Shared by
+            // the viewer here and the payloads opened under a step on Test
+            // Steps, which hold the same parts and should not come to behave
+            // differently from them.
+            function renderAttachmentTabs(tabs, body, onSwitch) {
+                var parts = body.querySelectorAll('.attach-part');
                 tabs.innerHTML = '';
 
                 // A single part is not a choice; the strip collapses instead of
                 // offering one button that does nothing.
-                if (count < 2) { return; }
-
-                var parts = document.querySelectorAll('#attachViewBody .attach-part');
-                for (var i = 0; i < parts.length; i++) {
-                    (function(index) {
-                        var button = document.createElement('button');
-                        button.type = 'button';
-                        button.className = 'attach-pill';
-                        button.textContent = parts[index].getAttribute('data-part') || 'Part';
-                        button.onclick = function() { showAttachmentPart(index); };
-                        tabs.appendChild(button);
-                    })(i);
+                if (parts.length > 1) {
+                    for (var i = 0; i < parts.length; i++) {
+                        (function(index) {
+                            var button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'attach-pill';
+                            button.textContent = parts[index].getAttribute('data-part') || 'Part';
+                            button.onclick = function() {
+                                showAttachmentPart(tabs, body, index);
+                                if (onSwitch) { onSwitch(); }
+                            };
+                            tabs.appendChild(button);
+                        })(i);
+                    }
                 }
+
+                showAttachmentPart(tabs, body, 0);
             }
 
-            function showAttachmentPart(index) {
-                var parts = document.querySelectorAll('#attachViewBody .attach-part');
-                var tabs = document.querySelectorAll('#attachViewTabs .attach-pill');
+            function showAttachmentPart(tabs, body, index) {
+                var parts = body.querySelectorAll('.attach-part');
+                var pills = tabs.querySelectorAll('.attach-pill');
 
                 for (var i = 0; i < parts.length; i++) { parts[i].hidden = i !== index; }
-                for (var k = 0; k < tabs.length; k++) { tabs[k].classList.toggle('is-active', k === index); }
-
-                setAttachCopyLabel('Copy');
+                for (var k = 0; k < pills.length; k++) { pills[k].classList.toggle('is-active', k === index); }
             }
 
             function openAttachmentPart() {
@@ -11311,41 +11441,40 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
             }
 
             function copyAttachment() {
-                var part = openAttachmentPart();
+                copyAttachmentPart(openAttachmentPart(), document.getElementById('attachCopy'));
+            }
+
+            // The part of a payload that is open, onto the clipboard - from the
+            // viewer here or from under a step - with the button that was
+            // pressed saying how it went.
+            function copyAttachmentPart(part, button) {
                 if (!part) { return; }
 
                 var text = part.querySelector('.attach-part__body').textContent;
+
+                function settle(copied) {
+                    if (button) { button.textContent = copied ? 'Copied' : 'Press Ctrl+C'; }
+                }
 
                 // Same fallback as the captured-output overlay: navigator.clipboard
                 // is not there when the report is opened straight off disk.
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(text).then(
-                        function() { setAttachCopyLabel('Copied'); },
-                        function() { legacyCopyAttachment(text); });
+                        function() { settle(true); },
+                        function() { settle(execCopy(text)); });
                     return;
                 }
 
-                legacyCopyAttachment(text);
-            }
-
-            function legacyCopyAttachment(text) {
-                var scratch = document.createElement('textarea');
-                scratch.value = text;
-                scratch.setAttribute('readonly', '');
-                scratch.style.position = 'fixed';
-                scratch.style.opacity = '0';
-                document.body.appendChild(scratch);
-                scratch.select();
-
-                try { document.execCommand('copy'); setAttachCopyLabel('Copied'); }
-                catch (err) { setAttachCopyLabel('Press Ctrl+C'); }
-
-                document.body.removeChild(scratch);
+                settle(execCopy(text));
             }
 
             function downloadAttachment() {
-                var part = openAttachmentPart();
-                var source = document.getElementById('attach-' + attachSelected);
+                saveAttachmentPart(openAttachmentPart(), document.getElementById('attach-' + attachSelected));
+            }
+
+            // The part of a payload that is open, saved under the name of the
+            // test and the payload, with the extension its format implies.
+            function saveAttachmentPart(part, source) {
                 if (!part || !source) { return; }
 
                 var format = part.getAttribute('data-format') || 'text';
@@ -11826,6 +11955,8 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                     body.appendChild(node.cloneNode(true));
                 });
 
+                openStepAttachments(body);
+
                 stepItems().forEach(function(item) {
                     item.classList.toggle('is-active', item.getAttribute('data-sid') === sid);
                 });
@@ -11833,6 +11964,134 @@ pytest <b>--report-link</b> <span class="s">"Coverage=htmlcov/index.html"</span>
                 revealStepSuite(sid);
 
                 document.getElementById('stepView').hidden = false;
+            }
+
+            // ---- What a step attached, shown under it -----------------------
+            // The payloads made while a step ran are shown right under it, so a
+            // test can be read step by step without crossing to API Logs and
+            // finding the same call again among every call in the run. What
+            // was attached outside any step sits at the foot of its phase, and
+            // a paperclip folds either away. Nothing is written into the step
+            // tree for this: each payload is already parked in #attachStore,
+            // and the paperclip carries the ids to clone from - so what shows
+            // is the very text the API Logs viewer shows, and only the test
+            // being read pays for it.
+
+            // Every paperclip in a test that has just been shown, opened if its
+            // markup says it starts open - which step_report decides, and says
+            // for all of them: a payload is read beside the step that made it,
+            // not behind a click.
+            function openStepAttachments(body) {
+                Array.prototype.forEach.call(body.querySelectorAll('.step-line__attach[aria-expanded="true"]'),
+                                             function(button) { showStepAttachments(button, true); });
+            }
+
+            // The panel under a paperclip, built from #attachStore the first
+            // time it is asked for and only shown or hidden after that - a
+            // second press must not stack another copy under the step.
+            function stepAttachmentPanel(button) {
+                var line = button.closest('.step-line, .step-loose');
+                if (!line) { return null; }
+
+                var panel = line.querySelector('.step-attach');
+
+                if (!panel) {
+                    panel = document.createElement('div');
+                    panel.className = 'step-attach';
+                    panel.hidden = true;
+
+                    (button.getAttribute('data-attach') || '').split(' ').forEach(function(aid) {
+                        var card = stepAttachmentCard(aid);
+                        if (card) { panel.appendChild(card); }
+                    });
+
+                    line.appendChild(panel);
+                }
+
+                return panel;
+            }
+
+            function showStepAttachments(button, open) {
+                var panel = stepAttachmentPanel(button);
+                if (!panel) { return; }
+
+                panel.hidden = !open;
+                button.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+
+            function toggleStepAttachments(button) {
+                var panel = stepAttachmentPanel(button);
+                if (panel) { showStepAttachments(button, panel.hidden); }
+            }
+
+            // One payload as a card: the kind, status and time the API Logs rail
+            // draws for it, the meta strip and the parts its viewer opens, and
+            // the same Copy and Download.
+            function stepAttachmentCard(aid) {
+                var source = document.getElementById('attach-' + aid);
+                var item = document.getElementById('attach-item-' + aid);
+                if (!source || !item) { return null; }
+
+                var card = document.createElement('section');
+                card.className = 'step-attach__card';
+
+                var head = document.createElement('div');
+                head.className = 'step-attach__head';
+
+                var title = document.createElement('span');
+                title.className = 'step-attach__title';
+                title.textContent = source.getAttribute('data-title') || '';
+                title.title = title.textContent;
+
+                head.appendChild(item.querySelector('.attach-item__kind').cloneNode(true));
+                head.appendChild(title);
+                head.appendChild(item.querySelector('.attach-code').cloneNode(true));
+                head.appendChild(item.querySelector('.attach-item__detail').cloneNode(true));
+
+                var body = document.createElement('div');
+                body.className = 'step-attach__body';
+
+                Array.prototype.forEach.call(source.querySelectorAll('.attach-part'), function(part) {
+                    body.appendChild(part.cloneNode(true));
+                });
+
+                function openPart() { return body.querySelector('.attach-part:not([hidden])'); }
+
+                var actions = document.createElement('span');
+                actions.className = 'step-attach__actions';
+
+                var copy = document.createElement('button');
+                copy.type = 'button';
+                copy.className = 'attach-action';
+                copy.textContent = 'Copy';
+                copy.onclick = function() { copyAttachmentPart(openPart(), copy); };
+                actions.appendChild(copy);
+
+                var save = document.createElement('button');
+                save.type = 'button';
+                save.className = 'attach-action';
+                save.textContent = 'Download';
+                save.onclick = function() { saveAttachmentPart(openPart(), source); };
+                actions.appendChild(save);
+
+                head.appendChild(actions);
+                card.appendChild(head);
+
+                var meta = source.querySelector('.attach-meta');
+                if (meta && meta.children.length) {
+                    var strip = meta.cloneNode(true);
+                    strip.className = 'step-attach__meta';
+                    card.appendChild(strip);
+                }
+
+                var tabs = document.createElement('div');
+                tabs.className = 'step-attach__tabs';
+                card.appendChild(tabs);
+                card.appendChild(body);
+
+                renderAttachmentTabs(tabs, body, function() { copy.textContent = 'Copy'; });
+
+                return card;
             }
 
             // ---- Crossing into the tree from a table row --------------------

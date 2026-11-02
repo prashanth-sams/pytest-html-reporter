@@ -19,7 +19,7 @@ import re
 from collections import OrderedDict
 
 from pytest_html_reporter.const_vars import ConfigVars
-from pytest_html_reporter.steps import open_step
+from pytest_html_reporter.steps import open_step, phase
 
 
 # What the viewer knows how to lay out. Anything else is shown as plain text.
@@ -290,6 +290,10 @@ def add(kind, title, parts, meta=None, code="", detail="", ms=""):
         # -1 for an attachment made outside any step, which is every one made
         # by a suite that never reached for them.
         "step": -1 if step is None else step["id"],
+        # And the phase it was made in, so one made outside every step is still
+        # shown where it happened - the last call a fixture attaches from its
+        # teardown, under Tear down - rather than on API Logs alone.
+        "phase": phase(),
     }
 
     _pending().append(record)
@@ -559,6 +563,16 @@ def _short_url(url):
 
 
 _SLUG = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def attachment_id(row_id, index):
+    """The id a test's `index`-th attachment is parked under in the page.
+
+    The API Logs tab files every payload under it and the Test Steps tab opens
+    them by it, so it is spelled once, here: two spellings that drifted apart
+    would leave a step's paperclip opening somebody else's payload, or nothing.
+    """
+    return '%s-%s' % (row_id, index)
 
 
 def filename_for(test_name, title):
