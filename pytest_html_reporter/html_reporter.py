@@ -1634,7 +1634,7 @@ class HTMLReporter(object):
             test_suites_fail=str(ConfigVars._test_fail_list),
             test_suites_skip=str(ConfigVars._test_skip_list),
             test_suites_xpass=str(ConfigVars._test_xpass_list),
-            test_suites_xfail=str(ConfigVars._test_fail_list),
+            test_suites_xfail=str(ConfigVars._test_xfail_list),
             test_suites_error=str(ConfigVars._test_error_list),
             archive_status=str(ConfigVars._archive_tab_content),
             archive_body_content=str(ConfigVars._archive_body_content),
