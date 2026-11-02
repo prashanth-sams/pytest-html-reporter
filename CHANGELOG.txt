@@ -9,6 +9,7 @@
 - The part buttons, `Copy` and `Download` are one piece of code serving both places a payload can be read, rather than a second copy of it, so the two cannot come to behave differently
 - A long body scrolls in a box of its own instead of pushing the steps after it out of reach. The paperclip is a real button now - it can be tabbed to, says whether it is open, and folds or opens with Enter - and its caret turns to say which way it will go
 - `Copy` on `API Logs` no longer says `Copied` when the browser quietly refused the fallback copy. It asked whether the copy threw, not whether it happened; it now asks the second, the way the captured-output overlay does, and says `Press Ctrl+C` when nothing reached the clipboard
+- Each build's card on `Archives` now says how many test suites it ran, on a line under its date. Every build has written that count into its `output.json` since 0.1.7, so the builds already archived show theirs too - nothing has to be rerun. A build archived without one leaves the line out rather than show `0`: it ran suites, nothing recorded how many
 
 0.4.4 (02/11/2026)
 -------------------

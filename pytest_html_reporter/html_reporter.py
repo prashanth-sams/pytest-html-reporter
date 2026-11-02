@@ -1874,6 +1874,16 @@ class HTMLReporter(object):
                 except KeyError:
                     _archive_body_text.rerun = '0'
 
+                # Not defaulted to '0' like rerun: a build archived without the
+                # count still ran suites, so the line is left out rather than
+                # say it ran none.
+                try:
+                    suites = int(data['total_suite'])
+                except (KeyError, TypeError, ValueError):
+                    _archive_body_text.suites_hidden = ' hidden'
+                else:
+                    _archive_body_text.suites = f"{suites} TEST SUITE{'' if suites == 1 else 'S'}"
+
                 index = i
                 if value != "current": index = i + 1
                 ConfigVars.archives.setdefault(str(index), {})['pass'] = data['status_list']['pass']

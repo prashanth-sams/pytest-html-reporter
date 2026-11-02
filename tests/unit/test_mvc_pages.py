@@ -39,10 +39,12 @@ def test_archive_body():
     xfail = str(get_random_number())
     error = str(get_random_number())
     status = get_random_string()
+    suites = f"{get_random_number()} TEST SUITES"
 
     _archive_body_text = ArchiveBody(
         total_tests=total_tests,
         date=_date,
+        suites=suites,
         _pass=_pass,
         fail=fail,
         skip=skip,
@@ -61,6 +63,10 @@ def test_archive_body():
 
     _date_s = soup.find("div", class_="archive-date")
     assert _date_s.text.strip() == _date
+
+    suites_s = soup.find("div", class_="archive-suites")
+    assert suites_s.text.strip() == suites
+    assert not suites_s.has_attr("hidden")
 
     _pass_s = soup.find(lambda tag: tag.name == "div" and "PASSED" in tag.text, class_="counter")
     assert _pass_s.text.strip().split("\n")[0] == _pass
